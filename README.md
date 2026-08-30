@@ -2,6 +2,11 @@
 
 Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwickelt und getestet für eine VVM S320 mit S2125.
 
+## Autoren
+
+- AndiO91
+- ChatGPT (OpenAI)
+
 ## Installation
 
 1. Den Ordner `custom_components/nibe_local` nach `/config/custom_components/nibe_local` kopieren.
