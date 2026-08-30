@@ -89,11 +89,11 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
 
 
-async def async_refresh_ventilation_state(self) -> dict[str, Any] | None:
-    """Refresh NIBE ventilation mode point 3830 once for all ventilation entities.
+    async def async_refresh_ventilation_state(self) -> dict[str, Any] | None:
+        """Refresh NIBE ventilation mode point 3830 once for all ventilation entities.
 
-    The Ventilationsmodus select and the virtual Lüftung+ switch both use
-    this same coordinator value, so one REST GET updates both entities in
-    the same coordinator event.
-    """
-    return await self.async_refresh_point(3830)
+        The Ventilationsmodus select and the virtual Lüftung+ switch both use
+        this same coordinator value, so one REST GET updates both entities in
+        the same coordinator event.
+        """
+        return await self.async_refresh_point(3830)

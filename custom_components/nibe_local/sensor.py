@@ -31,11 +31,16 @@ class NibeSensor(NibePointEntity, SensorEntity):
             return OPERATING_PRIORITY_MAP.get(value, value)
 
         value = scaled_value(self.point or {})
-        if self.definition.point_id == 840 and value is not None:
+
+        # Point 840 can report large sentinel/out-of-range values when no
+        # meaningful defrost countdown exists. Show those as 0 minutes.
+        if self.definition.point_id == 840:
             try:
-                return 0 if float(value) > 720 else value
+                if value is not None and float(value) > 720:
+                    return 0
             except (TypeError, ValueError):
-                return value
+                pass
+
         return value
 
     @property
@@ -66,6 +71,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
     @property
     def state_class(self):
         unit = self.native_unit_of_measurement
+        # Runtime and start counters are monotonically increasing.
         if self.definition.point_id in {1755, 2505, 2506, 2507}:
             return SensorStateClass.TOTAL_INCREASING
         if unit in {"°C", "°", "%", "%RH", "Hz", "A", "bar", "kW", "l/min", "min", "h", "s", "GM", "rpm"}:
