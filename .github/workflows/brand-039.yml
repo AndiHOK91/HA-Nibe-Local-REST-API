@@ -1,0 +1,75 @@
+name: NIBE Branding 0.3.9 exakt erzeugen
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".brand_source/**"
+      - ".github/workflows/brand-039.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  branding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Branding exakt aus Originalquelle erzeugen
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .brand_source/part02.txt || exit 0
+          cat .brand_source/part*.txt | base64 -d > /tmp/Nibe_Industrier_logo.svg.webp
+          echo "0ba23fad7c2a382039e41c5ebde7699571c0da315ebb1e0ddef746485bbc0aa9  /tmp/Nibe_Industrier_logo.svg.webp" | sha256sum -c -
+          python -m pip install --disable-pip-version-check "Pillow==12.3.0"
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          source = Path('/tmp/Nibe_Industrier_logo.svg.webp')
+          brand = Path('custom_components/nibe_local/brand')
+          brand.mkdir(parents=True, exist_ok=True)
+
+          img = Image.open(source).convert('RGBA')
+          bbox = img.getbbox()
+          if bbox:
+              img = img.crop(bbox)
+
+          img.save(brand / 'logo.png', 'PNG', optimize=True)
+          logo_2x = img.resize((img.width * 2, img.height * 2), Image.Resampling.LANCZOS)
+          logo_2x.save(brand / 'logo@2x.png', 'PNG', optimize=True)
+
+          icon_size = 256
+          canvas = Image.new('RGBA', (icon_size, icon_size), (0, 0, 0, 0))
+          max_w = int(icon_size * 0.88)
+          max_h = int(icon_size * 0.42)
+          scale = min(max_w / img.width, max_h / img.height)
+          icon_logo = img.resize(
+              (max(1, round(img.width * scale)), max(1, round(img.height * scale))),
+              Image.Resampling.LANCZOS,
+          )
+          x = (icon_size - icon_logo.width) // 2
+          y = (icon_size - icon_logo.height) // 2
+          canvas.alpha_composite(icon_logo, (x, y))
+          canvas.save(brand / 'icon.png', 'PNG', optimize=True)
+
+          icon_2x = canvas.resize((512, 512), Image.Resampling.LANCZOS)
+          icon_2x.save(brand / 'icon@2x.png', 'PNG', optimize=True)
+          PY
+          echo "7109bdf0270cac74dc54c57d18f3a822f9a455faa30f5e63fd64acd34198b1ba  custom_components/nibe_local/brand/icon.png" | sha256sum -c -
+          echo "353daa1e2b2f36c035c5697d14d86ad0da2babd22c9f978c0538b5a9faf56040  custom_components/nibe_local/brand/icon@2x.png" | sha256sum -c -
+          echo "80c9e75a513518ed1f903dbeec4700843edbc002b069d62a6717c9832065a4bc  custom_components/nibe_local/brand/logo.png" | sha256sum -c -
+          echo "8a8f124a98dd6073878fbc9ea4bd5bb8faaf7642bec5445e64756fbb9cf0e07d  custom_components/nibe_local/brand/logo@2x.png" | sha256sum -c -
+          rm -rf .brand_chunks .brand_source
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A custom_components/nibe_local/brand .brand_chunks .brand_source
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "NIBE-Branding für Version 0.3.9 exakt wiederherstellen"
+          git push
