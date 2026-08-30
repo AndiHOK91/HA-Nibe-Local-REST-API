@@ -5,7 +5,7 @@ Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwick
 ## Autoren
 
 - AndiO91
-- ChatGPT (OpenAI)
+- ChatGPT (OpenAI) – Unterstützung bei Entwicklung, REST-API-Auswertung und Home-Assistant-Integration
 
 ## Installation
 
