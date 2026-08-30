@@ -8,6 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .alarms import normalize_alarms
 from .const import POINTS
 from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, raw_value, scaled_value
@@ -80,11 +81,14 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
 
 class NibeNotificationSensor(SensorEntity):
+    """Read-only sensor for active NIBE alarms/notifications."""
+
     _attr_has_entity_name = True
     _attr_name = "Aktive Meldungen"
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
         self.coordinator = coordinator
+        # Keep the existing unique ID so upgrades do not create a duplicate entity.
         self._attr_unique_id = f"{coordinator.api.device_id}_notifications"
 
     @property
@@ -96,12 +100,29 @@ class NibeNotificationSensor(SensorEntity):
         return self.coordinator.last_update_success
 
     @property
+    def alarms(self) -> list[dict[str, Any]]:
+        payload = (self.coordinator.data or {}).get("notifications") or {"alarms": []}
+        return normalize_alarms(payload)
+
+    @property
     def native_value(self) -> int:
-        return len(((self.coordinator.data or {}).get("notifications") or {}).get("alarms", []))
+        return len(self.alarms)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"alarms": ((self.coordinator.data or {}).get("notifications") or {}).get("alarms", [])}
+        alarms = self.alarms
+        alarm_ids = [alarm["alarm_id"] for alarm in alarms if alarm.get("alarm_id") is not None]
+        summary = [
+            f'{alarm["alarm_id"]} - {alarm["text"]}'
+            if alarm.get("alarm_id") is not None
+            else str(alarm.get("text") or "Unbekannter Alarm")
+            for alarm in alarms
+        ]
+        return {
+            "alarm_ids": alarm_ids,
+            "alarm_summary": summary,
+            "alarms": alarms,
+        }
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(self.coordinator.async_add_listener(self.async_write_ha_state))
