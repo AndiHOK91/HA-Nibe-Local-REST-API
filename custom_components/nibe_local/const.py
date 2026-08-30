@@ -129,6 +129,8 @@ POINTS: tuple[PointDef, ...] = (
 
     # Ventilation / ERS / AZ30. Entities only appear when the point is valid (isOk).
     PointDef(3830, "ventilation_mode", "Lüftung", "select"),
+    PointDef(4040, "night_reduction", "Lüftung", "switch"),
+    PointDef(4041, "night_reduction_start_temperature", "Lüftung", "number"),
     PointDef(7934, "ventilation_exhaust_bt20", "Lüftung"),
     PointDef(7935, "ventilation_extract_bt21", "Lüftung"),
     PointDef(7936, "ventilation_supply_bt22", "Lüftung"),
