@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "NIBE Local REST",
+        "description": "Use either username/password for HTTP Basic authentication, or enter a complete Authorization header (for example 'Basic ...').",
+        "data": {
+          "host": "Host / IP address",
+          "port": "Port",
+          "device_id": "Device ID or serial number",
+          "username": "Username",
+          "password": "Password",
+          "auth_header": "Authorization header (optional alternative)",
+          "verify_ssl": "Verify TLS certificate",
+          "scan_interval": "Polling interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to the NIBE local API",
+      "invalid_auth": "Authentication failed"
+    },
+    "abort": {
+      "already_configured": "This NIBE device is already configured"
+    }
+  }
+}
