@@ -59,6 +59,16 @@ Die Alarmfunktion ist bewusst **nur lesend**. Es wird keine Reset- oder Quittier
 
 Punkt `3830` wird für den Ventilationsmodus verwendet. Für die Nachtabsenkung sind zusätzlich die schreibbaren Punkte `4040` und `4041` integriert. Einheit, Skalierung, Min-/Max-Werte und Schreibbarkeit werden soweit möglich aus den REST-Metadaten der NIBE übernommen.
 
+## Haftungs- und Gewährleistungsausschluss
+
+Diese Software wird als Open-Source-Projekt **ohne Gewährleistung oder Garantie** bereitgestellt. Die Nutzung erfolgt **auf eigene Gefahr**. Es wird insbesondere keine Gewähr für die Richtigkeit, Vollständigkeit, Aktualität oder Fehlerfreiheit der ausgelesenen, berechneten, übersetzten oder geschriebenen Werte sowie für die dauerhafte Kompatibilität mit bestimmten NIBE-Geräten, Firmware-Versionen oder Home-Assistant-Versionen übernommen.
+
+Die Integration kann Einstellungen einer Heizungs-, Kühlungs-, Lüftungs- und Brauchwasseranlage verändern. Nutzer sind selbst dafür verantwortlich, Änderungen vor der Verwendung zu prüfen und sicherzustellen, dass die eingestellten Werte für ihre konkrete Anlage zulässig und sicher sind. Bei sicherheitsrelevanten, frostschutzrelevanten oder anderweitig kritischen Funktionen dürfen die von dieser Integration angezeigten Werte und Zustände nicht als alleinige Entscheidungsgrundlage verwendet werden. Maßgeblich sind im Zweifel die Anzeigen und Einstellungen am NIBE-Gerät sowie die offizielle Dokumentation des Herstellers.
+
+Soweit gesetzlich zulässig, haften die Autoren und Mitwirkenden nicht für unmittelbare oder mittelbare Schäden, Folgeschäden, Sachschäden, Anlagen- oder Komponentenschäden, Datenverluste, Nutzungsausfälle, Energie- oder Mehrkosten oder sonstige Nachteile, die aus der Installation, Konfiguration, Nutzung, Fehlfunktion oder Nichtverfügbarkeit dieser Software entstehen oder damit in Zusammenhang stehen. Dies gilt auch dann, wenn auf die Möglichkeit solcher Schäden hingewiesen wurde.
+
+Dieser Hinweis ergänzt den Haftungs- und Gewährleistungsausschluss der **MIT-Lizenz**. Zwingende gesetzliche Haftungstatbestände bleiben unberührt.
+
 ## Version
 
 Aktueller Stand: **0.3.17**
