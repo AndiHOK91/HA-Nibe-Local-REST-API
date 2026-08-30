@@ -1,7 +1,7 @@
 {
   "domain": "nibe_local",
   "name": "NIBE Local REST",
-  "version": "0.3.16",
+  "version": "0.3.17",
   "documentation": "https://www.home-assistant.io/",
   "config_flow": true,
   "iot_class": "local_polling",

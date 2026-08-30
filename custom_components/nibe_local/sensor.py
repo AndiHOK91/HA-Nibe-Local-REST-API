@@ -14,6 +14,7 @@ from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, raw_value, scaled_value
 
 OPERATING_PRIORITY_MAP = {10: "Aus", 20: "Brauchwasser", 30: "Heizung", 40: "Pool", 60: "Kühlung"}
+DEFROST_REQUESTED_MAP = {0: "Aus", 1: "Aktiv", 2: "Passiv"}
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
@@ -30,6 +31,13 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == 1758:
             value = raw_value(self.point or {})
             return OPERATING_PRIORITY_MAP.get(value, value)
+
+        if self.definition.point_id == 8060:
+            value = raw_value(self.point or {})
+            try:
+                return DEFROST_REQUESTED_MAP.get(int(value), "Unbekannt")
+            except (TypeError, ValueError):
+                return "Unbekannt"
 
         value = scaled_value(self.point or {})
 
@@ -132,4 +140,3 @@ class NibeNotificationSensor(SensorEntity):
         self.async_on_remove(
             self.coordinator.async_add_listener(self.async_write_ha_state)
         )
-

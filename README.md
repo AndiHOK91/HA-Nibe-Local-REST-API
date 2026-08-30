@@ -1,4 +1,4 @@
-# NIBE Local REST – Home Assistant Custom Integration (0.3.16)
+# NIBE Local REST – Home Assistant Custom Integration (0.3.17)
 
 Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwickelt und getestet für eine VVM S320 mit S2125.
 
@@ -35,6 +35,11 @@ Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwick
 - **Starttemperatur Nachtabsenkung** über Punkt `4041`
 - **Aktive Meldungen** als read-only Alarm-Entity mit Alarmnummern und Detailattributen
 - Werte von **Zeit bis Enteisung** über 720 Minuten werden als 0 Minuten dargestellt
+- Punkt `8060` wird als **Enteisung angefordert (EB101)** angezeigt:
+  - `0` = Aus
+  - `1` = Aktiv
+  - `2` = Passiv
+  - sonst = Unbekannt
 - Konfigurierbares Polling-Intervall
 - Konfigurierbare Verzögerung für das Rücklesen nach Schaltbefehlen
 - NIBE-Branding
@@ -56,7 +61,7 @@ Punkt `3830` wird für den Ventilationsmodus verwendet. Für die Nachtabsenkung 
 
 ## Version
 
-Aktueller Stand: **0.3.16**
+Aktueller Stand: **0.3.17**
 
 ## Hinweise
 
