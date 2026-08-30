@@ -29,7 +29,14 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == 1758:
             value = raw_value(self.point or {})
             return OPERATING_PRIORITY_MAP.get(value, value)
-        return scaled_value(self.point or {})
+
+        value = scaled_value(self.point or {})
+        if self.definition.point_id == 840 and value is not None:
+            try:
+                return 0 if float(value) > 720 else value
+            except (TypeError, ValueError):
+                return value
+        return value
 
     @property
     def native_unit_of_measurement(self) -> str | None:
@@ -59,7 +66,6 @@ class NibeSensor(NibePointEntity, SensorEntity):
     @property
     def state_class(self):
         unit = self.native_unit_of_measurement
-        # Runtime and start counters are monotonically increasing.
         if self.definition.point_id in {1755, 2505, 2506, 2507}:
             return SensorStateClass.TOTAL_INCREASING
         if unit in {"°C", "°", "%", "%RH", "Hz", "A", "bar", "kW", "l/min", "min", "h", "s", "GM", "rpm"}:
