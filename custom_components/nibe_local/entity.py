@@ -1,0 +1,117 @@
+"""Base entities for NIBE Local REST."""
+from __future__ import annotations
+
+import re
+from typing import Any
+
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from .const import DOMAIN, PointDef
+from .coordinator import NibeCoordinator
+
+FRIENDLY_NAMES = {4: 'Aktuelle Außenlufttemperatur (BT1)', 8: 'Vorlauf (BT2)', 10: 'Rücklauf (BT3)', 11: 'Brauchwasser, oben (BT7)', 12: 'Brauchwasserbereitung (BT6)', 54: 'Mittlere Temperatur (BT1)', 58: 'Volumenstrommesser (BF1)', 781: 'Gradminuten', 832: 'Alarmnummer von Außenluftwärmepumpe (EB101)', 834: 'Ventilatordrehzahl (EB101)', 839: 'Erzeugte Leistung Wärme (EB101)', 840: 'Zeit bis Enteisung (EB101)', 841: 'Enteisung Index (EB101)', 842: 'Überhitzung Referenz EEV (EB101)', 843: 'Überhitzung EEV (EB101)', 844: 'EEV-ssh-error (EB101)', 845: 'Überhitzung Temp. Referenz EEV (EB101)', 846: 'Sollwert EEV (EB101)', 847: 'EEV PV (EB101)', 848: 'EEV-te-error durchschnittl. geöffnet (EB101)', 849: 'Öffnungsgrad EEV (EB101)', 852: 'EEV-ssh-error (EVI) (EB101)', 856: 'EEV-te-error durchschnittl. geöffnet in (EVI) (EB101)', 992: 'Niederdruck (EB101 BP8 dew)', 993: 'Hochdruck (EB101 BP9 dew)', 994: 'Einspritzung (EB101-BT81)', 995: 'Druckgeber, Einspritzung (EB101-BP11)', 996: 'EVI-Druck (EB101-EP14-BP11 dew)', 997: 'Verdampfer (EB101-BT84)', 998: 'Ventilatorstatus (EB101-EP14)', 999: 'Ventilator U/min (EB101-EP14)', 1708: 'Berechneter Vorlauf Klimatisierungssystem 1', 1716: 'Kühlung Status', 1755: 'Gesamtbetriebszeit Zusatzheizung', 1756: 'Leistung interne Zusatzheizung', 1758: 'Betriebspriorität', 1760: 'Betriebsmodus interne Zusatzheizung', 1829: 'Brauchwasserzirkulation (GP11)', 1942: 'Mehr Brauchwasser Status', 1975: 'Drehzahl Heizungsumwälzpumpe (GP1)', 2002: 'Umschaltventil Brauchwasser (QN10)', 2022: 'Aktueller Status', 2038: 'Betriebsmodus Brauchwasserkomfort', 2491: 'Rücklauf (EB101-BT3)', 2494: 'Kondensatorfühler, Vorlauf (EB101-BT12)', 2495: 'Heißgas (EB101-BT14)', 2496: 'Flüssigkeitsleitung (EB101-BT15)', 2497: 'Sauggas (EB101-BT17)', 2500: 'Verdichterstatus (EB101)', 2501: 'Verdichter, Zeit bis Start (EB101-EP14)', 2505: 'Verdichter, Anzahl Starts (EB101-EP14)', 2506: 'Verdichter, Gesamtbetriebszeit (EB101-EP14)', 2507: 'Verdichter, Betriebszeit Brauchwasser (EB101-EP14)', 2508: 'Alarmnummer (EB101-EP14)', 2657: 'Verdichter, angefordert (EB101-EP14)', 2683: 'Kühlung Blockierung', 2691: 'Kühlgradminuten', 2695: 'Berechneter Kühlungsvorlauf Klimatisierungssystem 1', 2729: 'Verdichter verwenden Kühlung', 2731: 'Kühlpumpe manuelle Drehzahl', 2766: 'Außenlufttemperatur (EB101-BT28)', 2767: 'Verdampfer (EB101-BT16)', 3095: 'Niederdruck (EB101-BP8)', 3096: 'Aktuelle Verdichterfrequenz (EB101)', 3097: 'Schutzmodus (EB101)', 3098: 'Enteisung (EB101)', 3101: 'Leistung (EB101-EP14)', 3138: 'Interne Ladepumpe (GP12)', 3170: 'Angeforderte Verdichterfrequenz (EB101)', 3252: 'Strom (EB101-EP14)', 3353: 'Temperatur, Wechselrichter (EB101-EP14)', 3354: 'Ventilatordrehzahl (EB101-EP14)', 3375: 'Alarmnummer', 3667: 'Heizkurve Klimatisierungssystem 1', 3671: 'Verschieb. Heizkurve Klimatisierungssystem 1', 3675: 'Niedrigster Vorlauf Klimatisierungssystem 1', 3679: 'Höchster Vorlauf Klimatisierungssystem 1', 3692: 'Externe Justierung Klimatisierungssystem 1', 3696: 'Externe Justierung mit Raumfühler Klimatisierungssystem 1', 3697: 'Brauchwasserbedarf', 3830: 'Ventilationsmodus', 3896: 'Heizung Start bei Untertemp.', 3897: 'Kühlung Start bei Übertemp.', 3900: 'Kühlung mit Raumfühler', 3920: 'Heizung zulassen', 3921: 'Kühlung zulassen', 4030: 'Mehr Brauchwasser (Anzahl Minuten)', 4560: 'Brauchwasserkomfort', 4564: 'Mehr Brauchwasser', 4602: 'Niedrigste Vorlauftemp. Kühlung Klim.system 1', 4693: 'Erwärmung (SG Ready)', 4694: 'Kühlung (SG Ready)', 4695: 'Brauchwasser (SG Ready)', 4721: 'Drehzahl Umwälzpumpe Heizung Wärmepumpe 1', 4729: 'Betriebsmodus Umwälzpumpe Heizung Wärmepumpe 1', 4745: 'Betriebsmodus Umwälzpumpe Brauchwasser Wärmepumpe 1', 4769: 'Drehzahl Umwälzpumpe Kühlung Wärmepumpe 1', 4778: 'Betriebsmodus Umwälzpumpe Kühlung Wärmepumpe 1', 4821: 'Betriebsart Ladepumpe, Kühlung (EB101)', 5025: 'Kühlkurve Klimatisierungssystem 1', 5033: 'Verschieb. Kühlkurve Klimatisierungssystem 1', 5079: 'Raumfühler Sollwert Klimatisierungssystem 1, Kühlung', 5144: 'Abluftventilator Drehzahl 4 (ERS 1)', 5145: 'Abluftventilator Drehzahl 3 (ERS 1)', 5146: 'Abluftventilator Drehzahl 2 (ERS 1)', 5147: 'Abluftventilator Drehzahl 1 (ERS 1)', 5148: 'Abluftventilator Drehzahl normal (ERS 1)', 5187: 'Zuluftventilator Drehzahl 4 (ERS 1)', 5188: 'Zuluftventilator Drehzahl 3 (ERS 1)', 5189: 'Zuluftventilator Drehzahl 2 (ERS 1)', 5190: 'Zuluftventilator Drehzahl 1 (ERS 1)', 5191: 'Zuluftventilator Drehzahl normal (ERS 1)', 5193: 'Bypasstemp. (ERS 1)', 7934: 'Abluft (AZ30-BT20)', 7935: 'Fortluft (AZ30-BT21)', 7936: 'Zuluft (AZ30-BT22)', 7937: 'Außenlufttemperatur (AZ30-BT23)', 7939: 'Luftfeuchtigkeit (AZ30-BM20)', 7957: 'Ventilatordrehzahl (AZ30-GQ2)', 7961: 'Wärmetauscher (AZ30-MA3)', 7962: 'Ventilatordrehzahl (AZ30-GQ3)', 8052: 'Start Enteisung Ventilator (EB101)', 8060: 'Defrost Requested EB101', 8121: 'Erhöhte Ventilation 1', 10613: 'SG Ready via API aktivieren', 10614: 'Angeforderter Betriebsmodus (SG Ready)', 14077: 'Regelt DCV (ERS S40 BM20 1)', 14081: 'Gewünschte Luftfeuchtigkeit (ERS S40 1)'}
+
+
+def _clean(text: str | None) -> str:
+    return (text or "").replace("\u00ad", "").strip()
+
+
+def point_value(point: dict[str, Any]) -> dict[str, Any]:
+    return point.get("value") or point.get("datavalue") or {}
+
+
+def raw_value(point: dict[str, Any]) -> int | str | None:
+    dv = point_value(point)
+    sv = dv.get("stringValue")
+    if sv not in (None, ""):
+        return sv
+    return dv.get("integerValue")
+
+
+def scaled_value(point: dict[str, Any]) -> int | float | str | None:
+    raw = raw_value(point)
+    if not isinstance(raw, (int, float)):
+        return raw
+    md = point.get("metadata") or {}
+    divisor = md.get("divisor") or 1
+    try:
+        value = raw / divisor
+    except (TypeError, ZeroDivisionError):
+        value = raw
+    decimal = md.get("decimal")
+    if isinstance(decimal, int) and decimal >= 0:
+        value = round(value, decimal)
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return value
+
+
+def to_raw(point: dict[str, Any], value: float) -> int:
+    md = point.get("metadata") or {}
+    divisor = md.get("divisor") or 1
+    return int(round(value * divisor))
+
+
+class NibePointEntity(CoordinatorEntity[NibeCoordinator]):
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: NibeCoordinator, definition: PointDef) -> None:
+        super().__init__(coordinator)
+        self.definition = definition
+        self._attr_unique_id = f"{coordinator.api.device_id}_{definition.point_id}"
+        if definition.diagnostic:
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    @property
+    def point(self) -> dict[str, Any] | None:
+        return self.coordinator.point(self.definition.point_id)
+
+    @property
+    def available(self) -> bool:
+        point = self.point
+        if not self.coordinator.last_update_success or not point:
+            return False
+        return bool(point_value(point).get("isOk", True))
+
+    @property
+    def name(self) -> str:
+        return FRIENDLY_NAMES.get(
+            self.definition.point_id,
+            _clean((self.point or {}).get("title"))
+            or self.definition.key.replace("_", " ").title(),
+        )
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        device = (self.coordinator.data or {}).get("device", {})
+        product = device.get("product") or {}
+        serial = product.get("serialNumber") or self.coordinator.api.device_id
+        return DeviceInfo(
+            identifiers={(DOMAIN, str(serial))},
+            manufacturer=product.get("manufacturer") or "NIBE",
+            name=product.get("name") or "NIBE VVM S320",
+            model=product.get("name"),
+            sw_version=product.get("firmwareId"),
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        point = self.point or {}
+        md = point.get("metadata") or {}
+        return {
+            "point_id": self.definition.point_id,
+            "group": self.definition.group,
+            "description": _clean(point.get("description")),
+            "variable_type": md.get("variableType"),
+            "variable_size": md.get("variableSize"),
+            "is_writable": md.get("isWritable"),
+            "modbus_register_type": md.get("modbusRegisterType"),
+            "modbus_register_id": md.get("modbusRegisterID"),
+            "raw_value": raw_value(point),
+            "divisor": md.get("divisor"),
+            "decimal": md.get("decimal"),
+            "min_value_raw": md.get("minValue"),
+            "max_value_raw": md.get("maxValue"),
+        }
