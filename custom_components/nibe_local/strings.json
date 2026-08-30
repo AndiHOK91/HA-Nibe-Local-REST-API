@@ -1,0 +1,48 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "NIBE Local REST einrichten",
+        "description": "Verbindung zur lokalen NIBE REST API.",
+        "data": {
+          "host": "IP-Adresse / Hostname",
+          "port": "Port",
+          "device_id": "Geräte-ID",
+          "username": "Benutzername",
+          "password": "Passwort",
+          "auth_header": "Authorization-Header (optional)",
+          "verify_ssl": "SSL-Zertifikat prüfen",
+          "scan_interval": "Abfrageintervall in Sekunden",
+          "command_poll_delay_ms": "Schalt-Poll-Verzögerung (ms)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zur NIBE konnte nicht hergestellt werden.",
+      "invalid_auth": "Benutzername oder Passwort ist ungültig."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "NIBE Local REST konfigurieren",
+        "description": "IP-Adresse, Zugangsdaten und Abfrageintervall ändern. Das Passwortfeld leer lassen, um das vorhandene Passwort beizubehalten.",
+        "data": {
+          "host": "IP-Adresse / Hostname",
+          "port": "Port",
+          "device_id": "Geräte-ID",
+          "username": "Benutzername",
+          "password": "Neues Passwort (leer = unverändert)",
+          "auth_header": "Authorization-Header (optional)",
+          "verify_ssl": "SSL-Zertifikat prüfen",
+          "scan_interval": "Abfrageintervall in Sekunden",
+          "command_poll_delay_ms": "Schalt-Poll-Verzögerung (ms)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung mit den neuen Einstellungen fehlgeschlagen.",
+      "invalid_auth": "Benutzername oder Passwort ist ungültig."
+    }
+  }
+}
