@@ -28,6 +28,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         else:
             entities.append(NibeSwitch(coordinator, d))
 
+    # Virtual dashboard switch backed by ventilation mode point 3830:
+    # ON -> 3 (Erhöht), OFF -> 0 (Normal).
     ventilation_point = coordinator.point(3830)
     if (
         ventilation_point
@@ -56,6 +58,7 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
     async def async_turn_off(self, **kwargs) -> None:
         await self.coordinator.api.patch_point(self.definition.point_id, 0)
         await self.coordinator.async_request_refresh()
+
 
 
 class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
@@ -93,6 +96,9 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
     async def _verify_after_configured_delay(self) -> None:
         await asyncio.sleep(self.coordinator.command_poll_delay_ms / 1000)
         await self._targeted_verify()
+
+        # One extra verification one second later catches NIBE state changes
+        # that are applied asynchronously.
         await asyncio.sleep(1)
         await self._targeted_verify()
 
@@ -109,9 +115,11 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
             raise
 
     async def async_turn_on(self, **kwargs) -> None:
+        # 2 = Einmalige Erhöhung
         await self._set_mode(2, True)
 
     async def async_turn_off(self, **kwargs) -> None:
+        # 0 = Aus / Normalzustand
         await self._set_mode(0, False)
 
 
@@ -143,17 +151,26 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
             return False
 
     async def _refresh_both_ventilation_entities(self) -> None:
+        """One REST read updates both Ventilationsmodus and Lüftung+."""
         await self.coordinator.async_refresh_ventilation_state()
         self._optimistic_state = None
         self.async_write_ha_state()
 
     async def _verify_after_configured_delay(self) -> None:
+        # Give the VVM time to apply the PATCH first.
         await asyncio.sleep(self.coordinator.command_poll_delay_ms / 1000)
+
+        # Exactly one GET of point 3830 updates the coordinator. Both the
+        # Ventilationsmodus select and Lüftung+ receive that same new value.
         await self._refresh_both_ventilation_entities()
+
+        # Verify once more one second later for slowly applied changes.
         await asyncio.sleep(1)
         await self._refresh_both_ventilation_entities()
 
     async def _set_mode(self, mode: int, optimistic_on: bool) -> None:
+        # Only Lüftung+ is optimistic. The real Ventilationsmodus select waits
+        # for the delayed REST read so it always displays a confirmed NIBE value.
         self._optimistic_state = optimistic_on
         self.async_write_ha_state()
 
@@ -166,7 +183,10 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
             raise
 
     async def async_turn_on(self, **kwargs) -> None:
+        # 3 = Erhöht
         await self._set_mode(3, True)
 
     async def async_turn_off(self, **kwargs) -> None:
+        # 0 = Normal
         await self._set_mode(0, False)
+

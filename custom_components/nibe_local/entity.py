@@ -19,6 +19,11 @@ def _clean(text: str | None) -> str:
 
 
 def point_value(point: dict[str, Any]) -> dict[str, Any]:
+    """Return the value object.
+
+    Current NIBE firmware uses the key "value". Older documentation/examples
+    may refer to it as "datavalue", so keep both for compatibility.
+    """
     return point.get("value") or point.get("datavalue") or {}
 
 
@@ -77,6 +82,8 @@ class NibePointEntity(CoordinatorEntity[NibeCoordinator]):
 
     @property
     def name(self) -> str:
+        # Stable German names keep entity names readable even when the NIBE API
+        # switches its point titles between languages/firmware versions.
         return FRIENDLY_NAMES.get(
             self.definition.point_id,
             _clean((self.point or {}).get("title"))

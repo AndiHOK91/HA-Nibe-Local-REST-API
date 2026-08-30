@@ -105,6 +105,9 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     def async_get_options_flow(config_entry):
+        # Home Assistant injects the ConfigEntry into OptionsFlow and exposes it
+        # as self.config_entry. Since HA 2025.12 it must no longer be passed to
+        # or assigned by the custom flow itself.
         return NibeLocalOptionsFlow()
 
 
@@ -113,10 +116,14 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         errors: dict[str, str] = {}
+
+        # Current effective values = original setup data overridden by options.
         current = {**self.config_entry.data, **self.config_entry.options}
 
         if user_input is not None:
             candidate = dict(user_input)
+
+            # Leaving the password field empty means "keep current password".
             if not candidate.get(CONF_PASSWORD):
                 candidate[CONF_PASSWORD] = current.get(CONF_PASSWORD, "")
 
@@ -127,8 +134,11 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             except NibeApiError:
                 errors["base"] = "cannot_connect"
             else:
+                # Options contain the complete effective configuration so setup
+                # can simply overlay them on top of the original entry data.
                 return self.async_create_entry(title="", data=candidate)
 
+        # Never pre-fill/show the stored password in the UI.
         return self.async_show_form(
             step_id="init",
             data_schema=_connection_schema(current, password_default=""),

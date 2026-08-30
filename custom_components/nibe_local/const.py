@@ -27,7 +27,10 @@ class PointDef:
     platform: Platform = "sensor"
     diagnostic: bool = False
 
+# Deliberately excludes all Pool points and the service/forced-control items
+# the user asked not to expose. EEV/defrost diagnostics and pump modes are included.
 POINTS: tuple[PointDef, ...] = (
+    # System
     PointDef(781, "degree_minutes", "System"),
     PointDef(1755, "aux_heat_total_time", "System"),
     PointDef(1756, "aux_heat_power", "System"),
@@ -35,6 +38,8 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(1760, "aux_heat_mode", "System"),
     PointDef(2022, "current_status", "System"),
     PointDef(3375, "alarm_number", "System", diagnostic=True),
+
+    # Heating
     PointDef(4, "outdoor_temperature_bt1", "Heizung"),
     PointDef(54, "mean_outdoor_temperature_bt1", "Heizung"),
     PointDef(8, "supply_temperature_bt2", "Heizung"),
@@ -44,6 +49,8 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(3667, "heating_curve", "Heizung", "number"),
     PointDef(3671, "heating_curve_offset", "Heizung", "number"),
     PointDef(3920, "heating_allowed", "Heizung", "switch"),
+
+    # Cooling
     PointDef(1716, "cooling_status", "Kühlung", "binary_sensor"),
     PointDef(2683, "cooling_blocked", "Kühlung", "binary_sensor"),
     PointDef(2691, "cooling_degree_minutes", "Kühlung"),
@@ -52,6 +59,8 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(3921, "cooling_allowed", "Kühlung", "switch"),
     PointDef(5025, "cooling_curve", "Kühlung", "number"),
     PointDef(5033, "cooling_curve_offset", "Kühlung", "number"),
+
+    # Hot water
     PointDef(11, "hot_water_top_bt7", "Warmwasser"),
     PointDef(12, "hot_water_charge_bt6", "Warmwasser"),
     PointDef(1829, "hot_water_circulation_gp11", "Warmwasser", "binary_sensor"),
@@ -61,8 +70,12 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(3697, "hot_water_position", "Warmwasser", "select"),
     PointDef(4030, "more_hot_water_minutes", "Warmwasser"),
     PointDef(4564, "more_hot_water", "Warmwasser", "switch"),
+
+    # Hydraulics / pumps
     PointDef(1975, "heating_circulation_pump_gp1", "Hydraulik"),
     PointDef(3138, "internal_charge_pump_gp12", "Hydraulik", "binary_sensor"),
+
+    # S2125 compressor / refrigerant circuit
     PointDef(832, "outdoor_unit_alarm", "S2125", diagnostic=True),
     PointDef(834, "outdoor_unit_fan_speed", "S2125"),
     PointDef(839, "generated_heat_power", "S2125"),
@@ -89,6 +102,8 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(3252, "compressor_current", "S2125"),
     PointDef(3353, "inverter_temperature", "S2125"),
     PointDef(3354, "compressor_fan_speed", "S2125"),
+
+    # EEV / EVI diagnostics
     PointDef(840, "time_to_defrost", "EEV / Abtauung", diagnostic=True),
     PointDef(841, "defrost_index", "EEV / Abtauung", diagnostic=True),
     PointDef(842, "eev_superheat_reference", "EEV / Abtauung", diagnostic=True),
@@ -111,12 +126,16 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(999, "fan_rpm_ep14", "EEV / Abtauung", diagnostic=True),
     PointDef(8052, "start_defrost_fan", "EEV / Abtauung", diagnostic=True),
     PointDef(8060, "defrost_requested", "EEV / Abtauung", diagnostic=True),
+
+    # Ventilation / ERS / AZ30. Entities only appear when the point is valid (isOk).
     PointDef(3830, "ventilation_mode", "Lüftung", "select"),
     PointDef(7934, "ventilation_exhaust_bt20", "Lüftung"),
     PointDef(7935, "ventilation_extract_bt21", "Lüftung"),
     PointDef(7936, "ventilation_supply_bt22", "Lüftung"),
     PointDef(7937, "ventilation_outdoor_bt23", "Lüftung"),
     PointDef(7939, "ventilation_humidity_bm20", "Lüftung"),
+
+    # Energy / SG Ready
 )
 
 POINT_BY_ID = {p.point_id: p for p in POINTS}

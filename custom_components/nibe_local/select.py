@@ -33,6 +33,12 @@ async def async_setup_entry(
 
 
 class NibePointSelect(NibePointEntity, SelectEntity):
+    """Select for NIBE enum-like points.
+
+    Only enum mappings confirmed by NIBE documentation or by the appliance/user
+    are translated to labels. Unknown enums remain raw values.
+    """
+
     ENUM_LABELS: dict[int, dict[int, str]] = {
         3830: {
             0: "Normal",

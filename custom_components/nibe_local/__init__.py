@@ -28,6 +28,8 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    # Options override the values entered during first setup. This makes host,
+    # credentials, SSL settings, device ID and poll interval editable later.
     data = {**entry.data, **entry.options}
 
     api = NibeLocalApi(

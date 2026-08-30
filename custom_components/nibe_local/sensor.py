@@ -59,6 +59,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
     @property
     def state_class(self):
         unit = self.native_unit_of_measurement
+        # Runtime and start counters are monotonically increasing.
         if self.definition.point_id in {1755, 2505, 2506, 2507}:
             return SensorStateClass.TOTAL_INCREASING
         if unit in {"°C", "°", "%", "%RH", "Hz", "A", "bar", "kW", "l/min", "min", "h", "s", "GM", "rpm"}:
