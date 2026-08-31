@@ -111,8 +111,6 @@ Das Polling-Intervall und die Verzögerung für die Rückmeldung nach Schaltbefe
 
 Die Integration ist ein inoffizielles Community-Projekt und steht in keiner Verbindung zu NIBE.
 
-Nicht jede NIBE-Anlage oder Firmware stellt dieselben REST-Punkte zur Verfügung. Welche Entitäten tatsächlich verfügbar sind, hängt deshalb von der jeweiligen Anlage, den angeschlossenen Komponenten und der Firmware ab.
-
 Die Integration befindet sich weiterhin vor Version 1.0 und wird auf einer realen Anlage weiterentwickelt und getestet.
 
 ## Haftungs- und Gewährleistungsausschluss
