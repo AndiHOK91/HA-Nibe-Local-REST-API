@@ -40,7 +40,8 @@ class NibeSensor(NibePointEntity, SensorEntity):
                 days = int(value)
                 if days < 0:
                     return None
-                return PERIODIC_HOT_WATER_DATE_EPOCH + timedelta(days=days)
+                next_date = PERIODIC_HOT_WATER_DATE_EPOCH + timedelta(days=days)
+                return next_date.strftime("%d.%m.%Y")
             except (TypeError, ValueError, OverflowError):
                 return None
 
@@ -75,7 +76,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
     @property
     def device_class(self):
         if self.definition.point_id == 2685:
-            return SensorDeviceClass.DATE
+            return None
         unit = self.native_unit_of_measurement
         if unit in {"°C", "°"}:
             return SensorDeviceClass.TEMPERATURE
