@@ -1,4 +1,4 @@
-# NIBE Local REST – Home Assistant Custom Integration (0.3.19)
+# NIBE Local REST – Home Assistant Custom Integration (0.3.20)
 
 Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwickelt und getestet für eine VVM S320 mit S2125.
 
@@ -63,6 +63,12 @@ Punkt `3708` **„Startzeit periodisches Brauchwasser“** wird ab Version **0.3
 
 Beim Schreiben wird die in Home Assistant gewählte Uhrzeit wieder in Sekunden seit Mitternacht umgerechnet. Beispiel: **09:30 → 34200**. Dadurch lässt sich die periodische Startzeit direkt über den normalen Uhrzeit-Picker von Home Assistant einstellen.
 
+### Filterwechsel-Intervall
+
+Punkt `3845` **„Zeit zwischen Filterwechsel“** wird ab Version **0.3.20** mit der Einheit **Monate** dargestellt. Die NIBE-Punkteliste enthält für diesen Punkt selbst keine Einheit; die Zuordnung zu Monaten wurde anhand der Anlagen-/myUplink-Anzeige verifiziert.
+
+In der verfügbaren Variablenliste wurde kein eigener Punkt für ein **Datum des letzten oder nächsten Filterwechsels** gefunden. Es gibt mehrere weitere, offenbar zubehör- bzw. systembezogene Punkte mit der Bezeichnung „Zeit zwischen Filterwechsel“, jedoch ebenfalls ohne separat ausgewiesenes Filterwechsel-Datum.
+
 ## Alarmmeldungen
 
 Die Entity **Aktive Meldungen** zeigt die Anzahl aktiver Meldungen. Zusätzlich stehen folgende Attribute zur Verfügung:
@@ -93,7 +99,7 @@ Dieses Projekt ist ein **inoffizielles Community-Projekt** und steht in keiner V
 
 ## Version
 
-Aktueller Stand: **0.3.19**
+Aktueller Stand: **0.3.20**
 
 ## Hinweise
 
