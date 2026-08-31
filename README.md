@@ -42,7 +42,6 @@ Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwick
   - sonst = Unbekannt
 - Konfigurierbares Polling-Intervall
 - Konfigurierbare Verzögerung für das Rücklesen nach Schaltbefehlen
-- NIBE-Branding
 - Pool-Entities sind bewusst ausgeschlossen
 
 ## Alarmmeldungen
@@ -68,6 +67,10 @@ Die Integration kann Einstellungen einer Heizungs-, Kühlungs-, Lüftungs- und B
 Soweit gesetzlich zulässig, haften die Autoren und Mitwirkenden nicht für unmittelbare oder mittelbare Schäden, Folgeschäden, Sachschäden, Anlagen- oder Komponentenschäden, Datenverluste, Nutzungsausfälle, Energie- oder Mehrkosten oder sonstige Nachteile, die aus der Installation, Konfiguration, Nutzung, Fehlfunktion oder Nichtverfügbarkeit dieser Software entstehen oder damit in Zusammenhang stehen. Dies gilt auch dann, wenn auf die Möglichkeit solcher Schäden hingewiesen wurde.
 
 Dieser Hinweis ergänzt den Haftungs- und Gewährleistungsausschluss der **MIT-Lizenz**. Zwingende gesetzliche Haftungstatbestände bleiben unberührt.
+
+## Markenhinweis
+
+Dieses Projekt ist ein **inoffizielles Community-Projekt** und steht in keiner Verbindung zu NIBE. Es enthält keine NIBE-Logos oder sonstigen Markengrafiken des Herstellers. Produkt- und Markennamen werden ausschließlich zur Beschreibung der technischen Kompatibilität verwendet.
 
 ## Version
 
