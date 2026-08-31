@@ -1,4 +1,4 @@
-# NIBE Local REST – Home Assistant Custom Integration (0.3.25)
+# NIBE Local REST – Home Assistant Custom Integration (0.3.26)
 
 Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwickelt und getestet für eine VVM S320 mit S2125.
 
@@ -77,7 +77,7 @@ Die Punkte `3710` und `3711` gehören zur Brauchwasserzirkulation und werden des
 
 ### Periodische Brauchwassererhöhung
 
-Punkt `2685` **„Datum periodisches Brauchwasser“** gehört zur periodischen Brauchwassererhöhung und wird ab Version **0.3.21** als read-only Sensor aufgenommen. Die vorhandene Variablenliste kennzeichnet diesen Punkt als nicht schreibbar. Das konkrete Datumsformat des Rohwerts wird nicht geraten; die Integration zeigt zunächst den von der NIBE gelieferten Wert an.
+Punkt `2685` wird als **„Nächste periodische Brauchwassererhöhung“** dargestellt. Der Rohwert ist die Anzahl der Tage seit dem **01.01.2010**. Beispiel: `6093` entspricht dem **07.09.2026**. Home Assistant erhält den Wert als echtes Datum mit der Sensor-Geräteklasse `date`.
 
 Punkt `3708` **„Startzeit periodisches Brauchwasser“** wird seit Version **0.3.19** als Home-Assistant-**Time-Entity** bereitgestellt. Der NIBE-Rohwert wird als Sekunden seit Mitternacht interpretiert. Damit entspricht zum Beispiel `34200` der Uhrzeit **09:30**.
 
@@ -113,7 +113,7 @@ Dieses Projekt ist ein **inoffizielles Community-Projekt** und steht in keiner V
 
 ## Version
 
-Aktueller Stand: **0.3.25**
+Aktueller Stand: **0.3.26**
 
 ## Hinweise
 
