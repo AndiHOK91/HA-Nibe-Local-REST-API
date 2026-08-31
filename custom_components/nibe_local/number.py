@@ -28,6 +28,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
 class NibeNumber(NibePointEntity, NumberEntity):
     @property
+    def name(self) -> str:
+        if self.definition.point_id == 3710:
+            return "BWZ Betriebszeit"
+        if self.definition.point_id == 3711:
+            return "BWZ Stillstandszeit"
+        return super().name
+
+    @property
     def native_value(self) -> float | None:
         value = scaled_value(self.point or {})
         return float(value) if isinstance(value, (int, float)) else None
