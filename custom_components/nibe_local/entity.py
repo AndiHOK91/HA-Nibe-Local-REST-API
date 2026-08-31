@@ -18,6 +18,7 @@ FRIENDLY_NAMES = {
     12: "Brauchwasserbereitung (BT6)",
     54: "Mittlere Temperatur (BT1)",
     58: "Volumenstrommesser (BF1)",
+    599: "Verdichter Gesamtzeit Kühlung, Wärmepumpe 1 (EP14)",
     781: "Gradminuten",
     829: "Energiezähler Impuls (BE6)",
     832: "Alarmnummer von Außenluftwärmepumpe (EB101)",
@@ -53,6 +54,7 @@ FRIENDLY_NAMES = {
     1820: "Externe Blockierung",
     1827: "Stufengeregelte Zusatzheizung Blockierung",
     1829: "Brauchwasserzirkulation (GP11)",
+    1865: "Betriebszeit elektrische Zusatzheizung für Brauchwasser",
     1942: "Mehr Brauchwasser Status",
     1975: "Drehzahl Heizungsumwälzpumpe (GP1)",
     2002: "Umschaltventil Brauchwasser (QN10)",
@@ -76,6 +78,7 @@ FRIENDLY_NAMES = {
     2729: "Verdichter verwenden Kühlung",
     2766: "Außenlufttemperatur (EB101-BT28)",
     2767: "Verdampfer (EB101-BT16)",
+    2792: "Drehzahl Heizungsumwälzpumpe (GP1) – Variable 2792",
     3095: "Niederdruck (EB101-BP8)",
     3096: "Aktuelle Verdichterfrequenz (EB101)",
     3097: "Schutzmodus (EB101)",
@@ -127,6 +130,9 @@ FRIENDLY_NAMES = {
     7939: "Luftfeuchtigkeit (AZ30-BM20)",
     8052: "Start Enteisung Ventilator (EB101)",
     8060: "Enteisung angefordert (EB101)",
+    22268: "Letzte Enteisung Wärmepumpe 1",
+    25165: "Energieprotokoll – Tatsächlicher Energieverbrauch",
+    25166: "Energieprotokoll – Tatsächlicher Energieverbrauch, Komponenten",
 }
 
 
