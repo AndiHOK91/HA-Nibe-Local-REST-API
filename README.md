@@ -63,7 +63,14 @@ Die Integration liest unter anderem Außen-, Vorlauf-, Rücklauf- und Raumtemper
 
 Einige Einstellungen können direkt aus Home Assistant geändert werden, zum Beispiel Heizkurve, Heizkurvenverschiebung sowie – abhängig vom Betriebsmodus der NIBE – die Freigabe für Heizung und Kühlung.
 
-Vor sicherheitsrelevanten Schreibvorgängen wird der aktuelle Betriebsmodus der Anlage erneut geprüft. Wenn die NIBE das Schreiben in diesem Modus nicht erlaubt, wird kein Schreibbefehl gesendet.
+Für die Schalter **„Heizung zulassen“** und **„Kühlung zulassen“** prüft die Integration unmittelbar vor jedem Schreibversuch den aktuell von der NIBE gemeldeten Betriebsmodus:
+
+- **Auto:** Beide Schalter sind nur lesbar. Änderungen aus Home Assistant werden gesperrt und es wird kein Schreibbefehl an die NIBE gesendet.
+- **Manuell:** Sowohl **Heizung zulassen** als auch **Kühlung zulassen** dürfen aus Home Assistant geändert werden.
+- **Nur Zusatzheizung:** **Heizung zulassen** darf geändert werden, **Kühlung zulassen** bleibt nur lesbar.
+- **Unbekannter oder nicht verfügbarer Betriebsmodus:** Das Schreiben auf beide Freigaben wird vorsorglich gesperrt.
+
+Der Betriebsmodus wird dafür vor dem Schalten gezielt neu von der Anlage gelesen. Dadurch berücksichtigt die Integration auch Änderungen, die kurz zuvor direkt an der NIBE oder über eine andere Bedienmöglichkeit vorgenommen wurden.
 
 ## Außeneinheit und Verdichter
 
