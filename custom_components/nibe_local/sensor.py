@@ -103,7 +103,11 @@ class NibeSensor(NibePointEntity, SensorEntity):
             return None
         point = self.point or {}
         md = point.get("metadata") or {}
-        return md.get("shortUnit") or md.get("unit") or None
+        unit = md.get("unit")
+        short_unit = md.get("shortUnit")
+        if unit == "°C":
+            return "°C"
+        return short_unit or unit or None
 
     @property
     def device_class(self):
