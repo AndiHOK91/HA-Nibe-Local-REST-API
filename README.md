@@ -1,4 +1,4 @@
-# NIBE Local REST – Home Assistant Custom Integration (0.3.22)
+# NIBE Local REST – Home Assistant Custom Integration (0.3.23)
 
 Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwickelt und getestet für eine VVM S320 mit S2125.
 
@@ -43,6 +43,22 @@ Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwick
 - Konfigurierbares Polling-Intervall
 - Konfigurierbare Verzögerung für das Rücklesen nach Schaltbefehlen
 - Pool-Entities sind bewusst ausgeschlossen
+
+## Betriebsmodus und Freigaben
+
+Punkt `3751` **„Betriebsmodus“** wird mit den bestätigten Werten dargestellt:
+
+- `0` = **Auto**
+- `1` = **Manuell**
+- `2` = **Nur Zusatzheizung**
+
+Die Schreibfreigabe für **Heizung zulassen** (`3920`) und **Kühlung zulassen** (`3921`) richtet sich nach dem aktuellen Betriebsmodus:
+
+- **Auto (0):** Heizung und Kühlung werden nur gelesen; Schreibversuche werden blockiert.
+- **Manuell (1):** Heizung und Kühlung dürfen gelesen und geschrieben werden.
+- **Nur Zusatzheizung (2):** Heizung darf gelesen und geschrieben werden; Kühlung wird nur gelesen.
+
+Vor jedem Schreibversuch auf `3920` oder `3921` wird Punkt `3751` gezielt neu gelesen. Dadurch gilt auch eine kurz zuvor direkt an der Anlage oder über myUplink geänderte Betriebsart. Bei nicht erlaubtem Schreiben erzeugt Home Assistant eine Fehlermeldung und es wird kein REST-PATCH an die NIBE gesendet.
 
 ## Zusätzliche Anlagenparameter
 
@@ -95,7 +111,7 @@ Dieses Projekt ist ein **inoffizielles Community-Projekt** und steht in keiner V
 
 ## Version
 
-Aktueller Stand: **0.3.22**
+Aktueller Stand: **0.3.23**
 
 ## Hinweise
 
