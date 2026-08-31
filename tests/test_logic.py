@@ -4,12 +4,13 @@ from datetime import time
 
 from custom_components.nibe_local.api import NibeLocalApi
 from custom_components.nibe_local.const import (
+    POINT_BY_ID,
     POINT_COOLING_ALLOWED,
     POINT_HEATING_ALLOWED,
     POINT_OPERATING_MODE_SETTING,
     POINT_VENTILATION_MODE,
 )
-from custom_components.nibe_local.entity import scaled_value, to_raw
+from custom_components.nibe_local.entity import FRIENDLY_NAMES, scaled_value, to_raw
 from custom_components.nibe_local.number import metadata_limits
 from custom_components.nibe_local.select import NibePointSelect
 from custom_components.nibe_local.sensor import (
@@ -115,3 +116,7 @@ def test_metadata_limits_scale_values() -> None:
         }
     }
     assert metadata_limits(point, 20.0) == (10.0, 50.0)
+
+
+def test_friendly_names_only_reference_active_points() -> None:
+    assert set(FRIENDLY_NAMES) == set(POINT_BY_ID)
