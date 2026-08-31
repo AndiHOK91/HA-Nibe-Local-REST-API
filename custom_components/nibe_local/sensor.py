@@ -101,6 +101,8 @@ class NibeSensor(NibePointEntity, SensorEntity):
     def native_unit_of_measurement(self) -> str | None:
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return None
+        if self.definition.point_id == 781:
+            return "GM"
         point = self.point or {}
         md = point.get("metadata") or {}
         unit = md.get("unit")
@@ -113,6 +115,8 @@ class NibeSensor(NibePointEntity, SensorEntity):
     def device_class(self):
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return None
+        if self.definition.point_id == 829:
+            return SensorDeviceClass.ENERGY
         unit = self.native_unit_of_measurement
         if unit in {"°C", "°"}:
             return SensorDeviceClass.TEMPERATURE
@@ -135,7 +139,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return None
         unit = self.native_unit_of_measurement
-        if self.definition.point_id in {599, 1755, 1865, 2505, 2506, 2507}:
+        if self.definition.point_id in {599, 829, 1755, 1865, 2505, 2506, 2507}:
             return SensorStateClass.TOTAL_INCREASING
         if unit in {
             "°C",
