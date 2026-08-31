@@ -138,10 +138,6 @@ FRIENDLY_NAMES = {
     25166: "Energieprotokoll – Tatsächlicher Energieverbrauch, Komponenten",
 }
 
-ALARM_POINT_IDS = frozenset({832, 2508, 3375})
-OUTDOOR_GROUPS = frozenset({"S2125", "EEV / Abtauung"})
-VENTILATION_GROUP = "Lüftung"
-
 
 def _clean(text: str | None) -> str:
     return (text or "").replace("\u00ad", "").strip()
@@ -223,38 +219,12 @@ class NibePointEntity(CoordinatorEntity[NibeCoordinator]):
     def device_info(self) -> DeviceInfo:
         device = (self.coordinator.data or {}).get("device", {})
         product = device.get("product") or {}
-        serial = str(product.get("serialNumber") or self.coordinator.api.device_id)
-        main_identifier = (DOMAIN, serial)
-        manufacturer = product.get("manufacturer") or "NIBE"
-
-        if self.definition.point_id in ALARM_POINT_IDS:
-            return DeviceInfo(
-                identifiers={(DOMAIN, f"{serial}_alarms")},
-                manufacturer=manufacturer,
-                name="Alarme",
-                via_device=main_identifier,
-            )
-
-        if self.definition.group in OUTDOOR_GROUPS:
-            return DeviceInfo(
-                identifiers={(DOMAIN, f"{serial}_outdoor")},
-                manufacturer=manufacturer,
-                name="Außeneinheit",
-                via_device=main_identifier,
-            )
-
-        if self.definition.group == VENTILATION_GROUP:
-            return DeviceInfo(
-                identifiers={(DOMAIN, f"{serial}_ventilation")},
-                manufacturer=manufacturer,
-                name="Lüftungsgerät",
-                via_device=main_identifier,
-            )
-
+        serial = product.get("serialNumber") or self.coordinator.api.device_id
         return DeviceInfo(
-            identifiers={main_identifier},
-            manufacturer=manufacturer,
-            name="Inneneinheit",
+            identifiers={(DOMAIN, str(serial))},
+            manufacturer=product.get("manufacturer") or "NIBE",
+            name=product.get("name") or "NIBE VVM S320",
+            model=product.get("name"),
             sw_version=product.get("firmwareId"),
         )
 
