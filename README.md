@@ -98,6 +98,8 @@ Aktive NIBE-Meldungen werden nur lesend dargestellt. Neben der Anzahl aktiver Me
 
 Eine Quittier- oder Reset-Funktion für Alarme ist bewusst nicht enthalten.
 
+**Hinweis:** Die Alarmdarstellung konnte bislang noch nicht praktisch getestet werden, da während der Entwicklung und des laufenden Tests keine Alarme an der Anlage aufgetreten sind.
+
 ## Lokale Kommunikation und Polling
 
 Im normalen Betrieb werden die verfügbaren NIBE-Punkte gesammelt über den lokalen REST-Endpunkt abgefragt. Falls diese Sammelabfrage nicht ausgewertet werden kann, nutzt die Integration einen Einzelpunkt-Fallback.
