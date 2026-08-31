@@ -15,6 +15,7 @@ from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, raw_value, scaled_value
 
 OPERATING_PRIORITY_MAP = {10: "Aus", 20: "Brauchwasser", 30: "Heizung", 40: "Pool", 60: "Kühlung"}
+OPERATING_MODE_MAP = {0: "Auto", 1: "Manuell", 2: "Nur Zusatzheizung"}
 DEFROST_REQUESTED_MAP = {0: "Aus", 1: "Aktiv", 2: "Passiv"}
 PERIODIC_HOT_WATER_DATE_EPOCH = date(2010, 1, 1)
 
@@ -33,6 +34,13 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == 1758:
             value = raw_value(self.point or {})
             return OPERATING_PRIORITY_MAP.get(value, value)
+
+        if self.definition.point_id == 4064:
+            value = raw_value(self.point or {})
+            try:
+                return OPERATING_MODE_MAP.get(int(value), value)
+            except (TypeError, ValueError):
+                return value
 
         if self.definition.point_id == 2685:
             value = raw_value(self.point or {})
