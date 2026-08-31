@@ -1,4 +1,4 @@
-# NIBE Local REST – Home Assistant Custom Integration (0.3.18)
+# NIBE Local REST – Home Assistant Custom Integration (0.3.19)
 
 Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwickelt und getestet für eine VVM S320 mit S2125.
 
@@ -44,7 +44,7 @@ Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwick
 - Konfigurierbare Verzögerung für das Rücklesen nach Schaltbefehlen
 - Pool-Entities sind bewusst ausgeschlossen
 
-## Zusätzliche Anlagenparameter in 0.3.18
+## Zusätzliche Anlagenparameter
 
 Zusätzlich integriert wurden:
 
@@ -57,7 +57,11 @@ Zusätzlich integriert wurden:
 
 Die bereits vorhandenen Punkte `3697`, `3920` und `3921` bleiben erhalten. Schreibbare Temperatur-, Zeitdauer- und Intervallwerte werden als Number-Entities, Ein/Aus-Einstellungen als Switches und Betriebsmodi als Selects bereitgestellt. Read-only-Zustände werden als Sensor bzw. Binärsensor angelegt.
 
-**Punkt 3708 „Startzeit periodisches Brauchwasser“** wird zunächst bewusst nur lesend bereitgestellt. Die NIBE-Punkteliste weist ihn zwar als schreibbar aus, das konkrete Schreibformat dieses Zeitwerts ist mit den bislang vorliegenden REST-Informationen jedoch nicht eindeutig verifiziert. Dadurch wird vermieden, ein möglicherweise falsches Zeitformat an die Anlage zu senden.
+### Startzeit periodisches Brauchwasser
+
+Punkt `3708` **„Startzeit periodisches Brauchwasser“** wird ab Version **0.3.19** als Home-Assistant-**Time-Entity** bereitgestellt. Der NIBE-Rohwert wird als Sekunden seit Mitternacht interpretiert. Damit entspricht zum Beispiel `34200` der Uhrzeit **09:30**.
+
+Beim Schreiben wird die in Home Assistant gewählte Uhrzeit wieder in Sekunden seit Mitternacht umgerechnet. Beispiel: **09:30 → 34200**. Dadurch lässt sich die periodische Startzeit direkt über den normalen Uhrzeit-Picker von Home Assistant einstellen.
 
 ## Alarmmeldungen
 
@@ -89,7 +93,7 @@ Dieses Projekt ist ein **inoffizielles Community-Projekt** und steht in keiner V
 
 ## Version
 
-Aktueller Stand: **0.3.18**
+Aktueller Stand: **0.3.19**
 
 ## Hinweise
 
