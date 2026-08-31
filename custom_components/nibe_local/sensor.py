@@ -1,6 +1,7 @@
 """Sensors for NIBE Local REST."""
 from __future__ import annotations
 
+from datetime import date, timedelta
 from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
@@ -15,6 +16,7 @@ from .entity import NibePointEntity, raw_value, scaled_value
 
 OPERATING_PRIORITY_MAP = {10: "Aus", 20: "Brauchwasser", 30: "Heizung", 40: "Pool", 60: "Kühlung"}
 DEFROST_REQUESTED_MAP = {0: "Aus", 1: "Aktiv", 2: "Passiv"}
+PERIODIC_HOT_WATER_DATE_EPOCH = date(2010, 1, 1)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
@@ -31,6 +33,16 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == 1758:
             value = raw_value(self.point or {})
             return OPERATING_PRIORITY_MAP.get(value, value)
+
+        if self.definition.point_id == 2685:
+            value = raw_value(self.point or {})
+            try:
+                days = int(value)
+                if days < 0:
+                    return None
+                return PERIODIC_HOT_WATER_DATE_EPOCH + timedelta(days=days)
+            except (TypeError, ValueError, OverflowError):
+                return None
 
         if self.definition.point_id == 8060:
             value = raw_value(self.point or {})
@@ -54,12 +66,16 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def native_unit_of_measurement(self) -> str | None:
+        if self.definition.point_id == 2685:
+            return None
         point = self.point or {}
         md = point.get("metadata") or {}
         return md.get("shortUnit") or md.get("unit") or None
 
     @property
     def device_class(self):
+        if self.definition.point_id == 2685:
+            return SensorDeviceClass.DATE
         unit = self.native_unit_of_measurement
         if unit in {"°C", "°"}:
             return SensorDeviceClass.TEMPERATURE
@@ -79,6 +95,8 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def state_class(self):
+        if self.definition.point_id == 2685:
+            return None
         unit = self.native_unit_of_measurement
         # Runtime and start counters are monotonically increasing.
         if self.definition.point_id in {1755, 2505, 2506, 2507}:
