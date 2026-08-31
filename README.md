@@ -1,6 +1,6 @@
 # NIBE Local REST – Home Assistant Custom Integration
 
-Diese Custom Integration bindet eine NIBE-Anlage über die **lokale REST API** direkt in Home Assistant ein. Sie wurde für eine Anlage mit VVM S320, S2125 und Lüftungsmodul entwickelt und wird dort im laufenden Betrieb getestet.
+Diese Custom Integration bindet eine NIBE-Anlage über die **lokale REST API** direkt in Home Assistant ein. Sie wurde für eine Anlage mit VVM S320, S2125 und ERS S40-400 entwickelt und wird dort im laufenden Betrieb getestet.
 
 Die Kommunikation erfolgt lokal im eigenen Netzwerk. Für das normale Auslesen ist keine Cloud-Verbindung zu myUplink erforderlich.
 
