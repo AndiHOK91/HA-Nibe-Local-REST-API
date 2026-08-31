@@ -1,4 +1,4 @@
-# NIBE Local REST – Home Assistant Custom Integration (0.3.17)
+# NIBE Local REST – Home Assistant Custom Integration (0.3.18)
 
 Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwickelt und getestet für eine VVM S320 mit S2125.
 
@@ -44,6 +44,21 @@ Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwick
 - Konfigurierbare Verzögerung für das Rücklesen nach Schaltbefehlen
 - Pool-Entities sind bewusst ausgeschlossen
 
+## Zusätzliche Anlagenparameter in 0.3.18
+
+Zusätzlich integriert wurden:
+
+- Energie: Punkt `829`
+- Zusatzheizung/Systemstatus: `1186`, `1820`, `1827`, `3919`, `4064`
+- Brauchwasser: `3699`–`3711` sowie `3748`
+- Heizung: `3749`
+- Betriebs-/Pumpenmodus: `3751`, `3752`
+- Lüftung: `3841`–`3845`
+
+Die bereits vorhandenen Punkte `3697`, `3920` und `3921` bleiben erhalten. Schreibbare Temperatur-, Zeitdauer- und Intervallwerte werden als Number-Entities, Ein/Aus-Einstellungen als Switches und Betriebsmodi als Selects bereitgestellt. Read-only-Zustände werden als Sensor bzw. Binärsensor angelegt.
+
+**Punkt 3708 „Startzeit periodisches Brauchwasser“** wird zunächst bewusst nur lesend bereitgestellt. Die NIBE-Punkteliste weist ihn zwar als schreibbar aus, das konkrete Schreibformat dieses Zeitwerts ist mit den bislang vorliegenden REST-Informationen jedoch nicht eindeutig verifiziert. Dadurch wird vermieden, ein möglicherweise falsches Zeitformat an die Anlage zu senden.
+
 ## Alarmmeldungen
 
 Die Entity **Aktive Meldungen** zeigt die Anzahl aktiver Meldungen. Zusätzlich stehen folgende Attribute zur Verfügung:
@@ -74,10 +89,10 @@ Dieses Projekt ist ein **inoffizielles Community-Projekt** und steht in keiner V
 
 ## Version
 
-Aktueller Stand: **0.3.17**
+Aktueller Stand: **0.3.18**
 
 ## Hinweise
 
-Dieses Repository ist privat und dient als Sicherungs- und Entwicklungsstand der Integration. Die Integration befindet sich noch vor Version 1.0.0 und wird weiter auf der realen Anlage getestet.
+Die Integration befindet sich noch vor Version 1.0.0 und wird weiter auf der realen Anlage getestet.
 
 Dokumentation, Versionshinweise und Commit-Beschreibungen werden auf **Deutsch** geführt.

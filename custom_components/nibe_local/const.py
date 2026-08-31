@@ -35,8 +35,15 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(1755, "aux_heat_total_time", "System"),
     PointDef(1756, "aux_heat_power", "System"),
     PointDef(1758, "operating_priority", "system", "sensor"),
+    PointDef(1186, "prioritized_aux_heat_allowed", "System", "binary_sensor"),
     PointDef(1760, "aux_heat_mode", "System"),
+    PointDef(1820, "external_blocking", "System", "binary_sensor"),
+    PointDef(1827, "step_controlled_aux_heat_blocking", "System", "binary_sensor"),
     PointDef(2022, "current_status", "System"),
+    PointDef(3751, "operating_mode_setting", "System", "select"),
+    PointDef(3752, "hu_pump_operating_mode", "Hydraulik", "select"),
+    PointDef(3919, "aux_heat_allowed_heating", "Heizung", "switch"),
+    PointDef(4064, "operating_mode_status", "System"),
     PointDef(3375, "alarm_number", "System", diagnostic=True),
 
     # Heating
@@ -68,10 +75,28 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(2002, "hot_water_diverter_qn10", "Warmwasser", "binary_sensor"),
     PointDef(2038, "hot_water_comfort_mode_status", "Warmwasser"),
     PointDef(3697, "hot_water_position", "Warmwasser", "select"),
+    PointDef(3699, "hot_water_start_high", "Warmwasser", "number"),
+    PointDef(3700, "hot_water_start_normal", "Warmwasser", "number"),
+    PointDef(3701, "hot_water_start_low", "Warmwasser", "number"),
+    PointDef(3702, "hot_water_stop_periodic_increase", "Warmwasser", "number"),
+    PointDef(3703, "hot_water_stop_high", "Warmwasser", "number"),
+    PointDef(3704, "hot_water_stop_normal", "Warmwasser", "number"),
+    PointDef(3705, "hot_water_stop_low", "Warmwasser", "number"),
+    PointDef(3706, "periodic_hot_water", "Warmwasser", "switch"),
+    PointDef(3707, "periodic_hot_water_interval", "Warmwasser", "number"),
+    # NIBE führt 3708 als schreibbaren Startzeit-Punkt. Da das konkrete
+    # REST-Zeitformat firmwareabhängig sein kann, wird er vorerst sicher
+    # lesend als Sensor bereitgestellt, statt ein Schreibformat zu erraten.
+    PointDef(3708, "periodic_hot_water_start_time", "Warmwasser"),
+    PointDef(3710, "hot_water_operating_time", "Warmwasser", "number"),
+    PointDef(3711, "hot_water_standstill_time", "Warmwasser", "number"),
+    PointDef(3748, "hot_water_period_time", "Warmwasser", "number"),
+    PointDef(3749, "heating_period_time", "Heizung", "number"),
     PointDef(4030, "more_hot_water_minutes", "Warmwasser"),
     PointDef(4564, "more_hot_water", "Warmwasser", "switch"),
 
     # Hydraulics / pumps
+    PointDef(829, "energy_meter_pulse_be6", "Energie"),
     PointDef(1975, "heating_circulation_pump_gp1", "Hydraulik"),
     PointDef(3138, "internal_charge_pump_gp12", "Hydraulik", "binary_sensor"),
 
@@ -131,6 +156,11 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(3830, "ventilation_mode", "Lüftung", "select"),
     PointDef(4040, "night_reduction", "Lüftung", "switch"),
     PointDef(4041, "night_reduction_start_temperature", "Lüftung", "number"),
+    PointDef(3841, "fan_reset_time_4", "Lüftung", "number"),
+    PointDef(3842, "fan_reset_time_3", "Lüftung", "number"),
+    PointDef(3843, "fan_reset_time_2", "Lüftung", "number"),
+    PointDef(3844, "fan_reset_time_1", "Lüftung", "number"),
+    PointDef(3845, "filter_change_interval", "Lüftung", "number"),
     PointDef(7934, "ventilation_exhaust_bt20", "Lüftung"),
     PointDef(7935, "ventilation_extract_bt21", "Lüftung"),
     PointDef(7936, "ventilation_supply_bt22", "Lüftung"),
