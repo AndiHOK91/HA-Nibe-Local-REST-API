@@ -34,6 +34,11 @@ class NibeNumber(NibePointEntity, NumberEntity):
 
     @property
     def native_unit_of_measurement(self) -> str | None:
+        # Punkt 3845 ist laut Anlagen-/myUplink-Anzeige ein Intervall in Monaten.
+        # Die NIBE-Punkteliste liefert für diesen Punkt jedoch keine Einheit,
+        # deshalb wird die fachlich bestätigte Einheit hier explizit ergänzt.
+        if self.definition.point_id == 3845:
+            return "Monate"
         md = (self.point or {}).get("metadata") or {}
         return md.get("shortUnit") or md.get("unit") or None
 
