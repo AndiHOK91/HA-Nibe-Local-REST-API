@@ -1,4 +1,4 @@
-# NIBE Local REST – Home Assistant Custom Integration (0.3.24)
+# NIBE Local REST – Home Assistant Custom Integration (0.3.25)
 
 Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwickelt und getestet für eine VVM S320 mit S2125.
 
@@ -71,7 +71,9 @@ Zusätzlich integriert wurden:
 - Betriebsmodus: `3751`
 - Lüftung: `3841`–`3844`
 
-Die bereits vorhandenen Punkte `3697`, `3920` und `3921` bleiben erhalten. Schreibbare Temperatur-, Zeitdauer- und Intervallwerte werden als Number-Entities, Ein/Aus-Einstellungen als Switches und Betriebsmodi als Selects bereitgestellt. Read-only-Zustände werden als Sensor bzw. Binärsensor angelegt.
+Punkt `2038` **„Betriebsmodus Brauchwasserkomfort“** wurde ab Version **0.3.25** wieder entfernt, da seine Bedeutung für die getestete Anlage nicht hinreichend eindeutig ist.
+
+Die Punkte `3710` und `3711` gehören zur Brauchwasserzirkulation und werden deshalb als **BWZ Betriebszeit** bzw. **BWZ Stillstandszeit** bezeichnet.
 
 ### Periodische Brauchwassererhöhung
 
@@ -111,7 +113,7 @@ Dieses Projekt ist ein **inoffizielles Community-Projekt** und steht in keiner V
 
 ## Version
 
-Aktueller Stand: **0.3.24**
+Aktueller Stand: **0.3.25**
 
 ## Hinweise
 
