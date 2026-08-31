@@ -1,4 +1,4 @@
-# NIBE Local REST – Home Assistant Custom Integration (0.4.0)
+# NIBE Local REST – Home Assistant Custom Integration (0.4.1)
 
 Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwickelt und getestet für eine VVM S320 mit S2125.
 
@@ -91,6 +91,8 @@ Schreibbare Number-Entities verwenden nur belastbare Min-/Max-Grenzen aus den RE
 
 Ab Version **0.4.0** wurden die Regressionstests erweitert. Geprüft werden unter anderem Skalierung und Rückumrechnung, die Normalisierung verschiedener REST-Antwortformen, die Datumsdekodierung von Punkt `2685`, Betriebsmodus- und Lüftungs-Mappings, die Schreibschutzmatrix für `3920`/`3921`, Zeitumrechnungen sowie die Prüfung von Number-Grenzen. Zusätzlich führt ein GitHub-Actions-Workflow diese Tests bei Pushes und Pull Requests gegen `main` automatisch aus.
 
+Version **0.4.1** korrigiert den GitHub-Actions-Testlauf und bereinigt die Entity-Namensliste. `FRIENDLY_NAMES` enthält nur noch tatsächlich aktive Punkte, ist zeilenweise formatiert und wird durch einen Regressionstest gegen `POINT_BY_ID` abgesichert.
+
 ## Alarmmeldungen
 
 Die Entity **Aktive Meldungen** zeigt die Anzahl aktiver Meldungen. Zusätzlich stehen folgende Attribute zur Verfügung:
@@ -121,7 +123,7 @@ Dieses Projekt ist ein **inoffizielles Community-Projekt** und steht in keiner V
 
 ## Version
 
-Aktueller Stand: **0.4.0**
+Aktueller Stand: **0.4.1**
 
 ## Hinweise
 
