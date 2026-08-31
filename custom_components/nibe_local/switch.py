@@ -6,6 +6,7 @@ import asyncio
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import POINTS, POINT_BY_ID
@@ -28,8 +29,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         else:
             entities.append(NibeSwitch(coordinator, d))
 
-    # Virtual dashboard switch backed by ventilation mode point 3830:
-    # ON -> 3 (Erhöht), OFF -> 0 (Normal).
     ventilation_point = coordinator.point(3830)
     if (
         ventilation_point
@@ -42,6 +41,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
 
 class NibeSwitch(NibePointEntity, SwitchEntity):
+    """Generic writable switch, with mode-dependent protection for 3920/3921."""
+
+    def _operating_mode(self) -> int | None:
+        value = raw_value(self.coordinator.point(3751) or {})
+        try:
+            return int(value) if value is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    def _write_allowed(self) -> bool:
+        point_id = self.definition.point_id
+        if point_id not in {3920, 3921}:
+            return True
+
+        mode = self._operating_mode()
+        if mode == 1:  # Manuell: Heizen und Kühlen schreibbar
+            return True
+        if mode == 2:  # Nur Zusatzheizung: nur Heizen schreibbar
+            return point_id == 3920
+        # Auto (0), unbekannter Wert oder fehlender Wert: sicher nur lesen.
+        return False
+
     @property
     def is_on(self) -> bool | None:
         value = raw_value(self.point or {})
@@ -51,22 +72,47 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
             return value.lower() not in {"", "0", "off", "false", "none"}
         return bool(value)
 
+    @property
+    def extra_state_attributes(self):
+        attrs = dict(super().extra_state_attributes or {})
+        if self.definition.point_id in {3920, 3921}:
+            mode = self._operating_mode()
+            attrs["operating_mode_raw"] = mode
+            attrs["write_allowed"] = self._write_allowed()
+        return attrs
+
+    async def _ensure_write_allowed(self) -> None:
+        if self.definition.point_id not in {3920, 3921}:
+            return
+
+        # Vor jedem Schreibversuch den Betriebsmodus gezielt neu lesen, damit
+        # eine kurz zuvor am Gerät oder in myUplink geänderte Einstellung gilt.
+        await self.coordinator.async_refresh_point(3751)
+        if self._write_allowed():
+            return
+
+        mode = self._operating_mode()
+        mode_label = {0: "Auto", 1: "Manuell", 2: "Nur Zusatzheizung"}.get(
+            mode, "Unbekannt"
+        )
+        point_label = "Heizung zulassen" if self.definition.point_id == 3920 else "Kühlung zulassen"
+        raise HomeAssistantError(
+            f"{point_label} ist im Betriebsmodus {mode_label} nur lesbar."
+        )
+
     async def async_turn_on(self, **kwargs) -> None:
+        await self._ensure_write_allowed()
         await self.coordinator.api.patch_point(self.definition.point_id, 1)
         await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs) -> None:
+        await self._ensure_write_allowed()
         await self.coordinator.api.patch_point(self.definition.point_id, 0)
         await self.coordinator.async_request_refresh()
 
 
-
 class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
-    """Switch for the NIBE one-time hot-water increase.
-
-    Point 4030 (remaining minutes) is the authoritative state:
-    the switch stays ON while the remaining time is greater than zero.
-    """
+    """Switch for the NIBE one-time hot-water increase."""
 
     _attr_icon = "mdi:water-boiler-alert"
 
@@ -95,14 +141,10 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
             return False
 
     async def _refresh_hot_water_state(self) -> None:
-        """Refresh both the trigger point and remaining-minutes point."""
         await self.coordinator.async_refresh_point(4564)
         await self.coordinator.async_refresh_point(4030)
 
     async def _verify_turn_on(self) -> None:
-        """Keep the optimistic ON state until NIBE exposes remaining minutes."""
-        # NIBE applies "one-time increase" asynchronously. Reading too early can
-        # still return zero minutes, which previously made the switch jump back.
         delays = (
             self.coordinator.command_poll_delay_ms / 1000,
             1.0,
@@ -123,19 +165,10 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
             except (TypeError, ValueError):
                 pass
 
-        # After the grace period, fall back to the actual remaining-minutes
-        # value even if NIBE never accepted the command.
         self._optimistic_state = None
         self.async_write_ha_state()
 
     async def _verify_turn_off(self) -> None:
-        """Keep the switch visually OFF until NIBE confirms 0 remaining minutes.
-
-        Point 4030 may still report the old remaining time for a few seconds
-        after point 4564 was set to 0. Clearing the optimistic state too early
-        made the switch jump back to ON. While shutdown is pending, the
-        optimistic OFF state has priority over normal coordinator polls.
-        """
         delays = (
             self.coordinator.command_poll_delay_ms / 1000,
             1.0,
@@ -158,14 +191,10 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
             except (TypeError, ValueError):
                 pass
 
-        # Safety fallback: if NIBE has still not confirmed the shutdown after
-        # the grace period, stop forcing OFF and show the actual reported state.
         self._optimistic_state = None
         self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs) -> None:
-        # 2 = Einmalige Erhöhung. Keep the UI ON until point 4030 confirms
-        # that remaining hot-water boost minutes are greater than zero.
         self._optimistic_state = True
         self.async_write_ha_state()
 
@@ -178,9 +207,6 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
             raise
 
     async def async_turn_off(self, **kwargs) -> None:
-        # Deactivate the one-time hot-water increase via its writable command
-        # point. Point 4030 is treated as read-only state/remaining time:
-        # attempting to PATCH it causes HTTP 400 on the tested NIBE firmware.
         self._optimistic_state = False
         self.async_write_ha_state()
 
@@ -222,7 +248,6 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
             return False
 
     async def _refresh_ventilation(self) -> int | None:
-        """Refresh point 3830 and return its current raw mode."""
         await self.coordinator.async_refresh_ventilation_state()
         value = raw_value(self.coordinator.point(3830) or {})
         try:
@@ -231,13 +256,6 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
             return None
 
     async def _verify_after_write(self) -> None:
-        """Keep optimistic state until NIBE confirms the requested mode.
-
-        NIBE can expose the old ventilation value briefly after the PATCH.
-        Clearing the optimistic state on that first stale read caused the
-        dashboard switch to jump back. We now keep it until a matching mode
-        is actually read, or until the grace period expires.
-        """
         delays = (
             self.coordinator.command_poll_delay_ms / 1000,
             1.0,
@@ -255,8 +273,6 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
                 self.async_write_ha_state()
                 return
 
-        # If NIBE did not confirm within the grace period, stop forcing the
-        # optimistic state and show the actually reported ventilation mode.
         self._optimistic_state = None
         self._expected_modes = None
         self.async_write_ha_state()
@@ -281,10 +297,7 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
             raise
 
     async def async_turn_on(self, **kwargs) -> None:
-        # 3 = Erhöht. 4 = Maximal is also considered an active Lüftung+ state.
         await self._set_mode(3, True, {3, 4})
 
     async def async_turn_off(self, **kwargs) -> None:
-        # Off explicitly requests 0 = Normal.
         await self._set_mode(0, False, {0})
-
