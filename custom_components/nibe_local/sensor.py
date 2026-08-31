@@ -131,7 +131,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return None
         unit = self.native_unit_of_measurement
-        if self.definition.point_id in {1755, 2505, 2506, 2507}:
+        if self.definition.point_id in {599, 1755, 1865, 2505, 2506, 2507}:
             return SensorStateClass.TOTAL_INCREASING
         if unit in {
             "°C",
