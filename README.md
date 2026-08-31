@@ -1,4 +1,4 @@
-# NIBE Local REST – Home Assistant Custom Integration (0.3.20)
+# NIBE Local REST – Home Assistant Custom Integration (0.3.21)
 
 Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwickelt und getestet für eine VVM S320 mit S2125.
 
@@ -50,16 +50,18 @@ Zusätzlich integriert wurden:
 
 - Energie: Punkt `829`
 - Zusatzheizung/Systemstatus: `1186`, `1820`, `1827`, `3919`, `4064`
-- Brauchwasser: `3699`–`3711` sowie `3748`
+- Brauchwasser: `2685`, `3699`–`3711` sowie `3748`
 - Heizung: `3749`
 - Betriebs-/Pumpenmodus: `3751`, `3752`
 - Lüftung: `3841`–`3845`
 
 Die bereits vorhandenen Punkte `3697`, `3920` und `3921` bleiben erhalten. Schreibbare Temperatur-, Zeitdauer- und Intervallwerte werden als Number-Entities, Ein/Aus-Einstellungen als Switches und Betriebsmodi als Selects bereitgestellt. Read-only-Zustände werden als Sensor bzw. Binärsensor angelegt.
 
-### Startzeit periodisches Brauchwasser
+### Periodische Brauchwassererhöhung
 
-Punkt `3708` **„Startzeit periodisches Brauchwasser“** wird ab Version **0.3.19** als Home-Assistant-**Time-Entity** bereitgestellt. Der NIBE-Rohwert wird als Sekunden seit Mitternacht interpretiert. Damit entspricht zum Beispiel `34200` der Uhrzeit **09:30**.
+Punkt `2685` **„Datum periodisches Brauchwasser“** gehört zur periodischen Brauchwassererhöhung und wird ab Version **0.3.21** als read-only Sensor aufgenommen. Die vorhandene Variablenliste kennzeichnet diesen Punkt als nicht schreibbar. Das konkrete Datumsformat des Rohwerts wird nicht geraten; die Integration zeigt zunächst den von der NIBE gelieferten Wert an.
+
+Punkt `3708` **„Startzeit periodisches Brauchwasser“** wird seit Version **0.3.19** als Home-Assistant-**Time-Entity** bereitgestellt. Der NIBE-Rohwert wird als Sekunden seit Mitternacht interpretiert. Damit entspricht zum Beispiel `34200` der Uhrzeit **09:30**.
 
 Beim Schreiben wird die in Home Assistant gewählte Uhrzeit wieder in Sekunden seit Mitternacht umgerechnet. Beispiel: **09:30 → 34200**. Dadurch lässt sich die periodische Startzeit direkt über den normalen Uhrzeit-Picker von Home Assistant einstellen.
 
@@ -99,7 +101,7 @@ Dieses Projekt ist ein **inoffizielles Community-Projekt** und steht in keiner V
 
 ## Version
 
-Aktueller Stand: **0.3.20**
+Aktueller Stand: **0.3.21**
 
 ## Hinweise
 
