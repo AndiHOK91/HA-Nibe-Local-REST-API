@@ -38,7 +38,6 @@ class NibeTime(NibePointEntity, TimeEntity):
 
     @property
     def native_value(self) -> time | None:
-        """Return the NIBE value as a Home Assistant time."""
         value = raw_value(self.point or {})
         try:
             seconds = int(value)
@@ -53,7 +52,6 @@ class NibeTime(NibePointEntity, TimeEntity):
         return time(hour=hours, minute=minutes, second=seconds)
 
     async def async_set_value(self, value: time) -> None:
-        """Write a Home Assistant time as seconds since midnight."""
         seconds = value.hour * 3600 + value.minute * 60 + value.second
         await self.coordinator.api.patch_point(self.definition.point_id, seconds)
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.async_refresh_point(self.definition.point_id)

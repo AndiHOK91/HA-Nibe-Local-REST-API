@@ -9,59 +9,73 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import POINTS, POINT_BY_ID
+from .const import (
+    POINTS,
+    POINT_BY_ID,
+    POINT_COOLING_ALLOWED,
+    POINT_HEATING_ALLOWED,
+    POINT_MORE_HOT_WATER,
+    POINT_MORE_HOT_WATER_MINUTES,
+    POINT_OPERATING_MODE_SETTING,
+    POINT_VENTILATION_MODE,
+)
 from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, raw_value
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     coordinator: NibeCoordinator = entry.runtime_data
     entities = []
-    for d in POINTS:
-        if d.platform != "switch":
+    for definition in POINTS:
+        if definition.platform != "switch":
             continue
-        point = coordinator.point(d.point_id)
+        point = coordinator.point(definition.point_id)
         if not point or not (point.get("metadata") or {}).get("isWritable", False):
             continue
 
-        if d.point_id == 4564:
+        if definition.point_id == POINT_MORE_HOT_WATER:
             entities.append(NibeMoreHotWaterSwitch(coordinator))
         else:
-            entities.append(NibeSwitch(coordinator, d))
+            entities.append(NibeSwitch(coordinator, definition))
 
-    ventilation_point = coordinator.point(3830)
+    ventilation_point = coordinator.point(POINT_VENTILATION_MODE)
     if (
         ventilation_point
         and (ventilation_point.get("metadata") or {}).get("isWritable", False)
-        and 3830 in POINT_BY_ID
+        and POINT_VENTILATION_MODE in POINT_BY_ID
     ):
         entities.append(NibeVentilationPlusSwitch(coordinator))
 
     async_add_entities(entities)
 
 
+def write_allowed_for_mode(point_id: int, mode: int | None) -> bool:
+    """Return whether a mode-dependent heating/cooling point may be written."""
+    if point_id not in {POINT_HEATING_ALLOWED, POINT_COOLING_ALLOWED}:
+        return True
+    if mode == 1:  # Manuell
+        return True
+    if mode == 2:  # Nur Zusatzheizung
+        return point_id == POINT_HEATING_ALLOWED
+    return False
+
+
 class NibeSwitch(NibePointEntity, SwitchEntity):
-    """Generic writable switch, with mode-dependent protection for 3920/3921."""
+    """Generic writable switch, with mode-dependent protection."""
 
     def _operating_mode(self) -> int | None:
-        value = raw_value(self.coordinator.point(3751) or {})
+        value = raw_value(self.coordinator.point(POINT_OPERATING_MODE_SETTING) or {})
         try:
             return int(value) if value is not None else None
         except (TypeError, ValueError):
             return None
 
     def _write_allowed(self) -> bool:
-        point_id = self.definition.point_id
-        if point_id not in {3920, 3921}:
-            return True
-
-        mode = self._operating_mode()
-        if mode == 1:  # Manuell: Heizen und Kühlen schreibbar
-            return True
-        if mode == 2:  # Nur Zusatzheizung: nur Heizen schreibbar
-            return point_id == 3920
-        # Auto (0), unbekannter Wert oder fehlender Wert: sicher nur lesen.
-        return False
+        return write_allowed_for_mode(self.definition.point_id, self._operating_mode())
 
     @property
     def is_on(self) -> bool | None:
@@ -75,19 +89,17 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
     @property
     def extra_state_attributes(self):
         attrs = dict(super().extra_state_attributes or {})
-        if self.definition.point_id in {3920, 3921}:
+        if self.definition.point_id in {POINT_HEATING_ALLOWED, POINT_COOLING_ALLOWED}:
             mode = self._operating_mode()
             attrs["operating_mode_raw"] = mode
             attrs["write_allowed"] = self._write_allowed()
         return attrs
 
     async def _ensure_write_allowed(self) -> None:
-        if self.definition.point_id not in {3920, 3921}:
+        if self.definition.point_id not in {POINT_HEATING_ALLOWED, POINT_COOLING_ALLOWED}:
             return
 
-        # Vor jedem Schreibversuch den Betriebsmodus gezielt neu lesen, damit
-        # eine kurz zuvor am Gerät oder in myUplink geänderte Einstellung gilt.
-        await self.coordinator.async_refresh_point(3751)
+        await self.coordinator.async_refresh_point(POINT_OPERATING_MODE_SETTING)
         if self._write_allowed():
             return
 
@@ -95,7 +107,11 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
         mode_label = {0: "Auto", 1: "Manuell", 2: "Nur Zusatzheizung"}.get(
             mode, "Unbekannt"
         )
-        point_label = "Heizung zulassen" if self.definition.point_id == 3920 else "Kühlung zulassen"
+        point_label = (
+            "Heizung zulassen"
+            if self.definition.point_id == POINT_HEATING_ALLOWED
+            else "Kühlung zulassen"
+        )
         raise HomeAssistantError(
             f"{point_label} ist im Betriebsmodus {mode_label} nur lesbar."
         )
@@ -103,12 +119,12 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
     async def async_turn_on(self, **kwargs) -> None:
         await self._ensure_write_allowed()
         await self.coordinator.api.patch_point(self.definition.point_id, 1)
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.async_refresh_point(self.definition.point_id)
 
     async def async_turn_off(self, **kwargs) -> None:
         await self._ensure_write_allowed()
         await self.coordinator.api.patch_point(self.definition.point_id, 0)
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.async_refresh_point(self.definition.point_id)
 
 
 class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
@@ -117,9 +133,10 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
     _attr_icon = "mdi:water-boiler-alert"
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
-        super().__init__(coordinator, POINT_BY_ID[4564])
+        super().__init__(coordinator, POINT_BY_ID[POINT_MORE_HOT_WATER])
         self._attr_unique_id = f"{coordinator.api.device_id}_more_hot_water"
         self._optimistic_state: bool | None = None
+        self._verify_task: asyncio.Task[None] | None = None
 
     @property
     def name(self) -> str:
@@ -130,7 +147,7 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
         if self._optimistic_state is not None:
             return self._optimistic_state
 
-        minutes_point = self.coordinator.point(4030)
+        minutes_point = self.coordinator.point(POINT_MORE_HOT_WATER_MINUTES)
         minutes = raw_value(minutes_point or {})
         if minutes is None:
             return None
@@ -140,9 +157,18 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
         except (TypeError, ValueError):
             return False
 
+    def _cancel_verify_task(self) -> None:
+        if self._verify_task and not self._verify_task.done():
+            self._verify_task.cancel()
+        self._verify_task = None
+
+    def _start_verify_task(self, coroutine) -> None:
+        self._cancel_verify_task()
+        self._verify_task = self.hass.async_create_task(coroutine)
+
     async def _refresh_hot_water_state(self) -> None:
-        await self.coordinator.async_refresh_point(4564)
-        await self.coordinator.async_refresh_point(4030)
+        await self.coordinator.async_refresh_point(POINT_MORE_HOT_WATER)
+        await self.coordinator.async_refresh_point(POINT_MORE_HOT_WATER_MINUTES)
 
     async def _verify_turn_on(self) -> None:
         delays = (
@@ -151,12 +177,12 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
             2.0,
             3.0,
         )
-
         for delay in delays:
             await asyncio.sleep(delay)
             await self._refresh_hot_water_state()
-
-            minutes = raw_value(self.coordinator.point(4030) or {})
+            minutes = raw_value(
+                self.coordinator.point(POINT_MORE_HOT_WATER_MINUTES) or {}
+            )
             try:
                 if minutes is not None and float(minutes) > 0:
                     self._optimistic_state = None
@@ -164,7 +190,6 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
                     return
             except (TypeError, ValueError):
                 pass
-
         self._optimistic_state = None
         self.async_write_ha_state()
 
@@ -177,12 +202,12 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
             3.0,
             5.0,
         )
-
         for delay in delays:
             await asyncio.sleep(delay)
             await self._refresh_hot_water_state()
-
-            minutes = raw_value(self.coordinator.point(4030) or {})
+            minutes = raw_value(
+                self.coordinator.point(POINT_MORE_HOT_WATER_MINUTES) or {}
+            )
             try:
                 if minutes is not None and float(minutes) <= 0:
                     self._optimistic_state = None
@@ -190,33 +215,36 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
                     return
             except (TypeError, ValueError):
                 pass
-
         self._optimistic_state = None
         self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs) -> None:
+        self._cancel_verify_task()
         self._optimistic_state = True
         self.async_write_ha_state()
-
         try:
-            await self.coordinator.api.patch_point(4564, 2)
-            self.hass.async_create_task(self._verify_turn_on())
+            await self.coordinator.api.patch_point(POINT_MORE_HOT_WATER, 2)
+            self._start_verify_task(self._verify_turn_on())
         except Exception:
             self._optimistic_state = None
             self.async_write_ha_state()
             raise
 
     async def async_turn_off(self, **kwargs) -> None:
+        self._cancel_verify_task()
         self._optimistic_state = False
         self.async_write_ha_state()
-
         try:
-            await self.coordinator.api.patch_point(4564, 0)
-            self.hass.async_create_task(self._verify_turn_off())
+            await self.coordinator.api.patch_point(POINT_MORE_HOT_WATER, 0)
+            self._start_verify_task(self._verify_turn_off())
         except Exception:
             self._optimistic_state = None
             self.async_write_ha_state()
             raise
+
+    async def async_will_remove_from_hass(self) -> None:
+        self._cancel_verify_task()
+        await super().async_will_remove_from_hass()
 
 
 class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
@@ -225,10 +253,11 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
     _attr_icon = "mdi:fan-plus"
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
-        super().__init__(coordinator, POINT_BY_ID[3830])
+        super().__init__(coordinator, POINT_BY_ID[POINT_VENTILATION_MODE])
         self._attr_unique_id = f"{coordinator.api.device_id}_ventilation_plus"
         self._optimistic_state: bool | None = None
         self._expected_modes: set[int] | None = None
+        self._verify_task: asyncio.Task[None] | None = None
 
     @property
     def name(self) -> str:
@@ -247,9 +276,18 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
         except (TypeError, ValueError):
             return False
 
+    def _cancel_verify_task(self) -> None:
+        if self._verify_task and not self._verify_task.done():
+            self._verify_task.cancel()
+        self._verify_task = None
+
+    def _start_verify_task(self) -> None:
+        self._cancel_verify_task()
+        self._verify_task = self.hass.async_create_task(self._verify_after_write())
+
     async def _refresh_ventilation(self) -> int | None:
         await self.coordinator.async_refresh_ventilation_state()
-        value = raw_value(self.coordinator.point(3830) or {})
+        value = raw_value(self.coordinator.point(POINT_VENTILATION_MODE) or {})
         try:
             return int(value) if value is not None else None
         except (TypeError, ValueError):
@@ -262,7 +300,6 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
             1.5,
             2.0,
         )
-
         expected = set(self._expected_modes or ())
         for delay in delays:
             await asyncio.sleep(delay)
@@ -272,7 +309,6 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
                 self._expected_modes = None
                 self.async_write_ha_state()
                 return
-
         self._optimistic_state = None
         self._expected_modes = None
         self.async_write_ha_state()
@@ -283,13 +319,13 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
         optimistic_on: bool,
         expected_modes: set[int],
     ) -> None:
+        self._cancel_verify_task()
         self._optimistic_state = optimistic_on
         self._expected_modes = expected_modes
         self.async_write_ha_state()
-
         try:
-            await self.coordinator.api.patch_point(3830, mode)
-            self.hass.async_create_task(self._verify_after_write())
+            await self.coordinator.api.patch_point(POINT_VENTILATION_MODE, mode)
+            self._start_verify_task()
         except Exception:
             self._optimistic_state = None
             self._expected_modes = None
@@ -301,3 +337,7 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs) -> None:
         await self._set_mode(0, False, {0})
+
+    async def async_will_remove_from_hass(self) -> None:
+        self._cancel_verify_task()
+        await super().async_will_remove_from_hass()

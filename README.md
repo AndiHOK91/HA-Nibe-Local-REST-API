@@ -1,4 +1,4 @@
-# NIBE Local REST – Home Assistant Custom Integration (0.3.26)
+# NIBE Local REST – Home Assistant Custom Integration (0.3.27)
 
 Private Home-Assistant-Custom-Integration für die lokale NIBE REST API, entwickelt und getestet für eine VVM S320 mit S2125.
 
@@ -77,11 +77,19 @@ Die Punkte `3710` und `3711` gehören zur Brauchwasserzirkulation und werden des
 
 ### Periodische Brauchwassererhöhung
 
-Punkt `2685` wird als **„Nächste periodische Brauchwassererhöhung“** dargestellt. Der Rohwert ist die Anzahl der Tage seit dem **01.01.2010**. Beispiel: `6093` entspricht dem **07.09.2026**. Home Assistant erhält den Wert als echtes Datum mit der Sensor-Geräteklasse `date`.
+Punkt `2685` wird als **„Nächste periodische Brauchwassererhöhung“** dargestellt. Der Rohwert ist die Anzahl der Tage seit dem **01.01.2010**. Beispiel: `6093` entspricht dem **07.09.2026**, `6096` dem **10.09.2026**. Die Anzeige erfolgt bewusst im deutschen Format **DD.MM.YYYY**.
 
 Punkt `3708` **„Startzeit periodisches Brauchwasser“** wird seit Version **0.3.19** als Home-Assistant-**Time-Entity** bereitgestellt. Der NIBE-Rohwert wird als Sekunden seit Mitternacht interpretiert. Damit entspricht zum Beispiel `34200` der Uhrzeit **09:30**.
 
 Beim Schreiben wird die in Home Assistant gewählte Uhrzeit wieder in Sekunden seit Mitternacht umgerechnet. Beispiel: **09:30 → 34200**. Dadurch lässt sich die periodische Startzeit direkt über den normalen Uhrzeit-Picker von Home Assistant einstellen.
+
+## Robustheit ab Version 0.3.27
+
+- Der Coordinator verwendet im Einzelpunkt-Fallback nur noch die öffentliche API-Methode `get_point()`.
+- Normale Schreibvorgänge lesen anschließend gezielt nur den betroffenen Punkt zurück, statt jedes Mal einen vollständigen Coordinator-Refresh auszulösen.
+- Bei **Mehr Brauchwasser** und **Lüftung +** wird eine noch laufende Bestätigungsprüfung vor einer neuen Prüfung abgebrochen. Dadurch können sich schnell aufeinanderfolgende Bedienungen nicht mehr durch alte Hintergrundprüfungen überholen.
+- Schreibbare Number-Entities verwenden nur noch belastbare Min-/Max-Grenzen aus den REST-Metadaten. Sind die Grenzen widersprüchlich oder offensichtlich nicht aussagekräftig, wird ein Schreibversuch aus Sicherheitsgründen blockiert.
+- Für zentrale Umrechnungen, Datumsdekodierung und Betriebsmodus-Schreibschutz wurden Regressionstests ergänzt.
 
 ## Alarmmeldungen
 
@@ -113,7 +121,7 @@ Dieses Projekt ist ein **inoffizielles Community-Projekt** und steht in keiner V
 
 ## Version
 
-Aktueller Stand: **0.3.26**
+Aktueller Stand: **0.3.27**
 
 ## Hinweise
 

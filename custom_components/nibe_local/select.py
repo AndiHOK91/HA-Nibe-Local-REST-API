@@ -5,8 +5,14 @@ from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import POINTS
+from .const import (
+    POINTS,
+    POINT_HOT_WATER_DEMAND,
+    POINT_OPERATING_MODE_SETTING,
+    POINT_VENTILATION_MODE,
+)
 from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, raw_value
 
@@ -36,23 +42,18 @@ class NibePointSelect(NibePointEntity, SelectEntity):
     """Select for NIBE enum-like points."""
 
     ENUM_LABELS: dict[int, dict[int, str]] = {
-        # Betriebsmodus VVM S320
-        3751: {
+        POINT_OPERATING_MODE_SETTING: {
             0: "Auto",
             1: "Manuell",
             2: "Nur Zusatzheizung",
         },
-        3830: {
+        POINT_VENTILATION_MODE: {
             0: "Normal",
             1: "Aus",
             2: "Reduziert",
             3: "Erhöht",
             4: "Maximal",
         },
-        4729: {0: "Auto", 1: "Manuell"},
-        4745: {0: "Auto", 1: "Manuell"},
-        4778: {0: "Auto", 1: "Manuell"},
-        4821: {0: "Auto", 1: "Manuell"},
     }
 
     HOT_WATER_DEMAND_LABELS = {
@@ -63,7 +64,7 @@ class NibePointSelect(NibePointEntity, SelectEntity):
 
     def _mapping(self) -> dict[int, str] | None:
         point_id = self.definition.point_id
-        if point_id == 3697:
+        if point_id == POINT_HOT_WATER_DEMAND:
             return self.HOT_WATER_DEMAND_LABELS
         return self.ENUM_LABELS.get(point_id)
 
@@ -114,7 +115,7 @@ class NibePointSelect(NibePointEntity, SelectEntity):
                 value = option
 
         await self.coordinator.api.patch_point(self.definition.point_id, value)
-        await self.coordinator.async_request_refresh()
+        await self.coordinator.async_refresh_point(self.definition.point_id)
 
     @property
     def extra_state_attributes(self):
@@ -125,22 +126,14 @@ class NibePointSelect(NibePointEntity, SelectEntity):
         return attrs
 
 
-class NibeSmartModeSelect(SelectEntity):
+class NibeSmartModeSelect(CoordinatorEntity[NibeCoordinator], SelectEntity):
     _attr_has_entity_name = True
     _attr_name = "Smart Mode"
     _attr_options = ["normal", "away"]
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
-        self.coordinator = coordinator
+        super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.api.device_id}_smart_mode"
-
-    @property
-    def should_poll(self) -> bool:
-        return False
-
-    @property
-    def available(self) -> bool:
-        return self.coordinator.last_update_success
 
     @property
     def current_option(self) -> str | None:
@@ -149,8 +142,3 @@ class NibeSmartModeSelect(SelectEntity):
     async def async_select_option(self, option: str) -> None:
         await self.coordinator.api.set_smart_mode(option)
         await self.coordinator.async_request_refresh()
-
-    async def async_added_to_hass(self) -> None:
-        self.async_on_remove(
-            self.coordinator.async_add_listener(self.async_write_ha_state)
-        )
