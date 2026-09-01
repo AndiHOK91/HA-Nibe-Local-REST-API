@@ -20,6 +20,7 @@ Die Integration stellt zahlreiche Werte und Funktionen der NIBE-Anlage als Home-
 - verschiedene schreibbare Einstellungen als Schalter, Auswahlfelder, Zahlenwerte und Uhrzeiten
 - automatische Neuauthentifizierung bei abgelehnten Zugangsdaten
 - Home-Assistant-Benachrichtigungen bei Authentifizierungs- und länger anhaltenden Verbindungsfehlern
+- eigene Diagnose-Entitäten für REST-API-Erreichbarkeit, Fallback-Status und Zeitpunkte erfolgreicher bzw. fehlgeschlagener Kommunikation
 
 Die Entitäten werden von Home Assistant regelmäßig über die lokale REST API aktualisiert. Das Polling-Intervall kann in den Optionen der Integration angepasst werden.
 
@@ -122,6 +123,17 @@ Die Integration erzeugt bei wichtigen Verbindungsproblemen Persistent Notificati
 
 Die Meldungen enthalten Gerätename, konfigurierten Host und aufgelöste IP-Adresse. Zugangsdaten oder Authorization-Header werden dabei nicht ausgegeben.
 
+## Diagnose und Verbindungsstatus
+
+Ab Version 0.7.0 stellt die Integration zusätzliche Diagnose-Entitäten am bestehenden NIBE-Gerät bereit. Sie sollen vor allem bei Netzwerkproblemen, Firmware-Updates oder Auffälligkeiten der lokalen REST API helfen.
+
+- **REST API erreichbar:** zeigt, ob der letzte reguläre Coordinator-Abruf erfolgreich war.
+- **Einzelpunkt-Fallback aktiv:** zeigt an, ob der Sammel-Endpunkt `/points` aktuell keine verwertbaren Daten liefert und deshalb der Einzelpunkt-Fallback verwendet wird.
+- **Letzter erfolgreicher Poll:** Zeitstempel des zuletzt vollständig erfolgreichen regulären Abrufs.
+- **Letzter Verbindungsfehler:** Zeitstempel des zuletzt erkannten Verbindungsfehlers zur REST API. Der Wert bleibt auch nach einer erfolgreichen Wiederherstellung erhalten, damit der letzte Ausfall nachvollziehbar bleibt.
+
+Diese Entitäten sind in Home Assistant als **Diagnose-Entitäten** gekennzeichnet. Der Fallback-Status bedeutet nicht automatisch, dass die gesamte REST API ausgefallen ist: Die Integration kann weiterhin Daten über Einzelpunktabfragen liefern, obwohl der Sammel-Endpunkt vorübergehend nicht nutzbar ist.
+
 ## Lokale Kommunikation und Polling
 
 Im normalen Betrieb werden die verfügbaren NIBE-Punkte gesammelt über den lokalen REST-Endpunkt abgefragt. Falls diese Sammelabfrage nicht ausgewertet werden kann, nutzt die Integration einen Einzelpunkt-Fallback.
@@ -142,7 +154,7 @@ Das Polling-Intervall und die Verzögerung für die Rückmeldung nach Schaltbefe
 4. Host/IP-Adresse, Port, Geräte-ID und Zugangsdaten eintragen.
 5. Bei einem lokal selbstsignierten Zertifikat kann die SSL-Zertifikatsprüfung deaktiviert werden.
 
-Für Version 0.6.1 ist mindestens **Home Assistant 2024.12.0** vorgesehen.
+Ab Version 0.6.0 ist mindestens **Home Assistant 2024.12.0** vorgesehen.
 
 ## Hinweise
 
@@ -169,4 +181,4 @@ Dieser Hinweis ergänzt den Haftungs- und Gewährleistungsausschluss der **MIT-L
 
 ## Version
 
-Aktueller Stand: **0.6.1**
+Aktueller Stand: **0.7.0**
