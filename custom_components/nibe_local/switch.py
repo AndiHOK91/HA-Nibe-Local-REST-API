@@ -64,6 +64,18 @@ def write_allowed_for_mode(point_id: int, mode: int | None) -> bool:
     return False
 
 
+def write_allowed_after_mode_refresh(
+    point_id: int,
+    mode: int | None,
+    *,
+    refresh_succeeded: bool,
+) -> bool:
+    """Return whether a protected write may proceed after refreshing the mode."""
+    if point_id not in {POINT_HEATING_ALLOWED, POINT_COOLING_ALLOWED}:
+        return True
+    return refresh_succeeded and write_allowed_for_mode(point_id, mode)
+
+
 class NibeSwitch(NibePointEntity, SwitchEntity):
     """Generic writable switch, with mode-dependent protection."""
 
@@ -99,11 +111,23 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
         if self.definition.point_id not in {POINT_HEATING_ALLOWED, POINT_COOLING_ALLOWED}:
             return
 
-        await self.coordinator.async_refresh_point(POINT_OPERATING_MODE_SETTING)
-        if self._write_allowed():
-            return
+        refreshed = await self.coordinator.async_refresh_point(
+            POINT_OPERATING_MODE_SETTING
+        )
+        if refreshed is None:
+            raise HomeAssistantError(
+                "Der aktuelle NIBE-Betriebsmodus konnte nicht geprüft werden. "
+                "Die Änderung wurde vorsorglich nicht gesendet."
+            )
 
         mode = self._operating_mode()
+        if write_allowed_after_mode_refresh(
+            self.definition.point_id,
+            mode,
+            refresh_succeeded=True,
+        ):
+            return
+
         mode_label = {0: "Auto", 1: "Manuell", 2: "Nur Zusatzheizung"}.get(
             mode, "Unbekannt"
         )
