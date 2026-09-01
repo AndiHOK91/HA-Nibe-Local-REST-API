@@ -1,7 +1,7 @@
 {
   "domain": "nibe_local",
   "name": "NIBE Local REST",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "documentation": "https://github.com/AndiO91/home-assistant-nibe-local-rest",
   "issue_tracker": "https://github.com/AndiO91/home-assistant-nibe-local-rest/issues",
   "codeowners": ["@AndiO91"],
