@@ -17,6 +17,7 @@ from custom_components.nibe_local.const import (
 from custom_components.nibe_local.coordinator import (
     CONNECTION_NOTIFICATION_DELAY_SECONDS,
     FALLBACK_BACKOFF_STEPS_SECONDS,
+    auth_failure_notification_due,
     connection_failure_notification_due,
     fallback_backoff_delay,
     merge_point_updates,
@@ -222,6 +223,12 @@ def test_connection_notification_waits_two_minutes() -> None:
     )
 
 
+def test_auth_notification_only_created_once_per_outage() -> None:
+    assert auth_failure_notification_due(notification_active=False)
+    assert not auth_failure_notification_due(notification_active=True)
+    assert auth_failure_notification_due(notification_active=False)
+
+
 def test_merge_point_updates_preserves_missing_old_values() -> None:
     previous = {"4": {"value": "old"}, "8": {"value": "keep"}}
     refreshed = {"4": {"value": "new"}, "10": {"value": "added"}}
@@ -246,6 +253,38 @@ def test_merge_keep_credentials_preserves_masked_secrets() -> None:
     merged = merge_keep_credentials(candidate, current)
     assert merged[CONF_PASSWORD] == "old-password"
     assert merged[CONF_AUTH_HEADER] == "Basic old"
+
+
+def test_merge_keep_credentials_treats_whitespace_only_as_blank() -> None:
+    current = {
+        CONF_USERNAME: "andi",
+        CONF_PASSWORD: "old-password",
+        CONF_AUTH_HEADER: "Basic old",
+    }
+    candidate = {
+        CONF_USERNAME: "andi",
+        CONF_PASSWORD: "   ",
+        CONF_AUTH_HEADER: "\t  ",
+    }
+    merged = merge_keep_credentials(candidate, current)
+    assert merged[CONF_PASSWORD] == "old-password"
+    assert merged[CONF_AUTH_HEADER] == "Basic old"
+
+
+def test_merge_keep_credentials_preserves_non_blank_whitespace() -> None:
+    current = {
+        CONF_USERNAME: "andi",
+        CONF_PASSWORD: "old-password",
+        CONF_AUTH_HEADER: "Basic old",
+    }
+    candidate = {
+        CONF_USERNAME: "andi",
+        CONF_PASSWORD: " new-password ",
+        CONF_AUTH_HEADER: " Basic new ",
+    }
+    merged = merge_keep_credentials(candidate, current)
+    assert merged[CONF_PASSWORD] == " new-password "
+    assert merged[CONF_AUTH_HEADER] == " Basic new "
 
 
 def test_merge_keep_credentials_replaces_provided_secrets() -> None:
