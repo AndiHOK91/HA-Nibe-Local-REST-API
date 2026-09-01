@@ -73,7 +73,13 @@ Für die Schalter **„Heizung zulassen“** und **„Kühlung zulassen“** pr�
 - **Nur Zusatzheizung:** **Heizung zulassen** darf geändert werden, **Kühlung zulassen** bleibt nur lesbar.
 - **Unbekannter oder nicht verfügbarer Betriebsmodus:** Das Schreiben auf beide Freigaben wird vorsorglich gesperrt.
 
-Der Betriebsmodus wird dafür vor dem Schalten gezielt neu von der Anlage gelesen. Dadurch berücksichtigt die Integration auch Änderungen, die kurz zuvor direkt an der NIBE oder über eine andere Bedienmöglichkeit vorgenommen wurden.
+Der Betriebsmodus wird dafür vor dem Schalten gezielt neu von der Anlage gelesen. Ab Version 0.7.1 muss dieser gezielte Abruf erfolgreich sein. Kann der aktuelle Betriebsmodus nicht sicher geprüft werden, wird die Änderung vorsorglich nicht an die NIBE gesendet. Dadurch kann kein veralteter, zuvor gespeicherter Betriebsmodus versehentlich als Freigabe für einen Schreibvorgang verwendet werden.
+
+## Schreibbare Zahlenwerte
+
+Schreibbare Number-Entitäten verwenden die von der NIBE gelieferten Metadaten für Min-/Max-Grenzen und Schrittweite. Wenn diese Metadaten nicht plausibel sind, wird der Schreibvorgang aus Sicherheitsgründen blockiert.
+
+Ab Version 0.7.1 werden nur positive Divisoren akzeptiert. Zusätzlich werden Werte abgelehnt, die nicht exakt auf die von NIBE vorgegebene Schrittweite abbildbar sind. Damit wird verhindert, dass ein über Service-Aufrufe übergebener Zwischenwert intern stillschweigend auf einen anderen Rohwert gerundet wird.
 
 ## Außeneinheit und Verdichter
 
@@ -140,9 +146,13 @@ Im normalen Betrieb werden die verfügbaren NIBE-Punkte gesammelt über den loka
 
 Damit ein dauerhaft gestörter Sammel-Endpunkt nicht unnötig viele Einzelabfragen verursacht, wird der vollständige Einzelpunkt-Fallback mit zunehmender Wartezeit ausgeführt: zunächst nach 30 Sekunden, danach nach 60 Sekunden und anschließend maximal alle 120 Sekunden. Die Sammelabfrage selbst wird weiterhin bei jedem regulären Poll versucht, sodass eine wieder funktionierende REST API sofort erkannt wird.
 
+Der Backoff wird nur verwendet, wenn bereits Punktdaten vorhanden sind, die während der Wartezeit weiter genutzt werden können. Beim Start ohne vorhandene Punktdaten wird der Einzelpunkt-Fallback bei jedem regulären Poll erneut versucht, damit die Integration nicht wegen des Backoffs ohne Daten bleibt.
+
 Wenn während eines Einzelpunkt-Fallbacks nur ein Teil der Werte erfolgreich gelesen werden kann, bleiben zuvor bekannte Werte der übrigen Punkte erhalten.
 
 Nach einem Schreibbefehl wird der betroffene Punkt gezielt neu gelesen, anstatt jedes Mal die komplette Anlage erneut abzufragen. Dadurch werden Schaltvorgänge schneller bestätigt und unnötige REST-Anfragen vermieden.
+
+Bekannte Auswahlwerte werden robust verarbeitet, auch wenn eine Firmware numerische Enum-Werte als Strings statt als Zahlen liefert.
 
 Das Polling-Intervall und die Verzögerung für die Rückmeldung nach Schaltbefehlen können in den Optionen der Integration eingestellt werden.
 
@@ -154,7 +164,11 @@ Das Polling-Intervall und die Verzögerung für die Rückmeldung nach Schaltbefe
 4. Host/IP-Adresse, Port, Geräte-ID und Zugangsdaten eintragen.
 5. Bei einem lokal selbstsignierten Zertifikat kann die SSL-Zertifikatsprüfung deaktiviert werden.
 
-Ab Version 0.6.0 ist mindestens **Home Assistant 2024.12.0** vorgesehen.
+Ab Version 0.6.0 ist mindestens **Home Assistant 2024.12.0** vorgesehen. Der GitHub-Actions-Testworkflow prüft die Integration sowohl mit dieser Mindestversion als auch mit der jeweils aktuellen Home-Assistant-Version.
+
+## Changelog
+
+Die wesentlichen Änderungen pro Version sind in [`CHANGELOG.md`](CHANGELOG.md) zusammengefasst.
 
 ## Hinweise
 
@@ -181,4 +195,4 @@ Dieser Hinweis ergänzt den Haftungs- und Gewährleistungsausschluss der **MIT-L
 
 ## Version
 
-Aktueller Stand: **0.7.0**
+Aktueller Stand: **0.7.1**
