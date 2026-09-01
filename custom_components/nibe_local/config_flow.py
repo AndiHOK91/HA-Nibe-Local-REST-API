@@ -4,11 +4,18 @@ from __future__ import annotations
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .api import NibeApiError, NibeAuthError, NibeLocalApi
 from .const import (
+    COMMAND_POLL_DELAY_OPTIONS_MS,
     CONF_AUTH_HEADER,
     CONF_COMMAND_POLL_DELAY_MS,
     CONF_DEVICE_ID,
@@ -18,12 +25,36 @@ from .const import (
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
-    COMMAND_POLL_DELAY_OPTIONS_MS,
     MIN_SCAN_INTERVAL,
 )
 
+_CREDENTIAL_KEYS = (CONF_USERNAME, CONF_PASSWORD, CONF_AUTH_HEADER)
 
-def _connection_schema(defaults: dict, *, password_default: str = "") -> vol.Schema:
+
+def _secret_selector(*, autocomplete: str | None = None) -> TextSelector:
+    """Create a masked text selector for credentials."""
+    config = TextSelectorConfig(type=TextSelectorType.PASSWORD)
+    if autocomplete is not None:
+        config["autocomplete"] = autocomplete
+    return TextSelector(config)
+
+
+def merge_keep_credentials(candidate: dict, current: dict) -> dict:
+    """Keep stored sensitive credentials when their masked fields are left empty."""
+    merged = dict(candidate)
+    if not merged.get(CONF_PASSWORD):
+        merged[CONF_PASSWORD] = current.get(CONF_PASSWORD, "")
+    if not merged.get(CONF_AUTH_HEADER):
+        merged[CONF_AUTH_HEADER] = current.get(CONF_AUTH_HEADER, "")
+    return merged
+
+
+def _connection_schema(
+    defaults: dict,
+    *,
+    password_default: str = "",
+    auth_header_default: str = "",
+) -> vol.Schema:
     """Build the connection/settings schema."""
     return vol.Schema(
         {
@@ -37,10 +68,12 @@ def _connection_schema(defaults: dict, *, password_default: str = "") -> vol.Sch
             vol.Optional(
                 CONF_USERNAME, default=defaults.get(CONF_USERNAME, "")
             ): str,
-            vol.Optional(CONF_PASSWORD, default=password_default): str,
             vol.Optional(
-                CONF_AUTH_HEADER, default=defaults.get(CONF_AUTH_HEADER, "")
-            ): str,
+                CONF_PASSWORD, default=password_default
+            ): _secret_selector(autocomplete="current-password"),
+            vol.Optional(
+                CONF_AUTH_HEADER, default=auth_header_default
+            ): _secret_selector(),
             vol.Required(
                 CONF_VERIFY_SSL, default=defaults.get(CONF_VERIFY_SSL, False)
             ): bool,
@@ -58,6 +91,21 @@ def _connection_schema(defaults: dict, *, password_default: str = "") -> vol.Sch
     )
 
 
+def _reauth_schema(current: dict) -> vol.Schema:
+    """Build the credential-only reauthentication schema."""
+    return vol.Schema(
+        {
+            vol.Optional(
+                CONF_USERNAME, default=current.get(CONF_USERNAME, "")
+            ): str,
+            vol.Optional(CONF_PASSWORD, default=""): _secret_selector(
+                autocomplete="current-password"
+            ),
+            vol.Optional(CONF_AUTH_HEADER, default=""): _secret_selector(),
+        }
+    )
+
+
 async def _validate(hass, values: dict) -> dict:
     """Validate connection settings and return device metadata."""
     api = NibeLocalApi(
@@ -70,13 +118,13 @@ async def _validate(hass, values: dict) -> dict:
         auth_header=values.get(CONF_AUTH_HEADER),
         verify_ssl=values[CONF_VERIFY_SSL],
     )
-    device = await api.get_device()
-    await api.get_points()
-    return device
+    return await api.get_device()
 
 
 class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
+
+    _reauth_entry: ConfigEntry | None = None
 
     async def async_step_user(self, user_input=None):
         errors: dict[str, str] = {}
@@ -103,6 +151,54 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    async def async_step_reauth(self, entry_data: dict):
+        """Start reauthentication after Home Assistant reports invalid credentials."""
+        self._reauth_entry = self.hass.config_entries.async_get_entry(
+            self.context["entry_id"]
+        )
+        if self._reauth_entry is None:
+            return self.async_abort(reason="reauth_entry_missing")
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(self, user_input=None):
+        """Validate and save replacement credentials."""
+        errors: dict[str, str] = {}
+        if self._reauth_entry is None:
+            return self.async_abort(reason="reauth_entry_missing")
+
+        current = {**self._reauth_entry.data, **self._reauth_entry.options}
+
+        if user_input is not None:
+            credentials = merge_keep_credentials(dict(user_input), current)
+            candidate = {**current, **credentials}
+
+            try:
+                await _validate(self.hass, candidate)
+            except NibeAuthError:
+                errors["base"] = "invalid_auth"
+            except NibeApiError:
+                errors["base"] = "cannot_connect"
+            else:
+                new_data = dict(self._reauth_entry.data)
+                new_options = dict(self._reauth_entry.options)
+
+                for key in _CREDENTIAL_KEYS:
+                    new_data[key] = candidate.get(key, "")
+                    new_options.pop(key, None)
+
+                self.hass.config_entries.async_update_entry(
+                    self._reauth_entry,
+                    data=new_data,
+                    options=new_options,
+                )
+                return self.async_abort(reason="reauth_successful")
+
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=_reauth_schema(current),
+            errors=errors,
+        )
+
     @staticmethod
     def async_get_options_flow(config_entry):
         # Home Assistant injects the ConfigEntry into OptionsFlow and exposes it
@@ -121,11 +217,7 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
         current = {**self.config_entry.data, **self.config_entry.options}
 
         if user_input is not None:
-            candidate = dict(user_input)
-
-            # Leaving the password field empty means "keep current password".
-            if not candidate.get(CONF_PASSWORD):
-                candidate[CONF_PASSWORD] = current.get(CONF_PASSWORD, "")
+            candidate = merge_keep_credentials(dict(user_input), current)
 
             try:
                 await _validate(self.hass, candidate)
@@ -138,12 +230,13 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
                 # can simply overlay them on top of the original entry data.
                 return self.async_create_entry(title="", data=candidate)
 
-        # Never pre-fill/show the stored password in the UI.
+        # Never pre-fill/show stored sensitive credentials in the UI.
         return self.async_show_form(
             step_id="init",
-            data_schema=_connection_schema(current, password_default=""),
+            data_schema=_connection_schema(
+                current,
+                password_default="",
+                auth_header_default="",
+            ),
             errors=errors,
-            description_placeholders={
-                "password_hint": "Passwort leer lassen, um das vorhandene Passwort beizubehalten."
-            },
         )
