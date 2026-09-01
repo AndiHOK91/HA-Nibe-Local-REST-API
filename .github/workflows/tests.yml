@@ -12,6 +12,11 @@ permissions:
 jobs:
   pytest:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        homeassistant-version: ["2024.12.0", "latest"]
+
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v4
@@ -22,7 +27,33 @@ jobs:
           python-version: "3.13"
 
       - name: Testabhängigkeiten installieren
-        run: python -m pip install --upgrade pip pytest homeassistant
+        env:
+          HA_VERSION: ${{ matrix.homeassistant-version }}
+        run: |
+          python -m pip install --upgrade pip pytest
+          if [ "$HA_VERSION" = "latest" ]; then
+            python -m pip install homeassistant
+          else
+            python -m pip install "homeassistant==$HA_VERSION"
+          fi
+
+      - name: JSON-Dateien validieren
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          paths = [Path("hacs.json")]
+          paths.extend(Path("custom_components/nibe_local").glob("*.json"))
+          paths.extend(Path("custom_components/nibe_local/translations").glob("*.json"))
+          for path in paths:
+              with path.open(encoding="utf-8") as handle:
+                  json.load(handle)
+              print(f"OK: {path}")
+          PY
+
+      - name: Python-Syntax prüfen
+        run: python -m compileall -q custom_components/nibe_local tests
 
       - name: Regressionstests ausführen
         env:
