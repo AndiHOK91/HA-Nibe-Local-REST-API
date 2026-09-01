@@ -17,19 +17,19 @@
         },
         "data_description": {
           "password": "The password is shown as a masked value.",
-          "auth_header": "Complete HTTP Authorization header in the format “Basic <Base64>”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
+          "auth_header": "Complete HTTP Authorization header, for example “Basic dXNlcjpwYXNzd29ydA==”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
         }
       },
       "reauth_confirm": {
         "title": "NIBE Local REST – update credentials",
-        "description": "The NIBE rejected the stored credentials. Enter the current credentials. Leave the password or Authorization header field empty to keep the stored value.",
+        "description": "{device_name} – Host: {host} – IP: {ip_address} rejected the stored credentials. Enter the current credentials. Leave the password or Authorization header field empty to keep the stored value.",
         "data": {
           "username": "Username",
           "password": "New password (empty = unchanged)",
           "auth_header": "New Authorization header (empty = unchanged)"
         },
         "data_description": {
-          "auth_header": "Complete HTTP Authorization header in the format “Basic <Base64>”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
+          "auth_header": "Complete HTTP Authorization header, for example “Basic dXNlcjpwYXNzd29ydA==”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
         }
       }
     },
@@ -60,7 +60,7 @@
           "command_poll_delay_ms": "Command polling delay (ms)"
         },
         "data_description": {
-          "auth_header": "Complete HTTP Authorization header in the format “Basic <Base64>”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
+          "auth_header": "Complete HTTP Authorization header, for example “Basic dXNlcjpwYXNzd29ydA==”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
         }
       }
     },
