@@ -1,7 +1,7 @@
 """Coordinator for NIBE Local REST."""
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 import logging
 import time as time_module
 from typing import Any
@@ -10,6 +10,7 @@ from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .api import NibeApiError, NibeAuthError, NibeLocalApi, async_resolve_host_ip
 from .const import DOMAIN, POINTS, POINT_VENTILATION_MODE
@@ -72,6 +73,9 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._next_fallback_attempt = 0.0
         self._connection_failure_started_at: float | None = None
         self._connection_notification_active = False
+        self.bulk_fallback_active = False
+        self.last_successful_poll: datetime | None = None
+        self.last_connection_error: datetime | None = None
 
     @property
     def _auth_notification_id(self) -> str:
@@ -105,6 +109,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _record_connection_failure(self) -> None:
         """Notify only after the REST API has been unreachable for two minutes."""
         now = time_module.monotonic()
+        self.last_connection_error = dt_util.utcnow()
         if self._connection_failure_started_at is None:
             self._connection_failure_started_at = now
             return
@@ -128,7 +133,8 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._connection_notification_active = True
 
     def _record_success(self) -> None:
-        """Clear stale connection/auth notifications after a successful update."""
+        """Record a successful poll and clear stale connection/auth notifications."""
+        self.last_successful_poll = dt_util.utcnow()
         self._connection_failure_started_at = None
         self._connection_notification_active = False
         persistent_notification.async_dismiss(
@@ -140,11 +146,13 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             points = await self.api.get_points()
             if points:
+                self.bulk_fallback_active = False
                 if self._fallback_failure_streak:
                     _LOGGER.info("Bulk /points is available again; fallback backoff reset")
                 self._fallback_failure_streak = 0
                 self._next_fallback_attempt = 0.0
             else:
+                self.bulk_fallback_active = True
                 points = await self._get_points_with_backoff()
 
             device = await self.api.get_device()
