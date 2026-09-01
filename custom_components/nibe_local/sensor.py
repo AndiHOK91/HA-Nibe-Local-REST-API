@@ -1,12 +1,13 @@
 """Sensors for NIBE Local REST."""
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -20,7 +21,7 @@ from .const import (
     POINT_TIME_TO_DEFROST,
 )
 from .coordinator import NibeCoordinator
-from .entity import NibePointEntity, raw_value, scaled_value
+from .entity import NibePointEntity, coordinator_device_info, raw_value, scaled_value
 
 OPERATING_PRIORITY_MAP = {
     10: "Aus",
@@ -57,8 +58,16 @@ async def async_setup_entry(
         for definition in POINTS
         if definition.platform == "sensor" and coordinator.point(definition.point_id)
     ]
-    entities = [NibeSensor(coordinator, definition) for definition in definitions]
-    entities.append(NibeNotificationSensor(coordinator))
+    entities: list[SensorEntity] = [
+        NibeSensor(coordinator, definition) for definition in definitions
+    ]
+    entities.extend(
+        [
+            NibeNotificationSensor(coordinator),
+            NibeLastSuccessfulPollSensor(coordinator),
+            NibeLastConnectionErrorSensor(coordinator),
+        ]
+    )
     async_add_entities(entities)
 
 
@@ -199,3 +208,47 @@ class NibeNotificationSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
             "alarm_summary": summary,
             "alarms": alarms,
         }
+
+
+class _NibeHealthTimestampSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
+    """Base class for coordinator health timestamps."""
+
+    _attr_has_entity_name = True
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def device_info(self):
+        return coordinator_device_info(self.coordinator)
+
+
+class NibeLastSuccessfulPollSensor(_NibeHealthTimestampSensor):
+    """Timestamp of the most recent successful regular coordinator poll."""
+
+    _attr_name = "Letzter erfolgreicher Poll"
+
+    def __init__(self, coordinator: NibeCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.api.device_id}_last_successful_poll"
+
+    @property
+    def native_value(self) -> datetime | None:
+        return self.coordinator.last_successful_poll
+
+
+class NibeLastConnectionErrorSensor(_NibeHealthTimestampSensor):
+    """Timestamp of the most recent REST API connection error."""
+
+    _attr_name = "Letzter Verbindungsfehler"
+
+    def __init__(self, coordinator: NibeCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.api.device_id}_last_connection_error"
+
+    @property
+    def native_value(self) -> datetime | None:
+        return self.coordinator.last_connection_error
