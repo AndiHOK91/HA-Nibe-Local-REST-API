@@ -2,15 +2,20 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST** werden hier versionsweise zusammengefasst.
 
+## 0.7.2
+
+- Wiederholte Authentifizierungsfehler erzeugen die Persistent Notification und die zugehörige Host-/IP-Auflösung nur einmal pro zusammenhängender Störung; nach erfolgreicher Kommunikation kann eine neue Störung wieder gemeldet werden.
+- Nur aus Leerzeichen bestehende Passwort- oder Authorization-Header-Eingaben gelten als leer und behalten den gespeicherten Wert bei; echte nichtleere Eingaben werden unverändert übernommen.
+- Regressionstests für Auth-Benachrichtigungen und den Umgang mit Zugangsdaten erweitert.
+- Integrationslogo unter `docs/logo.png` ergänzt.
+
 ## 0.7.1
 
 - Einzelpunkt-Fallback wird beim Start ohne vorhandene Punktdaten nicht mehr durch den Backoff verzögert.
 - Schreibschutz für **Heizung zulassen** und **Kühlung zulassen** verschärft: Vor dem Schreiben muss der aktuelle Betriebsmodus erfolgreich neu gelesen werden.
 - Bekannte Select-Werte werden auch dann korrekt zugeordnet, wenn die REST API numerische Enum-Werte als Strings liefert.
 - Number-Entitäten akzeptieren nur positive Divisoren und blockieren Werte, die nicht exakt zur von NIBE vorgegebenen Schrittweite passen.
-- Wiederholte Authentifizierungsfehler erzeugen die Persistent Notification und die zugehörige Host-/IP-Auflösung nur einmal pro zusammenhängender Störung; nach erfolgreicher Kommunikation kann eine neue Störung wieder gemeldet werden.
-- Nur aus Leerzeichen bestehende Passwort- oder Authorization-Header-Eingaben gelten als leer und behalten den gespeicherten Wert bei; echte nichtleere Eingaben werden unverändert übernommen.
-- Regressionstests für Fallback, Schreibschutz, Select-Enums, Number-Grenzfälle, Auth-Benachrichtigungen und Zugangsdaten erweitert.
+- Regressionstests für Fallback, Schreibschutz, Select-Enums und Number-Grenzfälle erweitert.
 - GitHub Actions prüft zusätzlich JSON-Dateien und Python-Syntax.
 - CI-Matrix testet gegen Home Assistant 2024.12.0 und die jeweils aktuelle Home-Assistant-Version.
 
