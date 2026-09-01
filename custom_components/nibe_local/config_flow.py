@@ -39,12 +39,17 @@ def _secret_selector(*, autocomplete: str | None = None) -> TextSelector:
     return TextSelector(config)
 
 
+def _secret_is_blank(value: object) -> bool:
+    """Return whether a secret field was effectively left empty."""
+    return value is None or (isinstance(value, str) and not value.strip())
+
+
 def merge_keep_credentials(candidate: dict, current: dict) -> dict:
     """Keep stored sensitive credentials when their masked fields are left empty."""
     merged = dict(candidate)
-    if not merged.get(CONF_PASSWORD):
+    if _secret_is_blank(merged.get(CONF_PASSWORD)):
         merged[CONF_PASSWORD] = current.get(CONF_PASSWORD, "")
-    if not merged.get(CONF_AUTH_HEADER):
+    if _secret_is_blank(merged.get(CONF_AUTH_HEADER)):
         merged[CONF_AUTH_HEADER] = current.get(CONF_AUTH_HEADER, "")
     return merged
 
