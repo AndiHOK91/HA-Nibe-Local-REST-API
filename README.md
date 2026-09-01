@@ -115,7 +115,7 @@ Wenn die NIBE REST API die gespeicherten Zugangsdaten ablehnt, erkennt die Integ
 
 Im Reauthentifizierungsdialog werden zur besseren Zuordnung der Gerätename, der konfigurierte Host und die aufgelöste IP-Adresse angezeigt. So lassen sich auch fehlerhafte Hostnamen oder Änderungen im Netzwerk leichter erkennen.
 
-Passwort und Authorization-Header werden in den Eingabemasken maskiert dargestellt und nicht mit dem gespeicherten Wert vorausgefüllt. Bleibt eines dieser Felder leer, wird der bisher gespeicherte Wert beibehalten.
+Passwort und Authorization-Header werden in den Eingabemasken maskiert dargestellt und nicht mit dem gespeicherten Wert vorausgefüllt. Bleibt eines dieser Felder leer oder besteht nur aus Leerzeichen, wird der bisher gespeicherte Wert beibehalten.
 
 Als Alternative zu Benutzername und Passwort kann ein vollständiger HTTP-Authorization-Header verwendet werden, zum Beispiel `Basic dXNlcjpwYXNzd29ydA==`. Der Wert nach `Basic` muss Base64-codiert sein.
 
@@ -123,7 +123,7 @@ Als Alternative zu Benutzername und Passwort kann ein vollständiger HTTP-Author
 
 Die Integration erzeugt bei wichtigen Verbindungsproblemen Persistent Notifications direkt in Home Assistant:
 
-- **Zugangsdaten abgelehnt:** Die Benachrichtigung erscheint sofort und der Reauthentifizierungsablauf wird gestartet.
+- **Zugangsdaten abgelehnt:** Die Benachrichtigung erscheint sofort und wird pro zusammenhängender Authentifizierungsstörung nur einmal erzeugt. Nach erfolgreicher Kommunikation kann eine spätere neue Störung wieder gemeldet werden.
 - **REST API nicht erreichbar:** Eine Benachrichtigung erscheint erst, wenn die Verbindung mindestens **2 Minuten** durchgehend gestört ist. Kurze Netzwerkunterbrechungen erzeugen dadurch keine unnötige Meldung.
 - **Verbindung wiederhergestellt:** Eine zuvor erzeugte Verbindungs- oder Authentifizierungsbenachrichtigung wird nach erfolgreicher Kommunikation automatisch entfernt.
 
@@ -195,4 +195,4 @@ Dieser Hinweis ergänzt den Haftungs- und Gewährleistungsausschluss der **MIT-L
 
 ## Version
 
-Aktueller Stand: **0.7.1**
+Aktueller Stand: **0.7.2**
