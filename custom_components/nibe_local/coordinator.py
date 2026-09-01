@@ -6,16 +6,18 @@ import logging
 import time as time_module
 from typing import Any
 
+from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import NibeApiError, NibeAuthError, NibeLocalApi
+from .api import NibeApiError, NibeAuthError, NibeLocalApi, async_resolve_host_ip
 from .const import DOMAIN, POINTS, POINT_VENTILATION_MODE
 
 _LOGGER = logging.getLogger(__name__)
 
 FALLBACK_BACKOFF_STEPS_SECONDS = (30, 60, 120)
+CONNECTION_NOTIFICATION_DELAY_SECONDS = 120
 
 
 def fallback_backoff_delay(failure_streak: int) -> int:
@@ -38,6 +40,16 @@ def merge_point_updates(
     return merged
 
 
+def connection_failure_notification_due(
+    *,
+    now: float,
+    failure_started_at: float | None,
+    delay: int = CONNECTION_NOTIFICATION_DELAY_SECONDS,
+) -> bool:
+    """Return whether a connection failure has lasted long enough to notify."""
+    return failure_started_at is not None and now - failure_started_at >= delay
+
+
 class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(
         self,
@@ -45,6 +57,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         api: NibeLocalApi,
         interval: int,
         command_poll_delay_ms: int = 1000,
+        device_name: str = "NIBE Local REST",
     ) -> None:
         super().__init__(
             hass,
@@ -54,8 +67,75 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self.api = api
         self.command_poll_delay_ms = command_poll_delay_ms
+        self.device_name = device_name
         self._fallback_failure_streak = 0
         self._next_fallback_attempt = 0.0
+        self._connection_failure_started_at: float | None = None
+        self._connection_notification_active = False
+
+    @property
+    def _auth_notification_id(self) -> str:
+        return f"{DOMAIN}_{self.api.device_id}_auth"
+
+    @property
+    def _connection_notification_id(self) -> str:
+        return f"{DOMAIN}_{self.api.device_id}_connection"
+
+    async def _connection_label(self) -> str:
+        """Return a device/host/IP label for user-facing messages."""
+        ip_address = await async_resolve_host_ip(self.api.host)
+        return (
+            f"{self.device_name} – Host: {self.api.host} – "
+            f"IP: {ip_address or 'nicht auflösbar'}"
+        )
+
+    async def _notify_auth_failure(self) -> None:
+        """Create or update the authentication failure notification immediately."""
+        label = await self._connection_label()
+        persistent_notification.async_create(
+            self.hass,
+            (
+                f"{label}: Die gespeicherten Zugangsdaten wurden von der REST API "
+                "abgelehnt. Bitte die Zugangsdaten der Integration aktualisieren."
+            ),
+            title="NIBE Local REST – Zugangsdaten abgelehnt",
+            notification_id=self._auth_notification_id,
+        )
+
+    async def _record_connection_failure(self) -> None:
+        """Notify only after the REST API has been unreachable for two minutes."""
+        now = time_module.monotonic()
+        if self._connection_failure_started_at is None:
+            self._connection_failure_started_at = now
+            return
+
+        if self._connection_notification_active or not connection_failure_notification_due(
+            now=now,
+            failure_started_at=self._connection_failure_started_at,
+        ):
+            return
+
+        label = await self._connection_label()
+        persistent_notification.async_create(
+            self.hass,
+            (
+                f"{label}: Die lokale REST API ist seit mindestens 2 Minuten nicht "
+                "erreichbar. Bitte Netzwerk, NIBE-Gerät und REST-API prüfen."
+            ),
+            title="NIBE Local REST – REST API nicht erreichbar",
+            notification_id=self._connection_notification_id,
+        )
+        self._connection_notification_active = True
+
+    def _record_success(self) -> None:
+        """Clear stale connection/auth notifications after a successful update."""
+        self._connection_failure_started_at = None
+        if self._connection_notification_active:
+            persistent_notification.async_dismiss(
+                self.hass, self._connection_notification_id
+            )
+            self._connection_notification_active = False
+        persistent_notification.async_dismiss(self.hass, self._auth_notification_id)
 
     async def _async_update_data(self) -> dict[str, Any]:
         try:
@@ -76,12 +156,16 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             except NibeApiError as err:
                 _LOGGER.debug("Notifications endpoint unavailable: %s", err)
                 notifications = {"alarms": []}
+
+            self._record_success()
             return {"points": points, "device": device, "notifications": notifications}
         except NibeAuthError as err:
+            await self._notify_auth_failure()
             raise ConfigEntryAuthFailed(
                 "NIBE API rejected the configured credentials"
             ) from err
         except NibeApiError as err:
+            await self._record_connection_failure()
             raise UpdateFailed(str(err)) from err
 
     async def _get_points_with_backoff(self) -> dict[str, Any]:
