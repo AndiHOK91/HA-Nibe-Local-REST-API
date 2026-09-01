@@ -33,10 +33,17 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
+def _metadata_divisor(point: dict) -> int | float | None:
+    """Return the raw metadata divisor without hiding invalid zero values."""
+    md = point.get("metadata") or {}
+    divisor = md.get("divisor", 1)
+    return 1 if divisor is None else divisor
+
+
 def metadata_limits(point: dict, current: float | None) -> tuple[float, float] | None:
     """Return trustworthy scaled limits or None when metadata is ambiguous."""
     md = point.get("metadata") or {}
-    divisor = md.get("divisor") or 1
+    divisor = _metadata_divisor(point)
     minimum = md.get("minValue")
     maximum = md.get("maxValue")
 
@@ -54,8 +61,7 @@ def metadata_limits(point: dict, current: float | None) -> tuple[float, float] |
 
 def value_is_representable(point: dict, value: float) -> bool:
     """Return whether a scaled value maps exactly to a NIBE integer raw value."""
-    md = point.get("metadata") or {}
-    divisor = md.get("divisor") or 1
+    divisor = _metadata_divisor(point)
     if not isinstance(divisor, (int, float)) or divisor <= 0:
         return False
     raw_value = value * divisor
@@ -99,8 +105,7 @@ class NibeNumber(NibePointEntity, NumberEntity):
 
     @property
     def native_step(self) -> float:
-        md = (self.point or {}).get("metadata") or {}
-        divisor = md.get("divisor") or 1
+        divisor = _metadata_divisor(self.point or {})
         return 1 / divisor if isinstance(divisor, (int, float)) and divisor > 0 else 1
 
     async def async_set_native_value(self, value: float) -> None:
