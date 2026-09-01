@@ -23,13 +23,20 @@ from custom_components.nibe_local.coordinator import (
     should_skip_fallback_scan,
 )
 from custom_components.nibe_local.entity import FRIENDLY_NAMES, scaled_value, to_raw
-from custom_components.nibe_local.number import metadata_limits
-from custom_components.nibe_local.select import NibePointSelect, supports_smart_mode
+from custom_components.nibe_local.number import metadata_limits, value_is_representable
+from custom_components.nibe_local.select import (
+    NibePointSelect,
+    mapped_option,
+    supports_smart_mode,
+)
 from custom_components.nibe_local.sensor import (
     OPERATING_MODE_MAP,
     periodic_hot_water_date,
 )
-from custom_components.nibe_local.switch import write_allowed_for_mode
+from custom_components.nibe_local.switch import (
+    write_allowed_after_mode_refresh,
+    write_allowed_for_mode,
+)
 from custom_components.nibe_local.time import seconds_from_time, time_from_seconds
 
 
@@ -87,6 +94,14 @@ def test_ventilation_mode_labels() -> None:
     }
 
 
+def test_mapped_option_accepts_integer_and_numeric_string() -> None:
+    mapping = NibePointSelect.ENUM_LABELS[POINT_OPERATING_MODE_SETTING]
+    assert mapped_option(0, mapping) == "Auto"
+    assert mapped_option("0", mapping) == "Auto"
+    assert mapped_option("2", mapping) == "Nur Zusatzheizung"
+    assert mapped_option("unbekannt", mapping) == "unbekannt"
+
+
 def test_mode_dependent_write_protection() -> None:
     assert not write_allowed_for_mode(POINT_HEATING_ALLOWED, 0)
     assert not write_allowed_for_mode(POINT_COOLING_ALLOWED, 0)
@@ -95,6 +110,18 @@ def test_mode_dependent_write_protection() -> None:
     assert write_allowed_for_mode(POINT_HEATING_ALLOWED, 2)
     assert not write_allowed_for_mode(POINT_COOLING_ALLOWED, 2)
     assert not write_allowed_for_mode(POINT_HEATING_ALLOWED, None)
+
+
+def test_protected_write_requires_successful_mode_refresh() -> None:
+    assert write_allowed_after_mode_refresh(
+        POINT_HEATING_ALLOWED, 1, refresh_succeeded=True
+    )
+    assert not write_allowed_after_mode_refresh(
+        POINT_HEATING_ALLOWED, 1, refresh_succeeded=False
+    )
+    assert not write_allowed_after_mode_refresh(
+        POINT_COOLING_ALLOWED, 1, refresh_succeeded=False
+    )
 
 
 def test_time_conversion_roundtrip() -> None:
@@ -130,6 +157,22 @@ def test_metadata_limits_scale_values() -> None:
     assert metadata_limits(point, 20.0) == (10.0, 50.0)
 
 
+def test_metadata_limits_reject_non_positive_divisor() -> None:
+    zero = {"metadata": {"divisor": 0, "minValue": 0, "maxValue": 100}}
+    negative = {"metadata": {"divisor": -10, "minValue": 0, "maxValue": 100}}
+    assert metadata_limits(zero, 0) is None
+    assert metadata_limits(negative, 0) is None
+    assert not value_is_representable(zero, 1.0)
+    assert not value_is_representable(negative, 1.0)
+
+
+def test_number_value_must_match_nibe_step() -> None:
+    point = {"metadata": {"divisor": 10, "minValue": 100, "maxValue": 500}}
+    assert value_is_representable(point, 22.2)
+    assert value_is_representable(point, 10.0)
+    assert not value_is_representable(point, 22.25)
+
+
 def test_friendly_names_only_reference_active_points() -> None:
     assert set(FRIENDLY_NAMES) == set(POINT_BY_ID)
 
@@ -148,6 +191,19 @@ def test_should_skip_fallback_scan_respects_window() -> None:
     assert should_skip_fallback_scan(now=100.0, next_attempt_at=110.0)
     assert not should_skip_fallback_scan(now=110.0, next_attempt_at=110.0)
     assert not should_skip_fallback_scan(now=120.0, next_attempt_at=110.0)
+
+
+def test_fallback_backoff_never_skips_without_cached_points() -> None:
+    assert not should_skip_fallback_scan(
+        now=100.0,
+        next_attempt_at=110.0,
+        has_previous_points=False,
+    )
+    assert should_skip_fallback_scan(
+        now=100.0,
+        next_attempt_at=110.0,
+        has_previous_points=True,
+    )
 
 
 def test_connection_notification_waits_two_minutes() -> None:
