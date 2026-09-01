@@ -1,10 +1,29 @@
 """Async client for the NIBE local REST API."""
 from __future__ import annotations
 
+import asyncio
+import socket
 import ssl
 from typing import Any
 
 from aiohttp import BasicAuth, ClientResponseError, ClientSession, ClientTimeout
+
+
+async def async_resolve_host_ip(host: str) -> str | None:
+    """Resolve a configured host to an IP address without blocking Home Assistant."""
+    try:
+        infos = await asyncio.get_running_loop().getaddrinfo(
+            host,
+            None,
+            type=socket.SOCK_STREAM,
+        )
+    except OSError:
+        return None
+
+    for _family, _socktype, _proto, _canonname, sockaddr in infos:
+        if sockaddr:
+            return str(sockaddr[0])
+    return None
 
 
 class NibeApiError(Exception):
@@ -102,20 +121,17 @@ class NibeLocalApi:
             if not isinstance(node, dict):
                 return
 
-            # A single point object, as returned by /points/{pointId}
             metadata = node.get("metadata")
             if isinstance(metadata, dict) and metadata.get("variableId") is not None:
                 point_id = str(metadata["variableId"])
                 result[point_id] = node
                 return
 
-            # Common wrapper keys
             for wrapper in ("points", "data", "items", "values"):
                 wrapped = node.get(wrapper)
                 if isinstance(wrapped, (dict, list)):
                     visit(wrapped)
 
-            # Mapping keyed by variable ID, e.g. {"4": {...}, "8": {...}}
             for key, value in node.items():
                 if isinstance(value, dict):
                     md = value.get("metadata")
