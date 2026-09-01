@@ -8,7 +8,7 @@ Alle wesentlichen Änderungen an **NIBE Local REST** werden hier versionsweise z
 - Schreibschutz für **Heizung zulassen** und **Kühlung zulassen** verschärft: Vor dem Schreiben muss der aktuelle Betriebsmodus erfolgreich neu gelesen werden.
 - Bekannte Select-Werte werden auch dann korrekt zugeordnet, wenn die REST API numerische Enum-Werte als Strings liefert.
 - Number-Entitäten akzeptieren nur positive Divisoren und blockieren Werte, die nicht exakt zur von NIBE vorgegebenen Schrittweite passen.
-- Regressionstests für Fallback, Schreibschutz, Select-Enuums und Number-Grenzfälle erweitert.
+- Regressionstests für Fallback, Schreibschutz, Select-Enums und Number-Grenzfälle erweitert.
 - GitHub Actions prüft zusätzlich JSON-Dateien und Python-Syntax.
 - CI-Matrix testet gegen Home Assistant 2024.12.0 und die jeweils aktuelle Home-Assistant-Version.
 
