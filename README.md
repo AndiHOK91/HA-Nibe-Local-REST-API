@@ -192,7 +192,3 @@ Dieser Hinweis ergänzt den Haftungs- und Gewährleistungsausschluss der **MIT-L
 
 - AndiO91
 - ChatGPT (OpenAI) – Unterstützung bei Entwicklung, REST-API-Auswertung und Home-Assistant-Integration
-
-## Version
-
-Aktueller Stand: **0.7.2**
