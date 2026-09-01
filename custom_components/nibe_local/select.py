@@ -22,6 +22,17 @@ def supports_smart_mode(device: dict | None) -> bool:
     return isinstance(device, dict) and "smartMode" in device
 
 
+def mapped_option(value: int | str | None, mapping: dict[int, str]) -> str | None:
+    """Map enum values robustly when firmware returns numeric strings."""
+    if value is None:
+        return None
+    try:
+        normalized = int(value)
+    except (TypeError, ValueError):
+        return str(value)
+    return mapping.get(normalized, str(value))
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -106,8 +117,8 @@ class NibePointSelect(NibePointEntity, SelectEntity):
             return None
 
         mapping = self._mapping()
-        if mapping and isinstance(value, int):
-            return mapping.get(value, str(value))
+        if mapping:
+            return mapped_option(value, mapping)
         return str(value)
 
     async def async_select_option(self, option: str) -> None:
