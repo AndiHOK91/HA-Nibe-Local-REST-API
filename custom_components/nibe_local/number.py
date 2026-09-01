@@ -1,6 +1,8 @@
 """Writable numeric settings for NIBE Local REST."""
 from __future__ import annotations
 
+import math
+
 from homeassistant.components.number import NumberEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -38,7 +40,7 @@ def metadata_limits(point: dict, current: float | None) -> tuple[float, float] |
     minimum = md.get("minValue")
     maximum = md.get("maxValue")
 
-    if not isinstance(divisor, (int, float)) or divisor == 0:
+    if not isinstance(divisor, (int, float)) or divisor <= 0:
         return None
     if not isinstance(minimum, (int, float)) or not isinstance(maximum, (int, float)):
         return None
@@ -48,6 +50,16 @@ def metadata_limits(point: dict, current: float | None) -> tuple[float, float] |
         return None
 
     return float(minimum / divisor), float(maximum / divisor)
+
+
+def value_is_representable(point: dict, value: float) -> bool:
+    """Return whether a scaled value maps exactly to a NIBE integer raw value."""
+    md = point.get("metadata") or {}
+    divisor = md.get("divisor") or 1
+    if not isinstance(divisor, (int, float)) or divisor <= 0:
+        return False
+    raw_value = value * divisor
+    return math.isclose(raw_value, round(raw_value), rel_tol=0.0, abs_tol=1e-9)
 
 
 class NibeNumber(NibePointEntity, NumberEntity):
@@ -89,7 +101,7 @@ class NibeNumber(NibePointEntity, NumberEntity):
     def native_step(self) -> float:
         md = (self.point or {}).get("metadata") or {}
         divisor = md.get("divisor") or 1
-        return 1 / divisor if isinstance(divisor, (int, float)) and divisor else 1
+        return 1 / divisor if isinstance(divisor, (int, float)) and divisor > 0 else 1
 
     async def async_set_native_value(self, value: float) -> None:
         current = self.native_value
@@ -105,6 +117,12 @@ class NibeNumber(NibePointEntity, NumberEntity):
             raise HomeAssistantError(
                 f"Wert {value} liegt außerhalb des erlaubten Bereichs "
                 f"{minimum} bis {maximum}."
+            )
+
+        if not value_is_representable(self.point or {}, value):
+            raise HomeAssistantError(
+                f"Wert {value} passt nicht zur von NIBE vorgegebenen Schrittweite "
+                f"{self.native_step}."
             )
 
         await self.coordinator.api.patch_point(
