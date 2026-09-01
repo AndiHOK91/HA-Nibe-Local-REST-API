@@ -27,9 +27,14 @@ def fallback_backoff_delay(failure_streak: int) -> int:
     return FALLBACK_BACKOFF_STEPS_SECONDS[step]
 
 
-def should_skip_fallback_scan(*, now: float, next_attempt_at: float) -> bool:
+def should_skip_fallback_scan(
+    *,
+    now: float,
+    next_attempt_at: float,
+    has_previous_points: bool = True,
+) -> bool:
     """Return whether the expensive individual-point fallback is still backed off."""
-    return now < next_attempt_at
+    return has_previous_points and now < next_attempt_at
 
 
 def merge_point_updates(
@@ -181,7 +186,9 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         previous_points = (self.data or {}).get("points") or {}
 
         if should_skip_fallback_scan(
-            now=now, next_attempt_at=self._next_fallback_attempt
+            now=now,
+            next_attempt_at=self._next_fallback_attempt,
+            has_previous_points=bool(previous_points),
         ):
             _LOGGER.debug(
                 "Bulk /points still returned no usable data; keeping previous values "
