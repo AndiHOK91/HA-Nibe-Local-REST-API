@@ -13,7 +13,7 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
-from .api import NibeApiError, NibeAuthError, NibeLocalApi
+from .api import NibeApiError, NibeAuthError, NibeLocalApi, async_resolve_host_ip
 from .const import (
     COMMAND_POLL_DELAY_OPTIONS_MS,
     CONF_AUTH_HEADER,
@@ -193,17 +193,21 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 return self.async_abort(reason="reauth_successful")
 
+        host = str(current.get(CONF_HOST, ""))
+        ip_address = await async_resolve_host_ip(host) if host else None
         return self.async_show_form(
             step_id="reauth_confirm",
             data_schema=_reauth_schema(current),
             errors=errors,
+            description_placeholders={
+                "device_name": self._reauth_entry.title or "NIBE Local REST",
+                "host": host or "–",
+                "ip_address": ip_address or "nicht auflösbar",
+            },
         )
 
     @staticmethod
     def async_get_options_flow(config_entry):
-        # Home Assistant injects the ConfigEntry into OptionsFlow and exposes it
-        # as self.config_entry. Since HA 2025.12 it must no longer be passed to
-        # or assigned by the custom flow itself.
         return NibeLocalOptionsFlow()
 
 
@@ -212,8 +216,6 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input=None):
         errors: dict[str, str] = {}
-
-        # Current effective values = original setup data overridden by options.
         current = {**self.config_entry.data, **self.config_entry.options}
 
         if user_input is not None:
@@ -226,11 +228,8 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             except NibeApiError:
                 errors["base"] = "cannot_connect"
             else:
-                # Options contain the complete effective configuration so setup
-                # can simply overlay them on top of the original entry data.
                 return self.async_create_entry(title="", data=candidate)
 
-        # Never pre-fill/show stored sensitive credentials in the UI.
         return self.async_show_form(
             step_id="init",
             data_schema=_connection_schema(
