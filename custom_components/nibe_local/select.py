@@ -17,13 +17,22 @@ from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, raw_value
 
 
+def supports_smart_mode(device: dict | None) -> bool:
+    """Return whether the NIBE device response exposes Smart Mode support."""
+    return isinstance(device, dict) and "smartMode" in device
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: NibeCoordinator = entry.runtime_data
-    entities: list[SelectEntity] = [NibeSmartModeSelect(coordinator)]
+    entities: list[SelectEntity] = []
+
+    device = (coordinator.data or {}).get("device")
+    if supports_smart_mode(device):
+        entities.append(NibeSmartModeSelect(coordinator))
 
     for definition in POINTS:
         if definition.platform != "select":
