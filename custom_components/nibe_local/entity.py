@@ -184,6 +184,20 @@ def to_raw(point: dict[str, Any], value: float) -> int:
     return int(round(value * divisor))
 
 
+def coordinator_device_info(coordinator: NibeCoordinator) -> DeviceInfo:
+    """Build the shared Home Assistant device info for coordinator entities."""
+    device = (coordinator.data or {}).get("device", {})
+    product = device.get("product") or {}
+    serial = product.get("serialNumber") or coordinator.api.device_id
+    return DeviceInfo(
+        identifiers={(DOMAIN, str(serial))},
+        manufacturer=product.get("manufacturer") or "NIBE",
+        name=product.get("name") or "NIBE VVM S320",
+        model=product.get("name"),
+        sw_version=product.get("firmwareId"),
+    )
+
+
 class NibePointEntity(CoordinatorEntity[NibeCoordinator]):
     _attr_has_entity_name = True
 
@@ -217,16 +231,7 @@ class NibePointEntity(CoordinatorEntity[NibeCoordinator]):
 
     @property
     def device_info(self) -> DeviceInfo:
-        device = (self.coordinator.data or {}).get("device", {})
-        product = device.get("product") or {}
-        serial = product.get("serialNumber") or self.coordinator.api.device_id
-        return DeviceInfo(
-            identifiers={(DOMAIN, str(serial))},
-            manufacturer=product.get("manufacturer") or "NIBE",
-            name=product.get("name") or "NIBE VVM S320",
-            model=product.get("name"),
-            sw_version=product.get("firmwareId"),
-        )
+        return coordinator_device_info(self.coordinator)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
