@@ -18,6 +18,8 @@ Die Integration stellt zahlreiche Werte und Funktionen der NIBE-Anlage als Home-
 - Diagnosewerte der Außeneinheit, EEV/EVI und Abtauung
 - Alarm- und Meldungsinformationen
 - verschiedene schreibbare Einstellungen als Schalter, Auswahlfelder, Zahlenwerte und Uhrzeiten
+- automatische Neuauthentifizierung bei abgelehnten Zugangsdaten
+- Home-Assistant-Benachrichtigungen bei Authentifizierungs- und länger anhaltenden Verbindungsfehlern
 
 Die Entitäten werden von Home Assistant regelmäßig über die lokale REST API aktualisiert. Das Polling-Intervall kann in den Optionen der Integration angepasst werden.
 
@@ -100,13 +102,35 @@ Eine Quittier- oder Reset-Funktion für Alarme ist bewusst nicht enthalten.
 
 **Hinweis:** Die Alarmdarstellung konnte bislang noch nicht praktisch getestet werden, da während der Entwicklung und des laufenden Tests keine Alarme an der Anlage aufgetreten sind.
 
+## Zugangsdaten und Neuauthentifizierung
+
+Wenn die NIBE REST API die gespeicherten Zugangsdaten ablehnt, erkennt die Integration den Authentifizierungsfehler und startet den Home-Assistant-Reauthentifizierungsablauf.
+
+Im Reauthentifizierungsdialog werden zur besseren Zuordnung der Gerätename, der konfigurierte Host und die aufgelöste IP-Adresse angezeigt. So lassen sich auch fehlerhafte Hostnamen oder Änderungen im Netzwerk leichter erkennen.
+
+Passwort und Authorization-Header werden in den Eingabemasken maskiert dargestellt und nicht mit dem gespeicherten Wert vorausgefüllt. Bleibt eines dieser Felder leer, wird der bisher gespeicherte Wert beibehalten.
+
+Als Alternative zu Benutzername und Passwort kann ein vollständiger HTTP-Authorization-Header verwendet werden, zum Beispiel `Basic dXNlcjpwYXNzd29ydA==`. Der Wert nach `Basic` muss Base64-codiert sein.
+
+## Home-Assistant-Benachrichtigungen
+
+Die Integration erzeugt bei wichtigen Verbindungsproblemen Persistent Notifications direkt in Home Assistant:
+
+- **Zugangsdaten abgelehnt:** Die Benachrichtigung erscheint sofort und der Reauthentifizierungsablauf wird gestartet.
+- **REST API nicht erreichbar:** Eine Benachrichtigung erscheint erst, wenn die Verbindung mindestens **2 Minuten** durchgehend gestört ist. Kurze Netzwerkunterbrechungen erzeugen dadurch keine unnötige Meldung.
+- **Verbindung wiederhergestellt:** Eine zuvor erzeugte Verbindungs- oder Authentifizierungsbenachrichtigung wird nach erfolgreicher Kommunikation automatisch entfernt.
+
+Die Meldungen enthalten Gerätename, konfigurierten Host und aufgelöste IP-Adresse. Zugangsdaten oder Authorization-Header werden dabei nicht ausgegeben.
+
 ## Lokale Kommunikation und Polling
 
 Im normalen Betrieb werden die verfügbaren NIBE-Punkte gesammelt über den lokalen REST-Endpunkt abgefragt. Falls diese Sammelabfrage nicht ausgewertet werden kann, nutzt die Integration einen Einzelpunkt-Fallback.
 
-Nach einem Schreibbefehl wird der betroffene Punkt gezielt neu gelesen, anstatt jedes Mal die komplette Anlage erneut abzufragen. Dadurch werden Schaltvorgänge schneller bestätigt und unnötige REST-Anfragen vermieden.
+Damit ein dauerhaft gestörter Sammel-Endpunkt nicht unnötig viele Einzelabfragen verursacht, wird der vollständige Einzelpunkt-Fallback mit zunehmender Wartezeit ausgeführt: zunächst nach 30 Sekunden, danach nach 60 Sekunden und anschließend maximal alle 120 Sekunden. Die Sammelabfrage selbst wird weiterhin bei jedem regulären Poll versucht, sodass eine wieder funktionierende REST API sofort erkannt wird.
 
-Bei abgelehnten Zugangsdaten erzeugt die Integration sofort eine Home-Assistant-Benachrichtigung und startet die Neuauthentifizierung. Ist die lokale REST API durchgehend mindestens zwei Minuten nicht erreichbar, wird ebenfalls eine Benachrichtigung erzeugt. Nach erfolgreicher Wiederherstellung werden diese Meldungen automatisch entfernt. Die Meldungen enthalten den Gerätenamen, den konfigurierten Host und die aufgelöste IP-Adresse zur leichteren Zuordnung und Fehlersuche.
+Wenn während eines Einzelpunkt-Fallbacks nur ein Teil der Werte erfolgreich gelesen werden kann, bleiben zuvor bekannte Werte der übrigen Punkte erhalten.
+
+Nach einem Schreibbefehl wird der betroffene Punkt gezielt neu gelesen, anstatt jedes Mal die komplette Anlage erneut abzufragen. Dadurch werden Schaltvorgänge schneller bestätigt und unnötige REST-Anfragen vermieden.
 
 Das Polling-Intervall und die Verzögerung für die Rückmeldung nach Schaltbefehlen können in den Optionen der Integration eingestellt werden.
 
@@ -117,6 +141,8 @@ Das Polling-Intervall und die Verzögerung für die Rückmeldung nach Schaltbefe
 3. Unter **Einstellungen → Geräte & Dienste** die Integration **NIBE Local REST** hinzufügen.
 4. Host/IP-Adresse, Port, Geräte-ID und Zugangsdaten eintragen.
 5. Bei einem lokal selbstsignierten Zertifikat kann die SSL-Zertifikatsprüfung deaktiviert werden.
+
+Für Version 0.6.1 ist mindestens **Home Assistant 2024.12.0** vorgesehen.
 
 ## Hinweise
 
