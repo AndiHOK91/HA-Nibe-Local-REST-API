@@ -15,7 +15,9 @@ from custom_components.nibe_local.const import (
     POINT_VENTILATION_MODE,
 )
 from custom_components.nibe_local.coordinator import (
+    CONNECTION_NOTIFICATION_DELAY_SECONDS,
     FALLBACK_BACKOFF_STEPS_SECONDS,
+    connection_failure_notification_due,
     fallback_backoff_delay,
     merge_point_updates,
     should_skip_fallback_scan,
@@ -146,6 +148,22 @@ def test_should_skip_fallback_scan_respects_window() -> None:
     assert should_skip_fallback_scan(now=100.0, next_attempt_at=110.0)
     assert not should_skip_fallback_scan(now=110.0, next_attempt_at=110.0)
     assert not should_skip_fallback_scan(now=120.0, next_attempt_at=110.0)
+
+
+def test_connection_notification_waits_two_minutes() -> None:
+    assert CONNECTION_NOTIFICATION_DELAY_SECONDS == 120
+    assert not connection_failure_notification_due(
+        now=100.0, failure_started_at=None
+    )
+    assert not connection_failure_notification_due(
+        now=219.9, failure_started_at=100.0
+    )
+    assert connection_failure_notification_due(
+        now=220.0, failure_started_at=100.0
+    )
+    assert connection_failure_notification_due(
+        now=300.0, failure_started_at=100.0
+    )
 
 
 def test_merge_point_updates_preserves_missing_old_values() -> None:
