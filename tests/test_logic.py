@@ -2,17 +2,27 @@
 
 from datetime import time
 
+from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+
 from custom_components.nibe_local.api import NibeLocalApi
+from custom_components.nibe_local.config_flow import merge_keep_credentials
 from custom_components.nibe_local.const import (
+    CONF_AUTH_HEADER,
     POINT_BY_ID,
     POINT_COOLING_ALLOWED,
     POINT_HEATING_ALLOWED,
     POINT_OPERATING_MODE_SETTING,
     POINT_VENTILATION_MODE,
 )
+from custom_components.nibe_local.coordinator import (
+    FALLBACK_BACKOFF_STEPS_SECONDS,
+    fallback_backoff_delay,
+    merge_point_updates,
+    should_skip_fallback_scan,
+)
 from custom_components.nibe_local.entity import FRIENDLY_NAMES, scaled_value, to_raw
 from custom_components.nibe_local.number import metadata_limits
-from custom_components.nibe_local.select import NibePointSelect
+from custom_components.nibe_local.select import NibePointSelect, supports_smart_mode
 from custom_components.nibe_local.sensor import (
     OPERATING_MODE_MAP,
     periodic_hot_water_date,
@@ -120,3 +130,68 @@ def test_metadata_limits_scale_values() -> None:
 
 def test_friendly_names_only_reference_active_points() -> None:
     assert set(FRIENDLY_NAMES) == set(POINT_BY_ID)
+
+
+def test_fallback_backoff_delay_caps_at_120_seconds() -> None:
+    assert FALLBACK_BACKOFF_STEPS_SECONDS == (30, 60, 120)
+    assert fallback_backoff_delay(0) == 30
+    assert fallback_backoff_delay(1) == 60
+    assert fallback_backoff_delay(2) == 120
+    assert fallback_backoff_delay(3) == 120
+    assert fallback_backoff_delay(20) == 120
+    assert fallback_backoff_delay(-1) == 30
+
+
+def test_should_skip_fallback_scan_respects_window() -> None:
+    assert should_skip_fallback_scan(now=100.0, next_attempt_at=110.0)
+    assert not should_skip_fallback_scan(now=110.0, next_attempt_at=110.0)
+    assert not should_skip_fallback_scan(now=120.0, next_attempt_at=110.0)
+
+
+def test_merge_point_updates_preserves_missing_old_values() -> None:
+    previous = {"4": {"value": "old"}, "8": {"value": "keep"}}
+    refreshed = {"4": {"value": "new"}, "10": {"value": "added"}}
+    assert merge_point_updates(previous, refreshed) == {
+        "4": {"value": "new"},
+        "8": {"value": "keep"},
+        "10": {"value": "added"},
+    }
+
+
+def test_merge_keep_credentials_preserves_masked_secrets() -> None:
+    current = {
+        CONF_USERNAME: "andi",
+        CONF_PASSWORD: "old-password",
+        CONF_AUTH_HEADER: "Basic old",
+    }
+    candidate = {
+        CONF_USERNAME: "andi",
+        CONF_PASSWORD: "",
+        CONF_AUTH_HEADER: "",
+    }
+    merged = merge_keep_credentials(candidate, current)
+    assert merged[CONF_PASSWORD] == "old-password"
+    assert merged[CONF_AUTH_HEADER] == "Basic old"
+
+
+def test_merge_keep_credentials_replaces_provided_secrets() -> None:
+    current = {
+        CONF_USERNAME: "andi",
+        CONF_PASSWORD: "old-password",
+        CONF_AUTH_HEADER: "Basic old",
+    }
+    candidate = {
+        CONF_USERNAME: "andi",
+        CONF_PASSWORD: "new-password",
+        CONF_AUTH_HEADER: "Basic new",
+    }
+    merged = merge_keep_credentials(candidate, current)
+    assert merged[CONF_PASSWORD] == "new-password"
+    assert merged[CONF_AUTH_HEADER] == "Basic new"
+
+
+def test_supports_smart_mode_only_when_device_exposes_key() -> None:
+    assert supports_smart_mode({"smartMode": "normal"})
+    assert supports_smart_mode({"smartMode": None})
+    assert not supports_smart_mode({})
+    assert not supports_smart_mode(None)
