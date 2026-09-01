@@ -106,6 +106,8 @@ Im normalen Betrieb werden die verfügbaren NIBE-Punkte gesammelt über den loka
 
 Nach einem Schreibbefehl wird der betroffene Punkt gezielt neu gelesen, anstatt jedes Mal die komplette Anlage erneut abzufragen. Dadurch werden Schaltvorgänge schneller bestätigt und unnötige REST-Anfragen vermieden.
 
+Bei abgelehnten Zugangsdaten erzeugt die Integration sofort eine Home-Assistant-Benachrichtigung und startet die Neuauthentifizierung. Ist die lokale REST API durchgehend mindestens zwei Minuten nicht erreichbar, wird ebenfalls eine Benachrichtigung erzeugt. Nach erfolgreicher Wiederherstellung werden diese Meldungen automatisch entfernt. Die Meldungen enthalten den Gerätenamen, den konfigurierten Host und die aufgelöste IP-Adresse zur leichteren Zuordnung und Fehlersuche.
+
 Das Polling-Intervall und die Verzögerung für die Rückmeldung nach Schaltbefehlen können in den Optionen der Integration eingestellt werden.
 
 ## Installation
@@ -141,4 +143,4 @@ Dieser Hinweis ergänzt den Haftungs- und Gewährleistungsausschluss der **MIT-L
 
 ## Version
 
-Aktueller Stand: **0.6.0**
+Aktueller Stand: **0.6.1**
