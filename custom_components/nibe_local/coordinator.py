@@ -130,11 +130,10 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def _record_success(self) -> None:
         """Clear stale connection/auth notifications after a successful update."""
         self._connection_failure_started_at = None
-        if self._connection_notification_active:
-            persistent_notification.async_dismiss(
-                self.hass, self._connection_notification_id
-            )
-            self._connection_notification_active = False
+        self._connection_notification_active = False
+        persistent_notification.async_dismiss(
+            self.hass, self._connection_notification_id
+        )
         persistent_notification.async_dismiss(self.hass, self._auth_notification_id)
 
     async def _async_update_data(self) -> dict[str, Any]:
