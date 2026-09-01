@@ -2,26 +2,71 @@
   "config": {
     "step": {
       "user": {
-        "title": "NIBE Local REST",
-        "description": "Use either username/password for HTTP Basic authentication, or enter a complete Authorization header (for example 'Basic ...').",
+        "title": "Set up NIBE Local REST",
+        "description": "Connect to the local NIBE REST API.",
         "data": {
           "host": "Host / IP address",
           "port": "Port",
-          "device_id": "Device ID or serial number",
+          "device_id": "Device ID",
           "username": "Username",
           "password": "Password",
-          "auth_header": "Authorization header (optional alternative)",
+          "auth_header": "Authorization header (optional)",
           "verify_ssl": "Verify TLS certificate",
-          "scan_interval": "Polling interval (seconds)"
+          "scan_interval": "Polling interval in seconds",
+          "command_poll_delay_ms": "Command polling delay (ms)"
+        },
+        "data_description": {
+          "password": "The password is shown as a masked value.",
+          "auth_header": "Complete HTTP Authorization header in the format “Basic <Base64>”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
+        }
+      },
+      "reauth_confirm": {
+        "title": "NIBE Local REST – update credentials",
+        "description": "The NIBE rejected the stored credentials. Enter the current credentials. Leave the password or Authorization header field empty to keep the stored value.",
+        "data": {
+          "username": "Username",
+          "password": "New password (empty = unchanged)",
+          "auth_header": "New Authorization header (empty = unchanged)"
+        },
+        "data_description": {
+          "auth_header": "Complete HTTP Authorization header in the format “Basic <Base64>”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
         }
       }
     },
     "error": {
-      "cannot_connect": "Could not connect to the NIBE local API",
-      "invalid_auth": "Authentication failed"
+      "cannot_connect": "Could not connect to the NIBE local API.",
+      "invalid_auth": "Username, password, or Authorization header is invalid."
     },
     "abort": {
-      "already_configured": "This NIBE device is already configured"
+      "already_configured": "This NIBE device is already configured.",
+      "reauth_successful": "Credentials updated successfully.",
+      "reauth_entry_missing": "The NIBE configuration to update could not be found."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure NIBE Local REST",
+        "description": "Change the host, credentials, and polling interval. Password and Authorization header are not displayed; leave either field empty to keep the stored value.",
+        "data": {
+          "host": "Host / IP address",
+          "port": "Port",
+          "device_id": "Device ID",
+          "username": "Username",
+          "password": "New password (empty = unchanged)",
+          "auth_header": "New Authorization header (empty = unchanged)",
+          "verify_ssl": "Verify TLS certificate",
+          "scan_interval": "Polling interval in seconds",
+          "command_poll_delay_ms": "Command polling delay (ms)"
+        },
+        "data_description": {
+          "auth_header": "Complete HTTP Authorization header in the format “Basic <Base64>”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect using the new settings.",
+      "invalid_auth": "Username, password, or Authorization header is invalid."
     }
   }
 }
