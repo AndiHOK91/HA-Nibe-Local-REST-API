@@ -14,35 +14,58 @@
           "verify_ssl": "SSL-Zertifikat prüfen",
           "scan_interval": "Abfrageintervall in Sekunden",
           "command_poll_delay_ms": "Schalt-Poll-Verzögerung (ms)"
+        },
+        "data_description": {
+          "password": "Das Passwort wird maskiert dargestellt.",
+          "auth_header": "Vollständiger HTTP-Authorization-Header im Format „Basic <Base64>“. Der Wert nach „Basic“ muss Base64-codiert sein und wird maskiert dargestellt."
+        }
+      },
+      "reauth_confirm": {
+        "title": "NIBE Local REST – Zugangsdaten erneuern",
+        "description": "Die NIBE hat die gespeicherten Zugangsdaten abgelehnt. Bitte die aktuellen Zugangsdaten eingeben. Leere Passwort- oder Authorization-Header-Felder behalten den jeweils gespeicherten Wert bei.",
+        "data": {
+          "username": "Benutzername",
+          "password": "Neues Passwort (leer = unverändert)",
+          "auth_header": "Neuer Authorization-Header (leer = unverändert)"
+        },
+        "data_description": {
+          "auth_header": "Vollständiger HTTP-Authorization-Header im Format „Basic <Base64>“. Der Wert nach „Basic“ muss Base64-codiert sein und wird maskiert dargestellt."
         }
       }
     },
     "error": {
       "cannot_connect": "Verbindung zur NIBE konnte nicht hergestellt werden.",
-      "invalid_auth": "Benutzername oder Passwort ist ungültig."
+      "invalid_auth": "Benutzername, Passwort oder Authorization-Header ist ungültig."
+    },
+    "abort": {
+      "reauth_successful": "Zugangsdaten erfolgreich aktualisiert.",
+      "reauth_entry_missing": "Die zu aktualisierende NIBE-Konfiguration wurde nicht gefunden."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "NIBE Local REST konfigurieren",
-        "description": "IP-Adresse, Zugangsdaten und Abfrageintervall ändern. Das Passwortfeld leer lassen, um das vorhandene Passwort beizubehalten.",
+        "description": "IP-Adresse, Zugangsdaten und Abfrageintervall ändern. Passwort und Authorization-Header werden nicht angezeigt; das jeweilige Feld leer lassen, um den gespeicherten Wert beizubehalten.",
         "data": {
           "host": "IP-Adresse / Hostname",
           "port": "Port",
           "device_id": "Geräte-ID",
           "username": "Benutzername",
           "password": "Neues Passwort (leer = unverändert)",
-          "auth_header": "Authorization-Header (optional)",
+          "auth_header": "Neuer Authorization-Header (leer = unverändert)",
           "verify_ssl": "SSL-Zertifikat prüfen",
           "scan_interval": "Abfrageintervall in Sekunden",
           "command_poll_delay_ms": "Schalt-Poll-Verzögerung (ms)"
+        },
+        "data_description": {
+          "auth_header": "Vollständiger HTTP-Authorization-Header im Format „Basic <Base64>“. Der Wert nach „Basic“ muss Base64-codiert sein und wird maskiert dargestellt."
         }
       }
     },
     "error": {
       "cannot_connect": "Verbindung mit den neuen Einstellungen fehlgeschlagen.",
-      "invalid_auth": "Benutzername oder Passwort ist ungültig."
+      "invalid_auth": "Benutzername, Passwort oder Authorization-Header ist ungültig."
     }
   }
 }
