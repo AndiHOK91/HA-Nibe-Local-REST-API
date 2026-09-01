@@ -56,6 +56,11 @@ def connection_failure_notification_due(
     return failure_started_at is not None and now - failure_started_at >= delay
 
 
+def auth_failure_notification_due(*, notification_active: bool) -> bool:
+    """Return whether an authentication failure notification should be created."""
+    return not notification_active
+
+
 class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(
         self,
@@ -78,6 +83,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._next_fallback_attempt = 0.0
         self._connection_failure_started_at: float | None = None
         self._connection_notification_active = False
+        self._auth_notification_active = False
         self.bulk_fallback_active = False
         self.last_successful_poll: datetime | None = None
         self.last_connection_error: datetime | None = None
@@ -99,7 +105,12 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
 
     async def _notify_auth_failure(self) -> None:
-        """Create or update the authentication failure notification immediately."""
+        """Create the authentication failure notification once per outage."""
+        if not auth_failure_notification_due(
+            notification_active=self._auth_notification_active
+        ):
+            return
+
         label = await self._connection_label()
         persistent_notification.async_create(
             self.hass,
@@ -110,6 +121,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             title="NIBE Local REST – Zugangsdaten abgelehnt",
             notification_id=self._auth_notification_id,
         )
+        self._auth_notification_active = True
 
     async def _record_connection_failure(self) -> None:
         """Notify only after the REST API has been unreachable for two minutes."""
@@ -142,6 +154,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.last_successful_poll = dt_util.utcnow()
         self._connection_failure_started_at = None
         self._connection_notification_active = False
+        self._auth_notification_active = False
         persistent_notification.async_dismiss(
             self.hass, self._connection_notification_id
         )
