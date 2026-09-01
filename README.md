@@ -141,4 +141,4 @@ Dieser Hinweis ergänzt den Haftungs- und Gewährleistungsausschluss der **MIT-L
 
 ## Version
 
-Aktueller Stand: **0.5.1**
+Aktueller Stand: **0.6.0**
