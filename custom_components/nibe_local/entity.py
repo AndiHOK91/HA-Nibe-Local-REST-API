@@ -7,13 +7,8 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, POINT_BY_ID, PointDef
+from .const import DOMAIN, PointDef
 from .coordinator import NibeCoordinator
-
-
-# Backward-compatible export for existing tests and external imports. Entity names
-# are now resolved through Home Assistant translations via translation_key.
-FRIENDLY_NAMES = {point_id: definition.key for point_id, definition in POINT_BY_ID.items()}
 
 
 def _clean(text: str | None) -> str:
@@ -24,7 +19,7 @@ def point_value(point: dict[str, Any]) -> dict[str, Any]:
     """Return the value object.
 
     Current NIBE firmware uses the key "value". Older documentation/examples
-    may refer to it as "datavalue", so keep both for compatibility.
+    may refer to it as "datavalue", so keep both for API compatibility.
     """
     return point.get("value") or point.get("datavalue") or {}
 
