@@ -69,7 +69,7 @@ def coordinator_device_info(coordinator: NibeCoordinator) -> DeviceInfo:
     return DeviceInfo(
         identifiers={(DOMAIN, str(serial))},
         manufacturer=product.get("manufacturer") or "NIBE",
-        name=product.get("name") or "NIBE VVM S320",
+        name=product.get("name") or "NIBE API",
         model=product.get("name"),
         sw_version=product.get("firmwareId"),
     )
