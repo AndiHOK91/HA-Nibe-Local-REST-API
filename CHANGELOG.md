@@ -8,6 +8,7 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 - Automatische Entfernung des früheren Standalone-Sensors `last_successful_poll` aus der Entity Registry entfernt; die eigene Installation wurde bereits bereinigt.
 - Nicht mehr benötigte Kompatibilitäts-Exporte `FRIENDLY_NAMES`, `OPERATING_MODE_MAP` und `ENUM_LABELS` entfernt.
 - Nicht mehr verwendetes internes `POINT_BY_ID`-Lookup entfernt; `POINTS` bleibt die zentrale Definition aller NIBE-Punkte.
+- Harte deutsche Namensüberschreibungen für die BWZ-Zeitwerte entfernt; auch diese Number-Entitäten verwenden jetzt ausschließlich die vorhandenen Home-Assistant-Übersetzungen.
 - Regressionstests auf die aktuelle, sprachneutrale Select-State-Struktur umgestellt.
 - Interne Setup- und Entity-Basis vereinfacht; Point-IDs, Unique IDs, Translation Keys und aktuelle Entity-IDs bleiben unverändert.
 
