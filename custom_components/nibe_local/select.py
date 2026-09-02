@@ -61,6 +61,7 @@ async def async_setup_entry(
 class NibePointSelect(NibePointEntity, SelectEntity):
     """Select for NIBE enum-like points."""
 
+    # Kept for compatibility with callers that imported the previous labels.
     ENUM_LABELS: dict[int, dict[int, str]] = {
         POINT_OPERATING_MODE_SETTING: {
             0: "Auto",
@@ -76,17 +77,32 @@ class NibePointSelect(NibePointEntity, SelectEntity):
         },
     }
 
-    HOT_WATER_DEMAND_LABELS = {
-        0: "Niedrig",
-        1: "Mittel",
-        2: "Hoch",
+    ENUM_OPTIONS: dict[int, dict[int, str]] = {
+        POINT_OPERATING_MODE_SETTING: {
+            0: "auto",
+            1: "manual",
+            2: "auxiliary_heat_only",
+        },
+        POINT_VENTILATION_MODE: {
+            0: "normal",
+            1: "off",
+            2: "reduced",
+            3: "increased",
+            4: "maximum",
+        },
+    }
+
+    HOT_WATER_DEMAND_OPTIONS = {
+        0: "low",
+        1: "medium",
+        2: "high",
     }
 
     def _mapping(self) -> dict[int, str] | None:
         point_id = self.definition.point_id
         if point_id == POINT_HOT_WATER_DEMAND:
-            return self.HOT_WATER_DEMAND_LABELS
-        return self.ENUM_LABELS.get(point_id)
+            return self.HOT_WATER_DEMAND_OPTIONS
+        return self.ENUM_OPTIONS.get(point_id)
 
     @property
     def options(self) -> list[str]:
@@ -124,7 +140,7 @@ class NibePointSelect(NibePointEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         mapping = self._mapping()
         if mapping:
-            reverse = {label: raw for raw, label in mapping.items()}
+            reverse = {state: raw for raw, state in mapping.items()}
             if option not in reverse:
                 raise ValueError(f"Unknown option {option!r}")
             value: int | str = reverse[option]
@@ -142,13 +158,15 @@ class NibePointSelect(NibePointEntity, SelectEntity):
         attrs = dict(super().extra_state_attributes or {})
         mapping = self._mapping()
         if mapping:
-            attrs["raw_to_label"] = mapping
+            attrs["raw_to_state"] = mapping
         return attrs
 
 
 class NibeSmartModeSelect(CoordinatorEntity[NibeCoordinator], SelectEntity):
+    """NIBE Smart Mode select."""
+
     _attr_has_entity_name = True
-    _attr_name = "Smart Mode"
+    _attr_translation_key = "smart_mode"
     _attr_options = ["normal", "away"]
 
     def __init__(self, coordinator: NibeCoordinator) -> None:

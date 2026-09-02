@@ -2,6 +2,20 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST** werden hier versionsweise zusammengefasst.
 
+## 0.7.4
+
+- Entitätsnamen werden über Home-Assistant-Übersetzungen statt fest im Python-Code gesetzter deutscher Namen bereitgestellt.
+- Deutsche und englische Übersetzungen für Sensoren, Binärsensoren, Schalter, Number-, Select- und Time-Entitäten ergänzt.
+- Diagnose-Entitäten und Smart Mode vollständig in die Übersetzungsstruktur aufgenommen.
+- Zustände von Betriebspriorität, Betriebsmodus und Enteisungsanforderung auf stabile, übersetzbare `snake_case`-Werte umgestellt.
+- Select-Zustände für Betriebsmodus, Lüftung und Brauchwasserbedarf auf stabile, übersetzbare Werte umgestellt.
+- Fehlende deutsche Übersetzung für `already_configured` ergänzt.
+
+## 0.7.3
+
+- Lokale Light-/Dark-Branding-Dateien für Home Assistant ergänzt und Dateinamen vereinheitlicht.
+- Integrationsversion für die HACS-Veröffentlichung angehoben.
+
 ## 0.7.2
 
 - Wiederholte Authentifizierungsfehler erzeugen die Persistent Notification und die zugehörige Host-/IP-Auflösung nur einmal pro zusammenhängender Störung; nach erfolgreicher Kommunikation kann eine neue Störung wieder gemeldet werden.

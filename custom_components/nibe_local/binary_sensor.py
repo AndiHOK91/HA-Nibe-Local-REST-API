@@ -55,7 +55,7 @@ class NibeApiReachableBinarySensor(CoordinatorEntity[NibeCoordinator], BinarySen
     """Show whether the most recent regular coordinator poll succeeded."""
 
     _attr_has_entity_name = True
-    _attr_name = "REST API erreichbar"
+    _attr_translation_key = "api_reachable"
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
@@ -80,7 +80,7 @@ class NibeFallbackActiveBinarySensor(CoordinatorEntity[NibeCoordinator], BinaryS
     """Show whether bulk /points currently requires the individual-point fallback."""
 
     _attr_has_entity_name = True
-    _attr_name = "Einzelpunkt-Fallback aktiv"
+    _attr_translation_key = "fallback_active"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 

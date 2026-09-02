@@ -24,14 +24,24 @@ from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, coordinator_device_info, raw_value, scaled_value
 
 OPERATING_PRIORITY_MAP = {
-    10: "Aus",
-    20: "Brauchwasser",
-    30: "Heizung",
-    40: "Pool",
-    60: "Kühlung",
+    10: "off",
+    20: "hot_water",
+    30: "heating",
+    40: "pool",
+    60: "cooling",
 }
+# Backward-compatible label map for external imports.
 OPERATING_MODE_MAP = {0: "Auto", 1: "Manuell", 2: "Nur Zusatzheizung"}
-DEFROST_REQUESTED_MAP = {0: "Aus", 1: "Aktiv", 2: "Passiv"}
+OPERATING_MODE_STATE_MAP = {
+    0: "auto",
+    1: "manual",
+    2: "auxiliary_heat_only",
+}
+DEFROST_REQUESTED_MAP = {
+    0: "off",
+    1: "active",
+    2: "passive",
+}
 PERIODIC_HOT_WATER_DATE_EPOCH = date(2010, 1, 1)
 
 
@@ -81,7 +91,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == POINT_OPERATING_MODE_STATUS:
             value = raw_value(self.point or {})
             try:
-                return OPERATING_MODE_MAP.get(int(value), value)
+                return OPERATING_MODE_STATE_MAP.get(int(value), value)
             except (TypeError, ValueError):
                 return value
 
@@ -91,9 +101,9 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == POINT_DEFROST_REQUESTED:
             value = raw_value(self.point or {})
             try:
-                return DEFROST_REQUESTED_MAP.get(int(value), "Unbekannt")
+                return DEFROST_REQUESTED_MAP.get(int(value), "unknown")
             except (TypeError, ValueError):
-                return "Unbekannt"
+                return "unknown"
 
         value = scaled_value(self.point or {})
 
@@ -174,7 +184,7 @@ class NibeNotificationSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
     """Read-only sensor for active NIBE alarms/notifications."""
 
     _attr_has_entity_name = True
-    _attr_name = "Aktive Meldungen"
+    _attr_translation_key = "notifications"
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator)
@@ -200,7 +210,7 @@ class NibeNotificationSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
         summary = [
             f'{alarm["alarm_id"]} - {alarm["text"]}'
             if alarm.get("alarm_id") is not None
-            else str(alarm.get("text") or "Unbekannter Alarm")
+            else str(alarm.get("text") or "Unknown alarm")
             for alarm in alarms
         ]
         return {
@@ -229,7 +239,7 @@ class _NibeHealthTimestampSensor(CoordinatorEntity[NibeCoordinator], SensorEntit
 class NibeLastSuccessfulPollSensor(_NibeHealthTimestampSensor):
     """Timestamp of the most recent successful regular coordinator poll."""
 
-    _attr_name = "Letzter erfolgreicher Poll"
+    _attr_translation_key = "last_successful_poll"
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator)
@@ -243,7 +253,7 @@ class NibeLastSuccessfulPollSensor(_NibeHealthTimestampSensor):
 class NibeLastConnectionErrorSensor(_NibeHealthTimestampSensor):
     """Timestamp of the most recent REST API connection error."""
 
-    _attr_name = "Letzter Verbindungsfehler"
+    _attr_translation_key = "last_connection_error"
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator)
