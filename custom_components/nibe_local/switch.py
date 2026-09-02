@@ -10,6 +10,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
+    DOMAIN,
     POINTS,
     POINT_COOLING_ALLOWED,
     POINT_HEATING_ALLOWED,
@@ -120,8 +121,8 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
         )
         if refreshed is None:
             raise HomeAssistantError(
-                "Der aktuelle NIBE-Betriebsmodus konnte nicht geprüft werden. "
-                "Die Änderung wurde vorsorglich nicht gesendet."
+                translation_domain=DOMAIN,
+                translation_key="operating_mode_unavailable",
             )
 
         mode = self._operating_mode()
@@ -132,16 +133,9 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
         ):
             return
 
-        mode_label = {0: "Auto", 1: "Manuell", 2: "Nur Zusatzheizung"}.get(
-            mode, "Unbekannt"
-        )
-        point_label = (
-            "Heizung zulassen"
-            if self.definition.point_id == POINT_HEATING_ALLOWED
-            else "Kühlung zulassen"
-        )
         raise HomeAssistantError(
-            f"{point_label} ist im Betriebsmodus {mode_label} nur lesbar."
+            translation_domain=DOMAIN,
+            translation_key="write_not_allowed_in_current_mode",
         )
 
     async def async_turn_on(self, **kwargs) -> None:
@@ -279,13 +273,10 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator, VENTILATION_MODE_DEFINITION)
         self._attr_unique_id = f"{coordinator.api.device_id}_ventilation_plus"
+        self._attr_translation_key = "ventilation_plus"
         self._optimistic_state: bool | None = None
         self._expected_modes: set[int] | None = None
         self._verify_task: asyncio.Task[None] | None = None
-
-    @property
-    def name(self) -> str:
-        return "Lüftung +"
 
     @property
     def is_on(self) -> bool | None:
