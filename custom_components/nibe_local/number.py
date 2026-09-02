@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import POINTS, POINT_BWZ_OPERATING_TIME, POINT_BWZ_STANDSTILL_TIME
+from .const import POINTS
 from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, scaled_value, to_raw
 
@@ -69,14 +69,6 @@ def value_is_representable(point: dict, value: float) -> bool:
 
 
 class NibeNumber(NibePointEntity, NumberEntity):
-    @property
-    def name(self) -> str:
-        if self.definition.point_id == POINT_BWZ_OPERATING_TIME:
-            return "BWZ Betriebszeit"
-        if self.definition.point_id == POINT_BWZ_STANDSTILL_TIME:
-            return "BWZ Stillstandszeit"
-        return super().name
-
     @property
     def native_value(self) -> float | None:
         value = scaled_value(self.point or {})
