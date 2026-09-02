@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any
 
-# Alarm texts verified against NIBE N firmware 4.12.8.
-# Keep this table keyed by the actual NIBE alarm number, not by translation ID.
-ALARM_TEXTS_DE: dict[int, str] = {
+# German fallback texts verified against NIBE N firmware 4.12.8.
+# Prefer device-provided text so the NIBE device language is preserved.
+VERIFIED_ALARM_TEXTS_DE: dict[int, str] = {
     224: "Kom.fehler mit Zubehör Brauchwasserkomfort",
 }
 
@@ -23,31 +23,34 @@ def alarm_number(alarm: dict[str, Any]) -> int | None:
     return None
 
 
-def normalize_alarm(alarm: dict[str, Any]) -> dict[str, Any]:
+def normalize_alarm(
+    alarm: dict[str, Any], language: str | None = None
+) -> dict[str, Any]:
     """Normalize an alarm without exposing any write/reset operation."""
     number = alarm_number(alarm)
     api_header = alarm.get("header") or alarm.get("name") or alarm.get("title")
-    mapped_header = ALARM_TEXTS_DE.get(number) if number is not None else None
+    verified_german_text = (
+        VERIFIED_ALARM_TEXTS_DE.get(number)
+        if number is not None and (language or "").lower().startswith("de")
+        else None
+    )
+    fallback_text = f"Alarm {number}" if number is not None else "Alarm"
 
     normalized: dict[str, Any] = {
         "alarm_id": number,
-        "text": mapped_header or api_header or "Unbekannter Alarm",
+        "text": api_header or verified_german_text or fallback_text,
         "description": alarm.get("description"),
         "severity": alarm.get("severity", alarm.get("class")),
         "time": alarm.get("time"),
         "equipment": alarm.get("equipName", alarm.get("source")),
     }
 
-    # Preserve the device-provided header when it differs from our verified
-    # firmware mapping. This makes firmware/language differences visible while
-    # still providing a stable German text for known alarm numbers.
-    if api_header and api_header != normalized["text"]:
-        normalized["device_text"] = api_header
-
     return normalized
 
 
-def normalize_alarms(payload: Any) -> list[dict[str, Any]]:
+def normalize_alarms(
+    payload: Any, language: str | None = None
+) -> list[dict[str, Any]]:
     """Return a normalized list for the notification payload shapes seen so far."""
     alarms: Any = payload
     if isinstance(payload, dict):
@@ -56,4 +59,8 @@ def normalize_alarms(payload: Any) -> list[dict[str, Any]]:
     if not isinstance(alarms, list):
         return []
 
-    return [normalize_alarm(item) for item in alarms if isinstance(item, dict)]
+    return [
+        normalize_alarm(item, language)
+        for item in alarms
+        if isinstance(item, dict)
+    ]

@@ -13,6 +13,8 @@ from .const import DOMAIN, POINTS
 from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, scaled_value, to_raw
 
+PARALLEL_UPDATES = 1
+
 
 async def async_setup_entry(
     hass: HomeAssistant,

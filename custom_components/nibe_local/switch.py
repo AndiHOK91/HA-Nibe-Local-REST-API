@@ -22,6 +22,8 @@ from .const import (
 from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, raw_value
 
+PARALLEL_UPDATES = 1
+
 MORE_HOT_WATER_DEFINITION = next(
     definition for definition in POINTS if definition.point_id == POINT_MORE_HOT_WATER
 )

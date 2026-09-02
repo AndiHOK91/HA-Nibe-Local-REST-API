@@ -4,7 +4,18 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 
 ## 0.8.0 (in Entwicklung)
 
-- Legacy-Migration für alte `nibe_vvm_s320_*`-Entity-IDs entfernt. Die aktuelle `nibe_api_*`-Struktur gilt ab 0.8.0 als feste Basis.
+- Die NIBE-Geräte-ID ist jetzt fest auf `0` gesetzt und wird weder bei der Einrichtung noch in den Optionen angeboten.
+- Eine explizite Authentifizierungsmethode trennt **Benutzername + Passwort** und **Authorization-Header**. Beim Methodenwechsel werden Zugangsdaten der inaktiven Methode entfernt; bestehende Einträge ohne Methodenfeld werden kompatibel anhand des vorhandenen Headers eingeordnet.
+- Der Reauthentifizierungsdialog fragt nur noch die Zugangsdaten der aktiven Authentifizierungsmethode ab.
+- Smart Mode und die Meldungs-/Alarm-Entität werden demselben Home-Assistant-Gerät wie die übrigen NIBE-Entitäten zugeordnet.
+- Das Attribut `last_successful_poll` wurde von **REST API erreichbar** entfernt. Der Zeitpunkt bleibt coordinatorintern verfügbar, ohne bei jedem erfolgreichen Poll Recorder-Änderungen an dieser Entity zu erzeugen.
+- NIBE-Einheiten werden für Home Assistant normalisiert: `%RH` → `%` und `l/min` → `L/min`; Volumenstrom erhält damit eine passende Home-Assistant-Device-Class. Die Humidity-Device-Class wird nur aus der ursprünglichen NIBE-Einheit `%RH`, nicht aus beliebigen Prozentwerten abgeleitet.
+- Schreibzugriffe auf die NIBE REST API werden integrationsweit über einen gemeinsamen Lock serialisiert. Zusätzlich verwenden schreibende Plattformen `PARALLEL_UPDATES = 1`, während coordinatorbasierte Leseplattformen `PARALLEL_UPDATES = 0` verwenden.
+- Ungültige Select-Optionen erzeugen jetzt einen übersetzbaren `HomeAssistantError` statt eines hart codierten englischen `ValueError`.
+- Das Zusatzattribut `group` verwendet sprachneutrale Schlüssel (`system`, `heating`, `cooling`, `hot_water`, `energy`, `hydraulics`, `heat_pump`, `eev_defrost`, `ventilation`).
+- Alarmtexte aus der NIBE werden bevorzugt, damit die Gerätesprache erhalten bleibt. Verifizierte deutsche Alarmtexte dienen nur bei deutscher Home-Assistant-Sprache als Fallback; andere Sprachen und unbekannte Alarme ohne Gerätetext erhalten einen sprachneutralen `Alarm <Nummer>`-Fallback.
+- Regressionstests für feste Geräte-ID, Authentifizierungsmethoden, serialisierte Schreibzugriffe, Parallelitätsgrenzen, Einheitennormalisierung, Alarm-Fallbacks, Gruppen und übersetzbare Select-Fehler ergänzt.
+- Legacy-Migration für alte `nibe_vvm_s320_*`-Entity-IDs entfernt. Bereits bestehende aktuelle `nibe_api_*`-Entity-IDs bleiben erhalten; für eine frische Installation wird kein exaktes Entity-ID-Präfix garantiert, da Home Assistant die IDs aus Geräte- und Entitynamen erzeugt.
 - Automatische Entfernung des früheren Standalone-Sensors `last_successful_poll` aus der Entity Registry entfernt; die eigene Installation wurde bereits bereinigt.
 - Nicht mehr benötigte Kompatibilitäts-Exporte `FRIENDLY_NAMES`, `OPERATING_MODE_MAP` und `ENUM_LABELS` entfernt.
 - Nicht mehr verwendetes internes `POINT_BY_ID`-Lookup entfernt; `POINTS` bleibt die zentrale Definition aller NIBE-Punkte.

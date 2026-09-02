@@ -8,6 +8,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -15,10 +17,12 @@ from homeassistant.helpers.selector import (
 
 from .api import NibeApiError, NibeAuthError, NibeLocalApi, async_resolve_host_ip
 from .const import (
+    AUTH_METHOD_BASIC,
+    AUTH_METHOD_HEADER,
     COMMAND_POLL_DELAY_OPTIONS_MS,
     CONF_AUTH_HEADER,
+    CONF_AUTH_METHOD,
     CONF_COMMAND_POLL_DELAY_MS,
-    CONF_DEVICE_ID,
     CONF_SCAN_INTERVAL,
     CONF_VERIFY_SSL,
     DEFAULT_COMMAND_POLL_DELAY_MS,
@@ -26,9 +30,11 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     MIN_SCAN_INTERVAL,
+    NIBE_DEVICE_ID,
 )
 
-_CREDENTIAL_KEYS = (CONF_USERNAME, CONF_PASSWORD, CONF_AUTH_HEADER)
+_AUTH_KEYS = (CONF_AUTH_METHOD, CONF_USERNAME, CONF_PASSWORD, CONF_AUTH_HEADER)
+_AUTH_METHODS = (AUTH_METHOD_BASIC, AUTH_METHOD_HEADER)
 
 
 def _secret_selector(*, autocomplete: str | None = None) -> TextSelector:
@@ -44,14 +50,51 @@ def _secret_is_blank(value: object) -> bool:
     return value is None or (isinstance(value, str) and not value.strip())
 
 
-def merge_keep_credentials(candidate: dict, current: dict) -> dict:
-    """Keep stored sensitive credentials when their masked fields are left empty."""
-    merged = dict(candidate)
-    if _secret_is_blank(merged.get(CONF_PASSWORD)):
-        merged[CONF_PASSWORD] = current.get(CONF_PASSWORD, "")
-    if _secret_is_blank(merged.get(CONF_AUTH_HEADER)):
-        merged[CONF_AUTH_HEADER] = current.get(CONF_AUTH_HEADER, "")
+def auth_method_from_values(values: dict) -> str:
+    """Return the configured auth method, inferring it for pre-0.8 entries."""
+    configured = values.get(CONF_AUTH_METHOD)
+    if configured in _AUTH_METHODS:
+        return configured
+    if not _secret_is_blank(values.get(CONF_AUTH_HEADER)):
+        return AUTH_METHOD_HEADER
+    return AUTH_METHOD_BASIC
+
+
+def merge_auth_settings(candidate: dict, current: dict) -> dict:
+    """Merge auth settings while keeping exactly one authentication method active."""
+    merged = {**current, **candidate}
+    method = candidate.get(CONF_AUTH_METHOD)
+    if method not in _AUTH_METHODS:
+        method = auth_method_from_values(current)
+    merged[CONF_AUTH_METHOD] = method
+    current_method = auth_method_from_values(current)
+    method_unchanged = method == current_method
+
+    if method == AUTH_METHOD_BASIC:
+        if _secret_is_blank(candidate.get(CONF_PASSWORD)):
+            merged[CONF_PASSWORD] = (
+                current.get(CONF_PASSWORD, "") if method_unchanged else ""
+            )
+        merged[CONF_AUTH_HEADER] = ""
+    else:
+        if _secret_is_blank(candidate.get(CONF_AUTH_HEADER)):
+            merged[CONF_AUTH_HEADER] = (
+                current.get(CONF_AUTH_HEADER, "") if method_unchanged else ""
+            )
+        merged[CONF_USERNAME] = ""
+        merged[CONF_PASSWORD] = ""
+
     return merged
+
+
+def _auth_method_selector() -> SelectSelector:
+    """Create the translated authentication-method selector."""
+    return SelectSelector(
+        SelectSelectorConfig(
+            options=list(_AUTH_METHODS),
+            translation_key="auth_method",
+        )
+    )
 
 
 def _connection_schema(
@@ -68,8 +111,8 @@ def _connection_schema(
                 int, vol.Range(min=1, max=65535)
             ),
             vol.Required(
-                CONF_DEVICE_ID, default=defaults.get(CONF_DEVICE_ID, "0")
-            ): str,
+                CONF_AUTH_METHOD, default=auth_method_from_values(defaults)
+            ): _auth_method_selector(),
             vol.Optional(
                 CONF_USERNAME, default=defaults.get(CONF_USERNAME, "")
             ): str,
@@ -98,6 +141,12 @@ def _connection_schema(
 
 def _reauth_schema(current: dict) -> vol.Schema:
     """Build the credential-only reauthentication schema."""
+    if auth_method_from_values(current) == AUTH_METHOD_HEADER:
+        return vol.Schema(
+            {
+                vol.Optional(CONF_AUTH_HEADER, default=""): _secret_selector(),
+            }
+        )
     return vol.Schema(
         {
             vol.Optional(
@@ -106,7 +155,6 @@ def _reauth_schema(current: dict) -> vol.Schema:
             vol.Optional(CONF_PASSWORD, default=""): _secret_selector(
                 autocomplete="current-password"
             ),
-            vol.Optional(CONF_AUTH_HEADER, default=""): _secret_selector(),
         }
     )
 
@@ -117,10 +165,10 @@ async def _validate(hass, values: dict) -> dict:
         async_get_clientsession(hass),
         host=values[CONF_HOST],
         port=values[CONF_PORT],
-        device_id=values[CONF_DEVICE_ID],
         username=values.get(CONF_USERNAME),
         password=values.get(CONF_PASSWORD),
         auth_header=values.get(CONF_AUTH_HEADER),
+        auth_method=values.get(CONF_AUTH_METHOD),
         verify_ssl=values[CONF_VERIFY_SSL],
     )
     return await api.get_device()
@@ -134,8 +182,9 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None):
         errors: dict[str, str] = {}
         if user_input is not None:
+            candidate = merge_auth_settings(dict(user_input), {})
             try:
-                device = await _validate(self.hass, user_input)
+                device = await _validate(self.hass, candidate)
             except NibeAuthError:
                 errors["base"] = "invalid_auth"
             except NibeApiError:
@@ -143,12 +192,12 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 product = device.get("product") or {}
                 serial = product.get("serialNumber") or (
-                    f"{user_input[CONF_HOST]}:{user_input[CONF_DEVICE_ID]}"
+                    f"{candidate[CONF_HOST]}:{NIBE_DEVICE_ID}"
                 )
                 await self.async_set_unique_id(str(serial))
                 self._abort_if_unique_id_configured()
                 title = product.get("name") or "NIBE API"
-                return self.async_create_entry(title=title, data=user_input)
+                return self.async_create_entry(title=title, data=candidate)
 
         return self.async_show_form(
             step_id="user",
@@ -174,8 +223,7 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         current = {**self._reauth_entry.data, **self._reauth_entry.options}
 
         if user_input is not None:
-            credentials = merge_keep_credentials(dict(user_input), current)
-            candidate = {**current, **credentials}
+            candidate = merge_auth_settings(dict(user_input), current)
 
             try:
                 await _validate(self.hass, candidate)
@@ -187,7 +235,7 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 new_data = dict(self._reauth_entry.data)
                 new_options = dict(self._reauth_entry.options)
 
-                for key in _CREDENTIAL_KEYS:
+                for key in _AUTH_KEYS:
                     new_data[key] = candidate.get(key, "")
                     new_options.pop(key, None)
 
@@ -224,7 +272,7 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
         current = {**self.config_entry.data, **self.config_entry.options}
 
         if user_input is not None:
-            candidate = merge_keep_credentials(dict(user_input), current)
+            candidate = merge_auth_settings(dict(user_input), current)
 
             try:
                 await _validate(self.hass, candidate)

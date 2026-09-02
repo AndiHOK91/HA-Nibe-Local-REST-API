@@ -23,6 +23,8 @@ from .const import (
 from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, coordinator_device_info, raw_value, scaled_value
 
+PARALLEL_UPDATES = 0
+
 OPERATING_PRIORITY_MAP = {
     10: "off",
     20: "hot_water",
@@ -41,6 +43,23 @@ DEFROST_REQUESTED_MAP = {
     2: "passive",
 }
 PERIODIC_HOT_WATER_DATE_EPOCH = date(2010, 1, 1)
+UNIT_NORMALIZATIONS = {
+    "%RH": "%",
+    "l/min": "L/min",
+}
+
+
+def normalize_unit(unit: str | None) -> str | None:
+    """Normalize NIBE unit strings to Home Assistant canonical units."""
+    if unit is None:
+        return None
+    return UNIT_NORMALIZATIONS.get(unit, unit)
+
+
+def is_relative_humidity(point: dict[str, Any]) -> bool:
+    """Return whether NIBE explicitly identifies the value as relative humidity."""
+    metadata = point.get("metadata") or {}
+    return "%RH" in {metadata.get("unit"), metadata.get("shortUnit")}
 
 
 def periodic_hot_water_date(raw: int | str | None) -> str | None:
@@ -126,7 +145,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
         short_unit = md.get("shortUnit")
         if unit == "°C":
             return "°C"
-        return short_unit or unit or None
+        return normalize_unit(short_unit or unit or None)
 
     @property
     def device_class(self):
@@ -134,6 +153,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
             return None
         if self.definition.point_id == 829:
             return SensorDeviceClass.ENERGY
+        point = self.point or {}
         unit = self.native_unit_of_measurement
         if unit in {"°C", "°"}:
             return SensorDeviceClass.TEMPERATURE
@@ -143,8 +163,10 @@ class NibeSensor(NibePointEntity, SensorEntity):
             return SensorDeviceClass.POWER
         if unit == "Hz":
             return SensorDeviceClass.FREQUENCY
-        if unit == "%RH":
+        if is_relative_humidity(point):
             return SensorDeviceClass.HUMIDITY
+        if unit == "L/min":
+            return SensorDeviceClass.VOLUME_FLOW_RATE
         if unit == "bar":
             return SensorDeviceClass.PRESSURE
         if unit in {"h", "min", "s"}:
@@ -162,12 +184,11 @@ class NibeSensor(NibePointEntity, SensorEntity):
             "°C",
             "°",
             "%",
-            "%RH",
             "Hz",
             "A",
             "bar",
             "kW",
-            "l/min",
+            "L/min",
             "min",
             "h",
             "s",
@@ -189,9 +210,13 @@ class NibeNotificationSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
         self._attr_unique_id = f"{coordinator.api.device_id}_notifications"
 
     @property
+    def device_info(self):
+        return coordinator_device_info(self.coordinator)
+
+    @property
     def alarms(self) -> list[dict[str, Any]]:
         payload = (self.coordinator.data or {}).get("notifications") or {"alarms": []}
-        return normalize_alarms(payload)
+        return normalize_alarms(payload, self.coordinator.hass.config.language)
 
     @property
     def native_value(self) -> int:
@@ -208,7 +233,7 @@ class NibeNotificationSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
         summary = [
             f'{alarm["alarm_id"]} - {alarm["text"]}'
             if alarm.get("alarm_id") is not None
-            else str(alarm.get("text") or "Unknown alarm")
+            else str(alarm.get("text") or "Alarm")
             for alarm in alarms
         ]
         return {

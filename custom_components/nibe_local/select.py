@@ -4,17 +4,21 @@ from __future__ import annotations
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    DOMAIN,
     POINTS,
     POINT_HOT_WATER_DEMAND,
     POINT_OPERATING_MODE_SETTING,
     POINT_VENTILATION_MODE,
 )
 from .coordinator import NibeCoordinator
-from .entity import NibePointEntity, raw_value
+from .entity import NibePointEntity, coordinator_device_info, raw_value
+
+PARALLEL_UPDATES = 1
 
 
 def supports_smart_mode(device: dict | None) -> bool:
@@ -96,7 +100,11 @@ class NibePointSelect(NibePointEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         reverse = {state: raw for raw, state in self._mapping.items()}
         if option not in reverse:
-            raise ValueError(f"Unknown option {option!r}")
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="select_invalid_option",
+                translation_placeholders={"option": option},
+            )
 
         await self.coordinator.api.patch_point(
             self.definition.point_id,
@@ -121,6 +129,10 @@ class NibeSmartModeSelect(CoordinatorEntity[NibeCoordinator], SelectEntity):
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{coordinator.api.device_id}_smart_mode"
+
+    @property
+    def device_info(self):
+        return coordinator_device_info(self.coordinator)
 
     @property
     def current_option(self) -> str | None:

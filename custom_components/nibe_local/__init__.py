@@ -9,8 +9,8 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import NibeLocalApi
 from .const import (
     CONF_AUTH_HEADER,
+    CONF_AUTH_METHOD,
     CONF_COMMAND_POLL_DELAY_MS,
-    CONF_DEVICE_ID,
     CONF_SCAN_INTERVAL,
     CONF_VERIFY_SSL,
     DEFAULT_COMMAND_POLL_DELAY_MS,
@@ -33,10 +33,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_get_clientsession(hass),
         host=data[CONF_HOST],
         port=data.get(CONF_PORT, DEFAULT_PORT),
-        device_id=data.get(CONF_DEVICE_ID, "0"),
         username=data.get(CONF_USERNAME),
         password=data.get(CONF_PASSWORD),
         auth_header=data.get(CONF_AUTH_HEADER),
+        auth_method=data.get(CONF_AUTH_METHOD),
         verify_ssl=data.get(CONF_VERIFY_SSL, False),
     )
 

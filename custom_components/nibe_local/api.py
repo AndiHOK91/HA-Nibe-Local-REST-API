@@ -8,6 +8,8 @@ from typing import Any
 
 from aiohttp import BasicAuth, ClientResponseError, ClientSession, ClientTimeout
 
+from .const import AUTH_METHOD_BASIC, AUTH_METHOD_HEADER, NIBE_DEVICE_ID
+
 
 async def async_resolve_host_ip(host: str) -> str | None:
     """Resolve a configured host to an IP address without blocking Home Assistant."""
@@ -40,20 +42,30 @@ class NibeLocalApi:
         session: ClientSession,
         host: str,
         port: int,
-        device_id: str,
         username: str | None = None,
         password: str | None = None,
         auth_header: str | None = None,
+        auth_method: str | None = None,
         verify_ssl: bool = False,
     ) -> None:
         self._session = session
         self.host = host.strip().removeprefix("https://").removeprefix("http://").rstrip("/")
         self.port = port
-        self.device_id = str(device_id)
-        self._auth = BasicAuth(username, password or "") if username else None
-        self._auth_header = auth_header.strip() if auth_header else None
+        self.device_id = NIBE_DEVICE_ID
+        if auth_method == AUTH_METHOD_BASIC:
+            self._auth = BasicAuth(username, password or "") if username else None
+            self._auth_header = None
+        elif auth_method == AUTH_METHOD_HEADER:
+            self._auth = None
+            self._auth_header = auth_header.strip() if auth_header else None
+        else:
+            # Compatibility for config entries created before auth_method existed:
+            # a stored header keeps its historical precedence over Basic Auth.
+            self._auth = BasicAuth(username, password or "") if username else None
+            self._auth_header = auth_header.strip() if auth_header else None
         self._ssl: bool | ssl.SSLContext = True if verify_ssl else False
         self._timeout = ClientTimeout(total=15)
+        self._write_lock = asyncio.Lock()
 
     @property
     def base_url(self) -> str:
@@ -88,6 +100,17 @@ class NibeLocalApi:
             raise NibeApiError(f"HTTP {err.status}: {err.message}") from err
         except Exception as err:
             raise NibeApiError(str(err)) from err
+
+    async def _write_request(
+        self,
+        method: str,
+        path: str,
+        *,
+        json: Any | None = None,
+    ) -> Any:
+        """Serialize writes so the NIBE API never receives concurrent commands."""
+        async with self._write_lock:
+            return await self._request(method, path, json=json)
 
     async def get_device(self) -> dict[str, Any]:
         return await self._request("GET", f"/devices/{self.device_id}")
@@ -160,11 +183,11 @@ class NibeLocalApi:
         else:
             value["integerValue"] = int(raw_value)
             value["stringValue"] = ""
-        return await self._request(
+        return await self._write_request(
             "PATCH", f"/devices/{self.device_id}/points", json=[value]
         )
 
     async def set_smart_mode(self, mode: str) -> Any:
-        return await self._request(
+        return await self._write_request(
             "POST", f"/devices/{self.device_id}/smartmode", json={"smartMode": mode}
         )

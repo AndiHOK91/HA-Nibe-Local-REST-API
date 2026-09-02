@@ -29,7 +29,7 @@ Die Integration stellt zahlreiche Werte und Funktionen der NIBE-Anlage als Home-
 - 🎛️ Schreibbare Einstellungen als Schalter, Auswahlfelder, Zahlenwerte und Uhrzeiten
 - 🔐 Automatische Neuauthentifizierung bei abgelehnten Zugangsdaten
 - 🔔 Home-Assistant-Benachrichtigungen bei Authentifizierungs- und länger anhaltenden Verbindungsfehlern
-- 🩺 Diagnose-Entitäten für REST-API-Erreichbarkeit, Fallback-Status und Kommunikationszeitpunkte
+- 🩺 Diagnose-Entitäten für REST-API-Erreichbarkeit, Fallback-Status und den letzten Verbindungsfehler
 
 Die Entitäten werden regelmäßig über die lokale REST API aktualisiert. Das Polling-Intervall kann in den Optionen angepasst werden.
 
@@ -85,9 +85,13 @@ Vorhandene Energie- und Leistungswerte der NIBE werden als Home-Assistant-Sensor
 
 Geeignete Entitäten verwenden passende Home-Assistant-State-Classes für Langzeitstatistiken und Energieverläufe.
 
+Von NIBE gelieferte Einheiten werden, wo nötig, auf Home-Assistant-konforme Schreibweisen normalisiert. Dazu gehören insbesondere `%RH` → `%` für Luftfeuchtigkeit und `l/min` → `L/min` für Volumenstrom. Die Luftfeuchtigkeits-Device-Class wird nur gesetzt, wenn NIBE den Wert ursprünglich ausdrücklich als `%RH` kennzeichnet; andere Prozentwerte bleiben unverändert klassifiziert.
+
 ## 🚨 Alarme und Meldungen
 
 Aktive NIBE-Meldungen werden nur lesend dargestellt. Soweit von der REST API geliefert, können Alarmnummer, Beschreibung, Schweregrad, Zeitpunkt und Quelle angezeigt werden.
+
+Wenn die NIBE einen eigenen Alarmtext liefert, wird dieser bevorzugt. Dadurch bleibt die am Gerät verwendete Sprache erhalten. Bei deutscher Home-Assistant-Sprache kann für bekannte Alarmnummern ein verifizierter deutscher Fallbacktext verwendet werden, falls die API selbst keinen Text liefert. In anderen Sprachen sowie bei unbekannten Alarmnummern bleibt der Fallback sprachneutral, zum Beispiel `Alarm 1234`.
 
 Eine Quittier- oder Reset-Funktion ist bewusst nicht enthalten.
 
@@ -95,11 +99,22 @@ Eine Quittier- oder Reset-Funktion ist bewusst nicht enthalten.
 
 ## 🔐 Zugangsdaten und Neuauthentifizierung
 
-Wenn die NIBE REST API die gespeicherten Zugangsdaten ablehnt, startet Home Assistant den Reauthentifizierungsablauf.
+Bei Einrichtung und in den Optionen wird eine eindeutige Authentifizierungsmethode gewählt:
 
-Im Dialog werden Gerätename, konfigurierter Host und aufgelöste IP-Adresse angezeigt. Passwort und Authorization-Header bleiben maskiert. Leere oder nur aus Leerzeichen bestehende Felder behalten den bisherigen gespeicherten Wert bei.
+- **Benutzername + Passwort**
+- **Authorization-Header**
 
-Alternativ zu Benutzername und Passwort kann ein vollständiger HTTP-Authorization-Header verwendet werden, zum Beispiel `Basic dXNlcjpwYXNzd29ydA==`.
+Es ist immer nur die ausgewählte Methode aktiv. Wird die Authentifizierungsmethode gewechselt, werden die gespeicherten Zugangsdaten der vorherigen Methode entfernt. Damit kann beispielsweise kein alter Authorization-Header unbemerkt ein neu eingetragenes Passwort übersteuern.
+
+Für bestehende Konfigurationen ohne gespeicherte Authentifizierungsmethode wird ein vorhandener Authorization-Header weiterhin als Header-Authentifizierung erkannt; andernfalls wird Benutzername + Passwort verwendet.
+
+Wenn die NIBE REST API die gespeicherten Zugangsdaten ablehnt, startet Home Assistant den Reauthentifizierungsablauf. Dabei werden nur die Felder der aktuell verwendeten Authentifizierungsmethode abgefragt. Ein leeres geheimes Feld behält den bisherigen gespeicherten Wert bei.
+
+Im Dialog werden Gerätename, konfigurierter Host und aufgelöste IP-Adresse angezeigt. Passwort und Authorization-Header werden maskiert dargestellt.
+
+Bei Header-Authentifizierung wird ein vollständiger HTTP-Authorization-Header verwendet, zum Beispiel `Basic dXNlcjpwYXNzd29ydA==`.
+
+Die lokale NIBE-Geräte-ID ist in der Integration fest auf **`0`** gesetzt und wird nicht als Benutzereinstellung angeboten.
 
 ## 🔔 Home-Assistant-Benachrichtigungen
 
@@ -113,11 +128,11 @@ Die Meldungen enthalten Gerätename, Host und aufgelöste IP-Adresse, aber keine
 
 Zusätzliche Diagnose-Entitäten am bestehenden NIBE-Gerät:
 
-- **REST API erreichbar** – enthält den Zeitpunkt des letzten erfolgreichen Polls als Attribut `last_successful_poll`
+- **REST API erreichbar**
 - **Einzelpunkt-Fallback aktiv**
 - **Letzter Verbindungsfehler**
 
-Der frühere separate Sensor **„Letzter erfolgreicher Poll“** wird nicht mehr angelegt. Dadurch erzeugt jeder erfolgreiche Poll keinen eigenen Eintrag mehr im Home-Assistant-Aktivitätenprotokoll. Der Zeitstempel bleibt als Diagnoseattribut von **„REST API erreichbar“** verfügbar.
+Der frühere separate Sensor **„Letzter erfolgreicher Poll“** wird nicht mehr angelegt. Auch das frühere Attribut `last_successful_poll` von **„REST API erreichbar“** wird nicht mehr nach außen geschrieben. Der Coordinator führt den Zeitpunkt intern weiter, ohne dadurch bei jedem erfolgreichen Poll einen neuen Recorder-Zustand für die Diagnose-Entität zu erzeugen.
 
 Der Fallback-Status bedeutet nicht automatisch, dass die gesamte REST API ausgefallen ist. Daten können weiterhin über Einzelpunktabfragen geliefert werden.
 
@@ -129,15 +144,21 @@ Der vollständige Fallback verwendet einen Backoff von **30 / 60 / 120 Sekunden*
 
 Nach einem Schreibbefehl wird der betroffene Punkt gezielt neu gelesen, statt jedes Mal die komplette Anlage abzufragen.
 
+Alle schreibenden REST-Aufrufe werden zusätzlich integrationsweit serialisiert. Dadurch erhält die NIBE auch dann keine parallelen `PATCH`-/`POST`-Befehle, wenn mehrere Home-Assistant-Automationen gleichzeitig Einstellungen ändern. Die schreibenden Entity-Plattformen sind zusätzlich auf einen parallelen Vorgang pro Plattform begrenzt; reine Leseplattformen werden vollständig über den Coordinator versorgt.
+
 Bekannte Auswahlwerte werden auch dann korrekt verarbeitet, wenn die Firmware numerische Enum-Werte als Strings liefert.
+
+Das zusätzliche Entity-Attribut `group` verwendet sprachneutrale technische Schlüssel: `system`, `heating`, `cooling`, `hot_water`, `energy`, `hydraulics`, `heat_pump`, `eev_defrost` und `ventilation`.
 
 ## 🧩 Installation
 
 1. Den Ordner `custom_components/nibe_local` nach `/config/custom_components/nibe_local` kopieren oder die Integration über HACS installieren.
 2. Home Assistant neu starten.
 3. Unter **Einstellungen → Geräte & Dienste** die Integration **NIBE Local REST API** hinzufügen.
-4. Host/IP-Adresse, Port, Geräte-ID und Zugangsdaten eintragen.
+4. Host/IP-Adresse und Port eintragen, die Authentifizierungsmethode auswählen und die dazugehörigen Zugangsdaten angeben.
 5. Bei einem lokal selbstsignierten Zertifikat kann die SSL-Zertifikatsprüfung deaktiviert werden.
+
+Die NIBE-Geräte-ID wird nicht abgefragt. Die Integration verwendet fest die Geräte-ID **`0`**.
 
 Mindestens **Home Assistant 2024.12.0** ist vorgesehen. Der GitHub-Actions-Testworkflow prüft die Integration gegen diese Mindestversion und gegen die jeweils aktuelle Home-Assistant-Version.
 

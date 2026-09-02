@@ -13,6 +13,7 @@ from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, raw_value
 
 SECONDS_PER_DAY = 24 * 60 * 60
+PARALLEL_UPDATES = 1
 
 
 def time_from_seconds(raw: int | str | None) -> time | None:

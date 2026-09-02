@@ -1,15 +1,26 @@
 """Regression tests for NIBE Local REST core logic."""
 
+import asyncio
 from datetime import time
 import json
 from pathlib import Path
 
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 
+from custom_components.nibe_local.alarms import normalize_alarm
 from custom_components.nibe_local.api import NibeLocalApi
-from custom_components.nibe_local.config_flow import merge_keep_credentials
+from custom_components.nibe_local.config_flow import (
+    _connection_schema,
+    _reauth_schema,
+    auth_method_from_values,
+    merge_auth_settings,
+)
 from custom_components.nibe_local.const import (
+    AUTH_METHOD_BASIC,
+    AUTH_METHOD_HEADER,
     CONF_AUTH_HEADER,
+    CONF_AUTH_METHOD,
+    NIBE_DEVICE_ID,
     POINTS,
     POINT_COOLING_ALLOWED,
     POINT_HEATING_ALLOWED,
@@ -32,9 +43,14 @@ from custom_components.nibe_local.select import (
     mapped_option,
     supports_smart_mode,
 )
-from custom_components.nibe_local.sensor import periodic_hot_water_date
+from custom_components.nibe_local.sensor import (
+    is_relative_humidity,
+    normalize_unit,
+    periodic_hot_water_date,
+)
 from custom_components.nibe_local.switch import write_allowed_for_mode
 from custom_components.nibe_local.time import seconds_from_time, time_from_seconds
+from custom_components.nibe_local import binary_sensor, number, select, sensor, switch, time as time_platform
 
 _TRANSLATIONS = (
     Path(__file__).parents[1] / "custom_components" / "nibe_local" / "translations"
@@ -45,6 +61,7 @@ _RUNTIME_EXCEPTION_KEYS = {
     "number_limits_unavailable",
     "number_out_of_range",
     "number_invalid_step",
+    "select_invalid_option",
     "auth_rejected",
     "auth_rejected_notification",
     "connection_unreachable_notification",
@@ -86,11 +103,104 @@ def test_periodic_hot_water_date_epoch() -> None:
     assert periodic_hot_water_date("ungueltig") is None
 
 
+def test_alarm_prefers_device_language_text() -> None:
+    alarm = normalize_alarm(
+        {
+            "alarmId": 224,
+            "header": "Device supplied alarm text",
+        }
+    )
+    assert alarm["text"] == "Device supplied alarm text"
+
+
+def test_alarm_uses_verified_german_fallback_when_device_text_is_missing() -> None:
+    alarm = normalize_alarm({"alarmId": 224}, "de")
+    assert alarm["text"] == "Kom.fehler mit Zubehör Brauchwasserkomfort"
+
+
+def test_alarm_does_not_use_german_fallback_for_other_languages() -> None:
+    assert normalize_alarm({"alarmId": 224}, "en")["text"] == "Alarm 224"
+    assert normalize_alarm({"alarmId": 224}, None)["text"] == "Alarm 224"
+
+
+def test_unknown_alarm_fallback_is_language_neutral() -> None:
+    assert normalize_alarm({"alarmId": 99999})["text"] == "Alarm 99999"
+    assert normalize_alarm({})["text"] == "Alarm"
+
+
+def test_nibe_units_are_normalized_for_home_assistant() -> None:
+    assert normalize_unit("%RH") == "%"
+    assert normalize_unit("l/min") == "L/min"
+    assert normalize_unit("°C") == "°C"
+    assert normalize_unit(None) is None
+
+
+def test_only_explicit_nibe_relative_humidity_unit_is_humidity() -> None:
+    assert is_relative_humidity({"metadata": {"unit": "%RH", "shortUnit": "%"}})
+    assert not is_relative_humidity({"metadata": {"unit": "%", "shortUnit": "%"}})
+
+
+def test_device_id_is_fixed() -> None:
+    assert NIBE_DEVICE_ID == "0"
+
+
+def test_parallel_update_limits_are_explicit() -> None:
+    assert sensor.PARALLEL_UPDATES == 0
+    assert binary_sensor.PARALLEL_UPDATES == 0
+    assert switch.PARALLEL_UPDATES == 1
+    assert number.PARALLEL_UPDATES == 1
+    assert select.PARALLEL_UPDATES == 1
+    assert time_platform.PARALLEL_UPDATES == 1
+
+
+def test_api_write_requests_are_serialized() -> None:
+    async def run_test() -> None:
+        api = NibeLocalApi(
+            object(),
+            host="192.0.2.1",
+            port=8443,
+        )
+        active = 0
+        maximum_active = 0
+
+        async def fake_request(method: str, path: str, *, json=None):
+            nonlocal active, maximum_active
+            active += 1
+            maximum_active = max(maximum_active, active)
+            await asyncio.sleep(0)
+            active -= 1
+            return None
+
+        api._request = fake_request
+        await asyncio.gather(
+            api.patch_point(3920, 1),
+            api.set_smart_mode("away"),
+        )
+        assert maximum_active == 1
+
+    asyncio.run(run_test())
+
+
 def test_all_point_selects_have_explicit_enum_mappings() -> None:
     configured = {
         definition.point_id for definition in POINTS if definition.platform == "select"
     }
     assert configured == set(NibePointSelect.ENUM_OPTIONS)
+
+
+def test_point_groups_use_stable_language_neutral_keys() -> None:
+    expected_groups = {
+        "system",
+        "heating",
+        "cooling",
+        "hot_water",
+        "energy",
+        "hydraulics",
+        "heat_pump",
+        "eev_defrost",
+        "ventilation",
+    }
+    assert {definition.group for definition in POINTS} == expected_groups
 
 
 def test_operating_mode_options_are_stable() -> None:
@@ -241,68 +351,185 @@ def test_merge_point_updates_preserves_missing_old_values() -> None:
     }
 
 
-def test_merge_keep_credentials_preserves_masked_secrets() -> None:
+def test_auth_method_is_inferred_for_existing_entries() -> None:
+    assert auth_method_from_values({CONF_AUTH_HEADER: "Basic old"}) == AUTH_METHOD_HEADER
+    assert auth_method_from_values({CONF_AUTH_HEADER: ""}) == AUTH_METHOD_BASIC
+    assert auth_method_from_values({}) == AUTH_METHOD_BASIC
+
+
+def test_explicit_auth_method_wins_over_legacy_values() -> None:
+    values = {
+        CONF_AUTH_METHOD: AUTH_METHOD_BASIC,
+        CONF_AUTH_HEADER: "Basic old",
+    }
+    assert auth_method_from_values(values) == AUTH_METHOD_BASIC
+
+
+def test_api_uses_only_the_explicit_authentication_method() -> None:
+    basic = NibeLocalApi(
+        object(),
+        host="192.0.2.1",
+        port=8443,
+        username="andi",
+        password="secret",
+        auth_header="Basic stale",
+        auth_method=AUTH_METHOD_BASIC,
+    )
+    assert basic._auth is not None
+    assert basic._auth.login == "andi"
+    assert basic._auth_header is None
+
+    header = NibeLocalApi(
+        object(),
+        host="192.0.2.1",
+        port=8443,
+        username="stale-user",
+        password="stale-password",
+        auth_header="Basic current",
+        auth_method=AUTH_METHOD_HEADER,
+    )
+    assert header._auth is None
+    assert header._auth_header == "Basic current"
+
+
+def test_api_keeps_legacy_header_precedence_without_auth_method() -> None:
+    legacy = NibeLocalApi(
+        object(),
+        host="192.0.2.1",
+        port=8443,
+        username="andi",
+        password="secret",
+        auth_header="Basic legacy",
+    )
+    assert legacy._headers()["Authorization"] == "Basic legacy"
+
+
+def _schema_keys(schema) -> set[str]:
+    """Return plain key names from a voluptuous schema."""
+    return {
+        str(key.schema if hasattr(key, "schema") else key)
+        for key in schema.schema
+    }
+
+
+def test_connection_schema_has_fixed_device_id_and_auth_method() -> None:
+    keys = _schema_keys(_connection_schema({}))
+    assert "device_id" not in keys
+    assert CONF_AUTH_METHOD in keys
+
+
+def test_reauth_schema_only_shows_active_authentication_method() -> None:
+    basic_keys = _schema_keys(
+        _reauth_schema(
+            {
+                CONF_AUTH_METHOD: AUTH_METHOD_BASIC,
+                CONF_USERNAME: "andi",
+                CONF_PASSWORD: "secret",
+            }
+        )
+    )
+    assert CONF_USERNAME in basic_keys
+    assert CONF_PASSWORD in basic_keys
+    assert CONF_AUTH_HEADER not in basic_keys
+
+    header_keys = _schema_keys(
+        _reauth_schema(
+            {
+                CONF_AUTH_METHOD: AUTH_METHOD_HEADER,
+                CONF_AUTH_HEADER: "Basic abc",
+            }
+        )
+    )
+    assert CONF_AUTH_HEADER in header_keys
+    assert CONF_USERNAME not in header_keys
+    assert CONF_PASSWORD not in header_keys
+
+
+def test_switching_to_basic_does_not_revive_an_inactive_password() -> None:
     current = {
+        CONF_AUTH_METHOD: AUTH_METHOD_HEADER,
         CONF_USERNAME: "andi",
         CONF_PASSWORD: "old-password",
         CONF_AUTH_HEADER: "Basic old",
     }
     candidate = {
+        CONF_AUTH_METHOD: AUTH_METHOD_BASIC,
         CONF_USERNAME: "andi",
         CONF_PASSWORD: "",
+    }
+    merged = merge_auth_settings(candidate, current)
+    assert merged[CONF_AUTH_METHOD] == AUTH_METHOD_BASIC
+    assert merged[CONF_PASSWORD] == ""
+    assert merged[CONF_AUTH_HEADER] == ""
+
+
+def test_basic_auth_preserves_blank_password_when_method_is_unchanged() -> None:
+    current = {
+        CONF_AUTH_METHOD: AUTH_METHOD_BASIC,
+        CONF_USERNAME: "andi",
+        CONF_PASSWORD: "old-password",
         CONF_AUTH_HEADER: "",
     }
-    merged = merge_keep_credentials(candidate, current)
+    candidate = {
+        CONF_AUTH_METHOD: AUTH_METHOD_BASIC,
+        CONF_USERNAME: "andi",
+        CONF_PASSWORD: " ",
+    }
+    merged = merge_auth_settings(candidate, current)
     assert merged[CONF_PASSWORD] == "old-password"
-    assert merged[CONF_AUTH_HEADER] == "Basic old"
+    assert merged[CONF_AUTH_HEADER] == ""
 
 
-def test_merge_keep_credentials_treats_whitespace_only_as_blank() -> None:
+def test_header_auth_preserves_blank_header_and_clears_basic_credentials() -> None:
     current = {
+        CONF_AUTH_METHOD: AUTH_METHOD_HEADER,
         CONF_USERNAME: "andi",
         CONF_PASSWORD: "old-password",
         CONF_AUTH_HEADER: "Basic old",
     }
     candidate = {
-        CONF_USERNAME: "andi",
-        CONF_PASSWORD: "   ",
+        CONF_AUTH_METHOD: AUTH_METHOD_HEADER,
         CONF_AUTH_HEADER: "\t  ",
     }
-    merged = merge_keep_credentials(candidate, current)
-    assert merged[CONF_PASSWORD] == "old-password"
+    merged = merge_auth_settings(candidate, current)
+    assert merged[CONF_AUTH_METHOD] == AUTH_METHOD_HEADER
     assert merged[CONF_AUTH_HEADER] == "Basic old"
+    assert merged[CONF_USERNAME] == ""
+    assert merged[CONF_PASSWORD] == ""
 
 
-def test_merge_keep_credentials_preserves_non_blank_whitespace() -> None:
+def test_switching_to_header_replaces_header_and_removes_basic_auth() -> None:
     current = {
+        CONF_AUTH_METHOD: AUTH_METHOD_BASIC,
         CONF_USERNAME: "andi",
         CONF_PASSWORD: "old-password",
-        CONF_AUTH_HEADER: "Basic old",
+        CONF_AUTH_HEADER: "",
     }
     candidate = {
-        CONF_USERNAME: "andi",
-        CONF_PASSWORD: " new-password ",
+        CONF_AUTH_METHOD: AUTH_METHOD_HEADER,
         CONF_AUTH_HEADER: " Basic new ",
     }
-    merged = merge_keep_credentials(candidate, current)
-    assert merged[CONF_PASSWORD] == " new-password "
+    merged = merge_auth_settings(candidate, current)
     assert merged[CONF_AUTH_HEADER] == " Basic new "
+    assert merged[CONF_USERNAME] == ""
+    assert merged[CONF_PASSWORD] == ""
 
 
-def test_merge_keep_credentials_replaces_provided_secrets() -> None:
+def test_switching_to_header_does_not_revive_an_inactive_header() -> None:
     current = {
+        CONF_AUTH_METHOD: AUTH_METHOD_BASIC,
         CONF_USERNAME: "andi",
         CONF_PASSWORD: "old-password",
-        CONF_AUTH_HEADER: "Basic old",
+        CONF_AUTH_HEADER: "Basic stale",
     }
     candidate = {
-        CONF_USERNAME: "andi",
-        CONF_PASSWORD: "new-password",
-        CONF_AUTH_HEADER: "Basic new",
+        CONF_AUTH_METHOD: AUTH_METHOD_HEADER,
+        CONF_AUTH_HEADER: "",
     }
-    merged = merge_keep_credentials(candidate, current)
-    assert merged[CONF_PASSWORD] == "new-password"
-    assert merged[CONF_AUTH_HEADER] == "Basic new"
+    merged = merge_auth_settings(candidate, current)
+    assert merged[CONF_AUTH_HEADER] == ""
+    assert merged[CONF_USERNAME] == ""
+    assert merged[CONF_PASSWORD] == ""
 
 
 def test_supports_smart_mode_only_when_device_exposes_key() -> None:
