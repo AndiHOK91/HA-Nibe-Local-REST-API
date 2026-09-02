@@ -2,11 +2,11 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="custom_components/nibe_local/brand/dark_logo.png">
     <source media="(prefers-color-scheme: light)" srcset="custom_components/nibe_local/brand/logo.png">
-    <img alt="NIBE Local REST – Home Assistant Custom Integration" src="custom_components/nibe_local/brand/logo.png" width="760">
+    <img alt="NIBE Local REST API – Home Assistant Custom Integration" src="custom_components/nibe_local/brand/logo.png" width="760">
   </picture>
 </p>
 
-# NIBE Local REST – Home Assistant Custom Integration
+# NIBE Local REST API – Home Assistant Custom Integration
 
 > 🏠 **Lokal** · ⚡ **Schnell** · 🔒 **Ohne Cloud-Zwang** · 🌡️ **Heizung** · 💧 **Brauchwasser** · 🌬️ **Lüftung**
 
@@ -113,10 +113,11 @@ Die Meldungen enthalten Gerätename, Host und aufgelöste IP-Adresse, aber keine
 
 Zusätzliche Diagnose-Entitäten am bestehenden NIBE-Gerät:
 
-- **REST API erreichbar**
+- **REST API erreichbar** – enthält den Zeitpunkt des letzten erfolgreichen Polls als Attribut `last_successful_poll`
 - **Einzelpunkt-Fallback aktiv**
-- **Letzter erfolgreicher Poll**
 - **Letzter Verbindungsfehler**
+
+Der frühere separate Sensor **„Letzter erfolgreicher Poll“** wird nicht mehr angelegt. Dadurch erzeugt jeder erfolgreiche Poll keinen eigenen Eintrag mehr im Home-Assistant-Aktivitätenprotokoll. Der Zeitstempel bleibt als Diagnoseattribut von **„REST API erreichbar“** verfügbar.
 
 Der Fallback-Status bedeutet nicht automatisch, dass die gesamte REST API ausgefallen ist. Daten können weiterhin über Einzelpunktabfragen geliefert werden.
 
@@ -134,7 +135,7 @@ Bekannte Auswahlwerte werden auch dann korrekt verarbeitet, wenn die Firmware nu
 
 1. Den Ordner `custom_components/nibe_local` nach `/config/custom_components/nibe_local` kopieren oder die Integration über HACS installieren.
 2. Home Assistant neu starten.
-3. Unter **Einstellungen → Geräte & Dienste** die Integration **NIBE Local REST** hinzufügen.
+3. Unter **Einstellungen → Geräte & Dienste** die Integration **NIBE Local REST API** hinzufügen.
 4. Host/IP-Adresse, Port, Geräte-ID und Zugangsdaten eintragen.
 5. Bei einem lokal selbstsignierten Zertifikat kann die SSL-Zertifikatsprüfung deaktiviert werden.
 
@@ -146,6 +147,8 @@ Die Integration bringt ihre Brand-Dateien direkt im Integrationsordner mit:
 
 - `custom_components/nibe_local/brand/icon.png`
 - `custom_components/nibe_local/brand/dark_icon.png`
+- `custom_components/nibe_local/brand/icon@2x.png`
+- `custom_components/nibe_local/brand/dark_icon@2x.png`
 - `custom_components/nibe_local/brand/logo.png`
 - `custom_components/nibe_local/brand/dark_logo.png`
 
