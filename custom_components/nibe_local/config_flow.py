@@ -147,7 +147,7 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 await self.async_set_unique_id(str(serial))
                 self._abort_if_unique_id_configured()
-                title = product.get("name") or f"NIBE {user_input[CONF_HOST]}"
+                title = product.get("name") or "NIBE API"
                 return self.async_create_entry(title=title, data=user_input)
 
         return self.async_show_form(
