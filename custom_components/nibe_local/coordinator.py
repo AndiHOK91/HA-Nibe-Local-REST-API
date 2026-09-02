@@ -14,7 +14,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import NibeApiError, NibeAuthError, NibeLocalApi, async_resolve_host_ip
-from .const import DOMAIN, POINTS, POINT_VENTILATION_MODE
+from .const import DOMAIN, POINTS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,11 +66,6 @@ def connection_failure_notification_due(
 ) -> bool:
     """Return whether a connection failure has lasted long enough to notify."""
     return failure_started_at is not None and now - failure_started_at >= delay
-
-
-def auth_failure_notification_due(*, notification_active: bool) -> bool:
-    """Return whether an authentication failure notification should be created."""
-    return not notification_active
 
 
 class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -133,9 +128,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _notify_auth_failure(self) -> None:
         """Create the authentication failure notification once per outage."""
-        if not auth_failure_notification_due(
-            notification_active=self._auth_notification_active
-        ):
+        if self._auth_notification_active:
             return
 
         label = await self._connection_label()
@@ -298,7 +291,3 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         current["points"] = points
         self.async_set_updated_data(current)
         return point
-
-    async def async_refresh_ventilation_state(self) -> dict[str, Any] | None:
-        """Refresh the ventilation mode once for all ventilation entities."""
-        return await self.async_refresh_point(POINT_VENTILATION_MODE)
