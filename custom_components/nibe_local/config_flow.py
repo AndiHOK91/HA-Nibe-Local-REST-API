@@ -207,7 +207,7 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "device_name": self._reauth_entry.title or "NIBE Local REST API",
                 "host": host or "–",
-                "ip_address": ip_address or "nicht auflösbar",
+                "ip_address": ip_address or "–",
             },
         )
 
