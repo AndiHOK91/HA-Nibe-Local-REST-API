@@ -1,9 +1,9 @@
 {
   "domain": "nibe_local",
   "name": "NIBE Local REST API",
-  "version": "0.7.4",
-  "documentation": "https://github.com/AndiO91/home-assistant-nibe-local-rest",
-  "issue_tracker": "https://github.com/AndiO91/home-assistant-nibe-local-rest/issues",
+  "version": "0.7.5",
+  "documentation": "https://github.com/AndiO91/HomeAssistant-Local-REST-API",
+  "issue_tracker": "https://github.com/AndiO91/HomeAssistant-Local-REST-API/issues",
   "codeowners": ["@AndiO91"],
   "config_flow": true,
   "iot_class": "local_polling",
