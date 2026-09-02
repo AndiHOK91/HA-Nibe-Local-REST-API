@@ -13,6 +13,8 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 - Fehlende deutsche Übersetzung für `already_configured` ergänzt.
 - **Letzter erfolgreicher Poll** wird nicht mehr als eigener Timestamp-Sensor angelegt, sondern als Attribut `last_successful_poll` des Diagnose-Binärsensors **REST API erreichbar** bereitgestellt. Dadurch erzeugt jeder erfolgreiche Poll keinen eigenen Eintrag mehr im Aktivitätenprotokoll.
 - Hochauflösende `icon@2x.png`- und `dark_icon@2x.png`-Branding-Dateien ergänzt.
+- Geräte- und Einrichtungs-Fallback auf **NIBE API** neutralisiert, da der lokale `/devices/{id}`-Endpunkt nicht auf allen Anlagen einen Produktnamen liefert.
+- Bereits registrierte, automatisch erzeugte Entity-IDs mit dem alten Präfix `nibe_vvm_s320_` werden beim Setup auf `nibe_api_` migriert. Unique IDs bleiben unverändert; bestehende Historie kann dadurch über die Home-Assistant-Entity-Registry weitergeführt werden.
 
 ## 0.7.3
 
