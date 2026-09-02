@@ -7,14 +7,12 @@ from typing import Any
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .alarms import normalize_alarms
 from .const import (
-    DOMAIN,
     POINTS,
     POINT_DEFROST_REQUESTED,
     POINT_OPERATING_MODE_STATUS,
@@ -32,8 +30,6 @@ OPERATING_PRIORITY_MAP = {
     40: "pool",
     60: "cooling",
 }
-# Backward-compatible label map for external imports.
-OPERATING_MODE_MAP = {0: "Auto", 1: "Manuell", 2: "Nur Zusatzheizung"}
 OPERATING_MODE_STATE_MAP = {
     0: "auto",
     1: "manual",
@@ -65,16 +61,6 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator: NibeCoordinator = entry.runtime_data
-
-    # Remove the legacy standalone poll timestamp entity introduced in 0.7.0.
-    # The same value is now exposed as an attribute of the API connectivity sensor.
-    entity_registry = er.async_get(hass)
-    legacy_unique_id = f"{coordinator.api.device_id}_last_successful_poll"
-    legacy_entity_id = entity_registry.async_get_entity_id(
-        "sensor", DOMAIN, legacy_unique_id
-    )
-    if legacy_entity_id is not None:
-        entity_registry.async_remove(legacy_entity_id)
 
     definitions = [
         definition
