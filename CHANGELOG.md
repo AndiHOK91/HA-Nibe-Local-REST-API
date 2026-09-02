@@ -1,9 +1,10 @@
 # Changelog
 
-Alle wesentlichen Änderungen an **NIBE Local REST** werden hier versionsweise zusammengefasst.
+Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
 ## 0.7.4
 
+- Integrationsname in HACS, Home Assistant, Übersetzungen und Dokumentation auf **NIBE Local REST API** vereinheitlicht.
 - Entitätsnamen werden über Home-Assistant-Übersetzungen statt fest im Python-Code gesetzter deutscher Namen bereitgestellt.
 - Deutsche und englische Übersetzungen für Sensoren, Binärsensoren, Schalter, Number-, Select- und Time-Entitäten ergänzt.
 - Diagnose-Entitäten und Smart Mode vollständig in die Übersetzungsstruktur aufgenommen.
@@ -11,6 +12,7 @@ Alle wesentlichen Änderungen an **NIBE Local REST** werden hier versionsweise z
 - Select-Zustände für Betriebsmodus, Lüftung und Brauchwasserbedarf auf stabile, übersetzbare Werte umgestellt.
 - Fehlende deutsche Übersetzung für `already_configured` ergänzt.
 - **Letzter erfolgreicher Poll** wird nicht mehr als eigener Timestamp-Sensor angelegt, sondern als Attribut `last_successful_poll` des Diagnose-Binärsensors **REST API erreichbar** bereitgestellt. Dadurch erzeugt jeder erfolgreiche Poll keinen eigenen Eintrag mehr im Aktivitätenprotokoll.
+- Hochauflösende `icon@2x.png`- und `dark_icon@2x.png`-Branding-Dateien ergänzt.
 
 ## 0.7.3
 
