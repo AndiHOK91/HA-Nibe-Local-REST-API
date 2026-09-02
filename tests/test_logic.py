@@ -1,6 +1,8 @@
 """Regression tests for NIBE Local REST core logic."""
 
 from datetime import time
+import json
+from pathlib import Path
 
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 
@@ -35,6 +37,20 @@ from custom_components.nibe_local.switch import (
     write_allowed_for_mode,
 )
 from custom_components.nibe_local.time import seconds_from_time, time_from_seconds
+
+_TRANSLATIONS = (
+    Path(__file__).parents[1] / "custom_components" / "nibe_local" / "translations"
+)
+_RUNTIME_EXCEPTION_KEYS = {
+    "operating_mode_unavailable",
+    "write_not_allowed_in_current_mode",
+    "number_limits_unavailable",
+    "number_out_of_range",
+    "number_invalid_step",
+    "auth_rejected",
+    "auth_rejected_notification",
+    "connection_unreachable_notification",
+}
 
 
 def _point(raw: int, *, divisor: int = 10, decimal: int = 1) -> dict:
@@ -299,3 +315,12 @@ def test_supports_smart_mode_only_when_device_exposes_key() -> None:
     assert supports_smart_mode({"smartMode": None})
     assert not supports_smart_mode({})
     assert not supports_smart_mode(None)
+
+
+def test_runtime_translations_are_complete_in_de_and_en() -> None:
+    for language in ("de", "en"):
+        payload = json.loads((_TRANSLATIONS / f"{language}.json").read_text())
+        assert payload["entity"]["switch"]["ventilation_plus"]["name"]
+        assert _RUNTIME_EXCEPTION_KEYS <= set(payload["exceptions"])
+        for key in _RUNTIME_EXCEPTION_KEYS:
+            assert payload["exceptions"][key]["message"]
