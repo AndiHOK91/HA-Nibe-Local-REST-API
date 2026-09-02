@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import POINTS
+from .const import DOMAIN, POINTS
 from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, scaled_value, to_raw
 
@@ -105,21 +105,30 @@ class NibeNumber(NibePointEntity, NumberEntity):
         limits = metadata_limits(self.point or {}, current)
         if limits is None:
             raise HomeAssistantError(
-                "NIBE liefert für diesen Wert keine verlässlichen Min-/Max-Grenzen; "
-                "der Schreibvorgang wurde aus Sicherheitsgründen blockiert."
+                translation_domain=DOMAIN,
+                translation_key="number_limits_unavailable",
             )
 
         minimum, maximum = limits
         if not minimum <= value <= maximum:
             raise HomeAssistantError(
-                f"Wert {value} liegt außerhalb des erlaubten Bereichs "
-                f"{minimum} bis {maximum}."
+                translation_domain=DOMAIN,
+                translation_key="number_out_of_range",
+                translation_placeholders={
+                    "value": str(value),
+                    "minimum": str(minimum),
+                    "maximum": str(maximum),
+                },
             )
 
         if not value_is_representable(self.point or {}, value):
             raise HomeAssistantError(
-                f"Wert {value} passt nicht zur von NIBE vorgegebenen Schrittweite "
-                f"{self.native_step}."
+                translation_domain=DOMAIN,
+                translation_key="number_invalid_step",
+                translation_placeholders={
+                    "value": str(value),
+                    "step": str(self.native_step),
+                },
             )
 
         await self.coordinator.api.patch_point(
