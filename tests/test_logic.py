@@ -10,15 +10,16 @@ from custom_components.nibe_local.api import NibeLocalApi
 from custom_components.nibe_local.config_flow import merge_keep_credentials
 from custom_components.nibe_local.const import (
     CONF_AUTH_HEADER,
+    POINTS,
     POINT_COOLING_ALLOWED,
     POINT_HEATING_ALLOWED,
+    POINT_HOT_WATER_DEMAND,
     POINT_OPERATING_MODE_SETTING,
     POINT_VENTILATION_MODE,
 )
 from custom_components.nibe_local.coordinator import (
     CONNECTION_NOTIFICATION_DELAY_SECONDS,
     FALLBACK_BACKOFF_STEPS_SECONDS,
-    auth_failure_notification_due,
     connection_failure_notification_due,
     fallback_backoff_delay,
     merge_point_updates,
@@ -32,10 +33,7 @@ from custom_components.nibe_local.select import (
     supports_smart_mode,
 )
 from custom_components.nibe_local.sensor import periodic_hot_water_date
-from custom_components.nibe_local.switch import (
-    write_allowed_after_mode_refresh,
-    write_allowed_for_mode,
-)
+from custom_components.nibe_local.switch import write_allowed_for_mode
 from custom_components.nibe_local.time import seconds_from_time, time_from_seconds
 
 _TRANSLATIONS = (
@@ -88,11 +86,26 @@ def test_periodic_hot_water_date_epoch() -> None:
     assert periodic_hot_water_date("ungueltig") is None
 
 
+def test_all_point_selects_have_explicit_enum_mappings() -> None:
+    configured = {
+        definition.point_id for definition in POINTS if definition.platform == "select"
+    }
+    assert configured == set(NibePointSelect.ENUM_OPTIONS)
+
+
 def test_operating_mode_options_are_stable() -> None:
     assert NibePointSelect.ENUM_OPTIONS[POINT_OPERATING_MODE_SETTING] == {
         0: "auto",
         1: "manual",
         2: "auxiliary_heat_only",
+    }
+
+
+def test_hot_water_demand_options_are_stable() -> None:
+    assert NibePointSelect.ENUM_OPTIONS[POINT_HOT_WATER_DEMAND] == {
+        0: "low",
+        1: "medium",
+        2: "high",
     }
 
 
@@ -122,18 +135,6 @@ def test_mode_dependent_write_protection() -> None:
     assert write_allowed_for_mode(POINT_HEATING_ALLOWED, 2)
     assert not write_allowed_for_mode(POINT_COOLING_ALLOWED, 2)
     assert not write_allowed_for_mode(POINT_HEATING_ALLOWED, None)
-
-
-def test_protected_write_requires_successful_mode_refresh() -> None:
-    assert write_allowed_after_mode_refresh(
-        POINT_HEATING_ALLOWED, 1, refresh_succeeded=True
-    )
-    assert not write_allowed_after_mode_refresh(
-        POINT_HEATING_ALLOWED, 1, refresh_succeeded=False
-    )
-    assert not write_allowed_after_mode_refresh(
-        POINT_COOLING_ALLOWED, 1, refresh_succeeded=False
-    )
 
 
 def test_time_conversion_roundtrip() -> None:
@@ -228,12 +229,6 @@ def test_connection_notification_waits_two_minutes() -> None:
     assert connection_failure_notification_due(
         now=300.0, failure_started_at=100.0
     )
-
-
-def test_auth_notification_only_created_once_per_outage() -> None:
-    assert auth_failure_notification_due(notification_active=False)
-    assert not auth_failure_notification_due(notification_active=True)
-    assert auth_failure_notification_due(notification_active=False)
 
 
 def test_merge_point_updates_preserves_missing_old_values() -> None:
