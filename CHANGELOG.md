@@ -10,6 +10,7 @@ Alle wesentlichen Änderungen an **NIBE Local REST** werden hier versionsweise z
 - Zustände von Betriebspriorität, Betriebsmodus und Enteisungsanforderung auf stabile, übersetzbare `snake_case`-Werte umgestellt.
 - Select-Zustände für Betriebsmodus, Lüftung und Brauchwasserbedarf auf stabile, übersetzbare Werte umgestellt.
 - Fehlende deutsche Übersetzung für `already_configured` ergänzt.
+- **Letzter erfolgreicher Poll** wird nicht mehr als eigener Timestamp-Sensor angelegt, sondern als Attribut `last_successful_poll` des Diagnose-Binärsensors **REST API erreichbar** bereitgestellt. Dadurch erzeugt jeder erfolgreiche Poll keinen eigenen Eintrag mehr im Aktivitätenprotokoll.
 
 ## 0.7.3
 
