@@ -1,4 +1,4 @@
-"""NIBE Local REST integration."""
+"""NIBE Local REST API integration."""
 from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
@@ -46,7 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         api,
         data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
         data.get(CONF_COMMAND_POLL_DELAY_MS, DEFAULT_COMMAND_POLL_DELAY_MS),
-        device_name=entry.title or "NIBE Local REST",
+        device_name=entry.title or "NIBE Local REST API",
     )
     await coordinator.async_config_entry_first_refresh()
 
