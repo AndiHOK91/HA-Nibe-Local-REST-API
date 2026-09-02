@@ -1,4 +1,4 @@
-"""Config and options flow for NIBE Local REST."""
+"""Config and options flow for NIBE Local REST API."""
 from __future__ import annotations
 
 import voluptuous as vol
@@ -205,7 +205,7 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=_reauth_schema(current),
             errors=errors,
             description_placeholders={
-                "device_name": self._reauth_entry.title or "NIBE Local REST",
+                "device_name": self._reauth_entry.title or "NIBE Local REST API",
                 "host": host or "–",
                 "ip_address": ip_address or "nicht auflösbar",
             },
