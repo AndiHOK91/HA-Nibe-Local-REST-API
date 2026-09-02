@@ -59,13 +59,18 @@ async def async_setup_entry(
 
 
 class NibePointSelect(NibePointEntity, SelectEntity):
-    """Select for NIBE enum-like points."""
+    """Select for explicitly mapped NIBE enum points."""
 
     ENUM_OPTIONS: dict[int, dict[int, str]] = {
         POINT_OPERATING_MODE_SETTING: {
             0: "auto",
             1: "manual",
             2: "auxiliary_heat_only",
+        },
+        POINT_HOT_WATER_DEMAND: {
+            0: "low",
+            1: "medium",
+            2: "high",
         },
         POINT_VENTILATION_MODE: {
             0: "normal",
@@ -76,73 +81,33 @@ class NibePointSelect(NibePointEntity, SelectEntity):
         },
     }
 
-    HOT_WATER_DEMAND_OPTIONS = {
-        0: "low",
-        1: "medium",
-        2: "high",
-    }
-
-    def _mapping(self) -> dict[int, str] | None:
-        point_id = self.definition.point_id
-        if point_id == POINT_HOT_WATER_DEMAND:
-            return self.HOT_WATER_DEMAND_OPTIONS
-        return self.ENUM_OPTIONS.get(point_id)
+    @property
+    def _mapping(self) -> dict[int, str]:
+        return self.ENUM_OPTIONS[self.definition.point_id]
 
     @property
     def options(self) -> list[str]:
-        mapping = self._mapping()
-        if mapping:
-            return list(mapping.values())
-
-        point = self.point or {}
-        md = point.get("metadata") or {}
-        minimum = md.get("minValue")
-        maximum = md.get("maxValue")
-        current = raw_value(point)
-
-        if isinstance(minimum, int) and isinstance(maximum, int):
-            if minimum <= maximum and (maximum - minimum) <= 50:
-                return [str(value) for value in range(minimum, maximum + 1)]
-
-        if isinstance(current, int):
-            return [str(current)]
-        if isinstance(current, str) and current:
-            return [current]
-        return []
+        return list(self._mapping.values())
 
     @property
     def current_option(self) -> str | None:
-        value = raw_value(self.point or {})
-        if value is None:
-            return None
-
-        mapping = self._mapping()
-        if mapping:
-            return mapped_option(value, mapping)
-        return str(value)
+        return mapped_option(raw_value(self.point or {}), self._mapping)
 
     async def async_select_option(self, option: str) -> None:
-        mapping = self._mapping()
-        if mapping:
-            reverse = {state: raw for raw, state in mapping.items()}
-            if option not in reverse:
-                raise ValueError(f"Unknown option {option!r}")
-            value: int | str = reverse[option]
-        else:
-            try:
-                value = int(option)
-            except ValueError:
-                value = option
+        reverse = {state: raw for raw, state in self._mapping.items()}
+        if option not in reverse:
+            raise ValueError(f"Unknown option {option!r}")
 
-        await self.coordinator.api.patch_point(self.definition.point_id, value)
+        await self.coordinator.api.patch_point(
+            self.definition.point_id,
+            reverse[option],
+        )
         await self.coordinator.async_refresh_point(self.definition.point_id)
 
     @property
     def extra_state_attributes(self):
         attrs = dict(super().extra_state_attributes or {})
-        mapping = self._mapping()
-        if mapping:
-            attrs["raw_to_state"] = mapping
+        attrs["raw_to_state"] = self._mapping
         return attrs
 
 
