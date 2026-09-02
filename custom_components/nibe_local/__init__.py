@@ -21,33 +21,78 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     PLATFORMS,
+    POINT_BY_ID,
 )
 from .coordinator import NibeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 _LEGACY_ENTITY_OBJECT_PREFIX = "nibe_vvm_s320_"
 _ENTITY_OBJECT_PREFIX = "nibe_api_"
+_SPECIAL_ENTITY_KEYS = {
+    "api_reachable",
+    "fallback_active",
+    "notifications",
+    "last_connection_error",
+    "smart_mode",
+}
 
 
-def _legacy_entity_id_target(entity_id: str) -> str | None:
-    """Return the neutral replacement for a legacy VVM S320 entity ID."""
+def _canonical_entity_key(unique_id: str, device_id: str) -> str | None:
+    """Return the stable language-neutral entity key for a registry unique ID."""
+    prefix = f"{device_id}_"
+    if not unique_id.startswith(prefix):
+        return None
+
+    suffix = unique_id.removeprefix(prefix)
+    if suffix in _SPECIAL_ENTITY_KEYS:
+        return suffix
+
+    try:
+        point_id = int(suffix)
+    except ValueError:
+        return None
+
+    definition = POINT_BY_ID.get(point_id)
+    return definition.key if definition is not None else None
+
+
+def _canonical_entity_id_target(
+    entity_id: str,
+    unique_id: str,
+    device_id: str,
+) -> str | None:
+    """Return the canonical NIBE API entity ID for an automatically named entity."""
     domain, separator, object_id = entity_id.partition(".")
-    if not separator or not object_id.startswith(_LEGACY_ENTITY_OBJECT_PREFIX):
+    if not separator:
         return None
-    suffix = object_id.removeprefix(_LEGACY_ENTITY_OBJECT_PREFIX)
-    if not suffix:
+
+    if not object_id.startswith(
+        (_LEGACY_ENTITY_OBJECT_PREFIX, _ENTITY_OBJECT_PREFIX)
+    ):
         return None
-    return f"{domain}.{_ENTITY_OBJECT_PREFIX}{suffix}"
+
+    key = _canonical_entity_key(unique_id, device_id)
+    if key is None:
+        return None
+    return f"{domain}.{_ENTITY_OBJECT_PREFIX}{key}"
 
 
-def _async_migrate_legacy_entity_ids(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Rename automatically generated legacy VVM S320 entity IDs.
+def _async_migrate_entity_ids(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    device_id: str,
+) -> None:
+    """Migrate automatically generated entity IDs to stable canonical IDs.
 
-    Older releases used the hard-coded device fallback name ``NIBE VVM S320``.
-    Home Assistant incorporated that device name into automatically generated
-    entity IDs. The local REST API does not expose a model name on all systems,
-    so migrate only matching legacy IDs owned by this config entry to the
-    neutral ``nibe_api`` prefix. Unique IDs are intentionally left unchanged.
+    Older releases derived entity IDs from the hard-coded ``NIBE VVM S320``
+    device fallback and from localized entity names. Canonical IDs now use the
+    neutral ``nibe_api`` prefix plus the stable translation key. This keeps the
+    technical entity ID independent from the Home Assistant UI language while
+    preserving the existing unique ID and entity registry entry.
+
+    Only IDs still using an integration-generated ``nibe_vvm_s320`` or
+    ``nibe_api`` prefix are migrated. Custom entity IDs with another prefix are
+    intentionally left untouched.
     """
     entity_registry = er.async_get(hass)
 
@@ -58,20 +103,24 @@ def _async_migrate_legacy_entity_ids(hass: HomeAssistant, entry: ConfigEntry) ->
         ):
             continue
 
-        new_entity_id = _legacy_entity_id_target(registry_entry.entity_id)
+        new_entity_id = _canonical_entity_id_target(
+            registry_entry.entity_id,
+            registry_entry.unique_id,
+            device_id,
+        )
         if new_entity_id is None or new_entity_id == registry_entry.entity_id:
             continue
 
         if entity_registry.async_get(new_entity_id) is not None:
             _LOGGER.warning(
-                "Cannot migrate legacy entity ID %s to %s because the target already exists",
+                "Cannot migrate entity ID %s to %s because the target already exists",
                 registry_entry.entity_id,
                 new_entity_id,
             )
             continue
 
         _LOGGER.info(
-            "Migrating legacy entity ID %s to %s",
+            "Migrating entity ID %s to %s",
             registry_entry.entity_id,
             new_entity_id,
         )
@@ -109,7 +158,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await coordinator.async_config_entry_first_refresh()
 
-    _async_migrate_legacy_entity_ids(hass, entry)
+    _async_migrate_entity_ids(hass, entry, api.device_id)
 
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
