@@ -12,8 +12,11 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 - Harte deutsche Namensüberschreibungen für die BWZ-Zeitwerte entfernt; auch diese Number-Entitäten verwenden jetzt ausschließlich die vorhandenen Home-Assistant-Übersetzungen.
 - Veraltete `strings.json` entfernt. Custom Integrations laden ihre Übersetzungen direkt aus `translations/<sprache>.json`.
 - Sprachabhängigen Fallbacktext `nicht auflösbar` im Reauth-Dialog durch einen neutralen Gedankenstrich ersetzt.
+- Spezialschalter **Lüftung +** verwendet jetzt einen eigenen Translation Key statt eines fest im Python-Code gesetzten deutschen Namens.
+- Benutzernahe Fehler beim Schreiben von Switch- und Number-Entitäten werden über Home Assistants übersetzbare `HomeAssistantError`-Mechanik ausgegeben.
+- Persistent Notifications für Authentifizierungs- und Verbindungsfehler verwenden die deutsche bzw. englische Übersetzungsdatei; der Notification-Titel bleibt sprachneutral.
 - Regressionstests auf die aktuelle, sprachneutrale Select-State-Struktur umgestellt.
-- Interne Setup- und Entity-Basis vereinfacht; Point-IDs, Unique IDs, Translation Keys und aktuelle Entity-IDs bleiben unverändert.
+- Interne Setup- und Entity-Basis vereinfacht; Point-IDs, Unique IDs, Translation Keys bestehender Punkt-Entitäten und aktuelle Entity-IDs bleiben unverändert.
 
 ## 0.7.5
 
