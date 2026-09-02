@@ -74,7 +74,6 @@ async def async_setup_entry(
     entities.extend(
         [
             NibeNotificationSensor(coordinator),
-            NibeLastSuccessfulPollSensor(coordinator),
             NibeLastConnectionErrorSensor(coordinator),
         ]
     )
@@ -234,20 +233,6 @@ class _NibeHealthTimestampSensor(CoordinatorEntity[NibeCoordinator], SensorEntit
     @property
     def device_info(self):
         return coordinator_device_info(self.coordinator)
-
-
-class NibeLastSuccessfulPollSensor(_NibeHealthTimestampSensor):
-    """Timestamp of the most recent successful regular coordinator poll."""
-
-    _attr_translation_key = "last_successful_poll"
-
-    def __init__(self, coordinator: NibeCoordinator) -> None:
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.api.device_id}_last_successful_poll"
-
-    @property
-    def native_value(self) -> datetime | None:
-        return self.coordinator.last_successful_poll
 
 
 class NibeLastConnectionErrorSensor(_NibeHealthTimestampSensor):
