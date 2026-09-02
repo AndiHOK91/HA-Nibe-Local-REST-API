@@ -61,22 +61,6 @@ async def async_setup_entry(
 class NibePointSelect(NibePointEntity, SelectEntity):
     """Select for NIBE enum-like points."""
 
-    # Kept for compatibility with callers that imported the previous labels.
-    ENUM_LABELS: dict[int, dict[int, str]] = {
-        POINT_OPERATING_MODE_SETTING: {
-            0: "Auto",
-            1: "Manuell",
-            2: "Nur Zusatzheizung",
-        },
-        POINT_VENTILATION_MODE: {
-            0: "Normal",
-            1: "Aus",
-            2: "Reduziert",
-            3: "Erhöht",
-            4: "Maximal",
-        },
-    }
-
     ENUM_OPTIONS: dict[int, dict[int, str]] = {
         POINT_OPERATING_MODE_SETTING: {
             0: "auto",
