@@ -69,18 +69,6 @@ def write_allowed_for_mode(point_id: int, mode: int | None) -> bool:
     return False
 
 
-def write_allowed_after_mode_refresh(
-    point_id: int,
-    mode: int | None,
-    *,
-    refresh_succeeded: bool,
-) -> bool:
-    """Return whether a protected write may proceed after refreshing the mode."""
-    if point_id not in {POINT_HEATING_ALLOWED, POINT_COOLING_ALLOWED}:
-        return True
-    return refresh_succeeded and write_allowed_for_mode(point_id, mode)
-
-
 class NibeSwitch(NibePointEntity, SwitchEntity):
     """Generic writable switch, with mode-dependent protection."""
 
@@ -125,12 +113,7 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
                 translation_key="operating_mode_unavailable",
             )
 
-        mode = self._operating_mode()
-        if write_allowed_after_mode_refresh(
-            self.definition.point_id,
-            mode,
-            refresh_succeeded=True,
-        ):
+        if write_allowed_for_mode(self.definition.point_id, self._operating_mode()):
             return
 
         raise HomeAssistantError(
@@ -301,7 +284,7 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
         self._verify_task = self.hass.async_create_task(self._verify_after_write())
 
     async def _refresh_ventilation(self) -> int | None:
-        await self.coordinator.async_refresh_ventilation_state()
+        await self.coordinator.async_refresh_point(POINT_VENTILATION_MODE)
         value = raw_value(self.coordinator.point(POINT_VENTILATION_MODE) or {})
         try:
             return int(value) if value is not None else None
