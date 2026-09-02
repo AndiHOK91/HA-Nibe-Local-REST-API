@@ -171,5 +171,3 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(7937, "ventilation_outdoor_bt23", "Lüftung"),
     PointDef(7939, "ventilation_humidity_bm20", "Lüftung"),
 )
-
-POINT_BY_ID = {p.point_id: p for p in POINTS}
