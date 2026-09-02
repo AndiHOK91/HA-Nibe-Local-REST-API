@@ -15,6 +15,8 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 - Spezialschalter **Lüftung +** verwendet jetzt einen eigenen Translation Key statt eines fest im Python-Code gesetzten deutschen Namens.
 - Benutzernahe Fehler beim Schreiben von Switch- und Number-Entitäten werden über Home Assistants übersetzbare `HomeAssistantError`-Mechanik ausgegeben.
 - Persistent Notifications für Authentifizierungs- und Verbindungsfehler verwenden die deutsche bzw. englische Übersetzungsdatei; der Notification-Titel bleibt sprachneutral.
+- Alle konfigurierten Point-Selects besitzen jetzt explizite Enum-Mappings. Der ungenutzte generische Min-/Max-Fallback für unbekannte Selects wurde entfernt und durch einen Regressionstest abgesichert.
+- Redundante Hilfsfunktionen für bereits separat geprüfte Schreibfreigaben, Auth-Benachrichtigungen und den Lüftungs-Punktrefresh entfernt; die Aufrufe nutzen jetzt direkt die zugrunde liegende Logik.
 - Regressionstests auf die aktuelle, sprachneutrale Select-State-Struktur umgestellt.
 - Interne Setup- und Entity-Basis vereinfacht; Point-IDs, Unique IDs, Translation Keys bestehender Punkt-Entitäten und aktuelle Entity-IDs bleiben unverändert.
 
