@@ -7,6 +7,7 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 - Legacy-Migration für alte `nibe_vvm_s320_*`-Entity-IDs entfernt. Die aktuelle `nibe_api_*`-Struktur gilt ab 0.8.0 als feste Basis.
 - Automatische Entfernung des früheren Standalone-Sensors `last_successful_poll` aus der Entity Registry entfernt; die eigene Installation wurde bereits bereinigt.
 - Nicht mehr benötigte Kompatibilitäts-Exporte `FRIENDLY_NAMES`, `OPERATING_MODE_MAP` und `ENUM_LABELS` entfernt.
+- Nicht mehr verwendetes internes `POINT_BY_ID`-Lookup entfernt; `POINTS` bleibt die zentrale Definition aller NIBE-Punkte.
 - Regressionstests auf die aktuelle, sprachneutrale Select-State-Struktur umgestellt.
 - Interne Setup- und Entity-Basis vereinfacht; Point-IDs, Unique IDs, Translation Keys und aktuelle Entity-IDs bleiben unverändert.
 
