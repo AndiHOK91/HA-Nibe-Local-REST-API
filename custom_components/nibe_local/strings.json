@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "NIBE Local REST einrichten",
+        "title": "NIBE Local REST API einrichten",
         "description": "Verbindung zur lokalen NIBE REST API.",
         "data": {
           "host": "IP-Adresse / Hostname",
@@ -21,7 +21,7 @@
         }
       },
       "reauth_confirm": {
-        "title": "NIBE Local REST – Zugangsdaten erneuern",
+        "title": "NIBE Local REST API – Zugangsdaten erneuern",
         "description": "{device_name} – Host: {host} – IP: {ip_address} hat die gespeicherten Zugangsdaten abgelehnt. Bitte die aktuellen Zugangsdaten eingeben. Leere Passwort- oder Authorization-Header-Felder behalten den jeweils gespeicherten Wert bei.",
         "data": {
           "username": "Benutzername",
@@ -45,7 +45,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "NIBE Local REST konfigurieren",
+        "title": "NIBE Local REST API konfigurieren",
         "description": "IP-Adresse, Zugangsdaten und Abfrageintervall ändern. Passwort und Authorization-Header werden nicht angezeigt; das jeweilige Feld leer lassen, um den gespeicherten Wert beizubehalten.",
         "data": {
           "host": "IP-Adresse / Hostname",
