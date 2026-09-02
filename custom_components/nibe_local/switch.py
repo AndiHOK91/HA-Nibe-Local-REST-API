@@ -11,7 +11,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     POINTS,
-    POINT_BY_ID,
     POINT_COOLING_ALLOWED,
     POINT_HEATING_ALLOWED,
     POINT_MORE_HOT_WATER,
@@ -21,6 +20,13 @@ from .const import (
 )
 from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, raw_value
+
+MORE_HOT_WATER_DEFINITION = next(
+    definition for definition in POINTS if definition.point_id == POINT_MORE_HOT_WATER
+)
+VENTILATION_MODE_DEFINITION = next(
+    definition for definition in POINTS if definition.point_id == POINT_VENTILATION_MODE
+)
 
 
 async def async_setup_entry(
@@ -43,10 +49,8 @@ async def async_setup_entry(
             entities.append(NibeSwitch(coordinator, definition))
 
     ventilation_point = coordinator.point(POINT_VENTILATION_MODE)
-    if (
-        ventilation_point
-        and (ventilation_point.get("metadata") or {}).get("isWritable", False)
-        and POINT_VENTILATION_MODE in POINT_BY_ID
+    if ventilation_point and (ventilation_point.get("metadata") or {}).get(
+        "isWritable", False
     ):
         entities.append(NibeVentilationPlusSwitch(coordinator))
 
@@ -57,9 +61,9 @@ def write_allowed_for_mode(point_id: int, mode: int | None) -> bool:
     """Return whether a mode-dependent heating/cooling point may be written."""
     if point_id not in {POINT_HEATING_ALLOWED, POINT_COOLING_ALLOWED}:
         return True
-    if mode == 1:  # Manuell
+    if mode == 1:
         return True
-    if mode == 2:  # Nur Zusatzheizung
+    if mode == 2:
         return point_id == POINT_HEATING_ALLOWED
     return False
 
@@ -157,14 +161,10 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
     _attr_icon = "mdi:water-boiler-alert"
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
-        super().__init__(coordinator, POINT_BY_ID[POINT_MORE_HOT_WATER])
+        super().__init__(coordinator, MORE_HOT_WATER_DEFINITION)
         self._attr_unique_id = f"{coordinator.api.device_id}_more_hot_water"
         self._optimistic_state: bool | None = None
         self._verify_task: asyncio.Task[None] | None = None
-
-    @property
-    def name(self) -> str:
-        return "Mehr Brauchwasser"
 
     @property
     def is_on(self) -> bool | None:
@@ -277,7 +277,7 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
     _attr_icon = "mdi:fan-plus"
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
-        super().__init__(coordinator, POINT_BY_ID[POINT_VENTILATION_MODE])
+        super().__init__(coordinator, VENTILATION_MODE_DEFINITION)
         self._attr_unique_id = f"{coordinator.api.device_id}_ventilation_plus"
         self._optimistic_state: bool | None = None
         self._expected_modes: set[int] | None = None
