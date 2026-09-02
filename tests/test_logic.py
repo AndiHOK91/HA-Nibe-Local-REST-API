@@ -8,7 +8,6 @@ from custom_components.nibe_local.api import NibeLocalApi
 from custom_components.nibe_local.config_flow import merge_keep_credentials
 from custom_components.nibe_local.const import (
     CONF_AUTH_HEADER,
-    POINT_BY_ID,
     POINT_COOLING_ALLOWED,
     POINT_HEATING_ALLOWED,
     POINT_OPERATING_MODE_SETTING,
@@ -23,17 +22,14 @@ from custom_components.nibe_local.coordinator import (
     merge_point_updates,
     should_skip_fallback_scan,
 )
-from custom_components.nibe_local.entity import FRIENDLY_NAMES, scaled_value, to_raw
+from custom_components.nibe_local.entity import scaled_value, to_raw
 from custom_components.nibe_local.number import metadata_limits, value_is_representable
 from custom_components.nibe_local.select import (
     NibePointSelect,
     mapped_option,
     supports_smart_mode,
 )
-from custom_components.nibe_local.sensor import (
-    OPERATING_MODE_MAP,
-    periodic_hot_water_date,
-)
+from custom_components.nibe_local.sensor import periodic_hot_water_date
 from custom_components.nibe_local.switch import (
     write_allowed_after_mode_refresh,
     write_allowed_for_mode,
@@ -76,30 +72,29 @@ def test_periodic_hot_water_date_epoch() -> None:
     assert periodic_hot_water_date("ungueltig") is None
 
 
-def test_operating_mode_labels_match_select() -> None:
-    assert OPERATING_MODE_MAP == {
-        0: "Auto",
-        1: "Manuell",
-        2: "Nur Zusatzheizung",
+def test_operating_mode_options_are_stable() -> None:
+    assert NibePointSelect.ENUM_OPTIONS[POINT_OPERATING_MODE_SETTING] == {
+        0: "auto",
+        1: "manual",
+        2: "auxiliary_heat_only",
     }
-    assert NibePointSelect.ENUM_LABELS[POINT_OPERATING_MODE_SETTING] == OPERATING_MODE_MAP
 
 
-def test_ventilation_mode_labels() -> None:
-    assert NibePointSelect.ENUM_LABELS[POINT_VENTILATION_MODE] == {
-        0: "Normal",
-        1: "Aus",
-        2: "Reduziert",
-        3: "Erhöht",
-        4: "Maximal",
+def test_ventilation_mode_options_are_stable() -> None:
+    assert NibePointSelect.ENUM_OPTIONS[POINT_VENTILATION_MODE] == {
+        0: "normal",
+        1: "off",
+        2: "reduced",
+        3: "increased",
+        4: "maximum",
     }
 
 
 def test_mapped_option_accepts_integer_and_numeric_string() -> None:
-    mapping = NibePointSelect.ENUM_LABELS[POINT_OPERATING_MODE_SETTING]
-    assert mapped_option(0, mapping) == "Auto"
-    assert mapped_option("0", mapping) == "Auto"
-    assert mapped_option("2", mapping) == "Nur Zusatzheizung"
+    mapping = NibePointSelect.ENUM_OPTIONS[POINT_OPERATING_MODE_SETTING]
+    assert mapped_option(0, mapping) == "auto"
+    assert mapped_option("0", mapping) == "auto"
+    assert mapped_option("2", mapping) == "auxiliary_heat_only"
     assert mapped_option("unbekannt", mapping) == "unbekannt"
 
 
@@ -172,10 +167,6 @@ def test_number_value_must_match_nibe_step() -> None:
     assert value_is_representable(point, 22.2)
     assert value_is_representable(point, 10.0)
     assert not value_is_representable(point, 22.25)
-
-
-def test_friendly_names_only_reference_active_points() -> None:
-    assert set(FRIENDLY_NAMES) == set(POINT_BY_ID)
 
 
 def test_fallback_backoff_delay_caps_at_120_seconds() -> None:
