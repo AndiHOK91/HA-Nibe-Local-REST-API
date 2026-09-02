@@ -9,6 +9,7 @@ from typing import Any
 from homeassistant.components import persistent_notification
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers.translation import async_get_translations
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -19,6 +20,17 @@ _LOGGER = logging.getLogger(__name__)
 
 FALLBACK_BACKOFF_STEPS_SECONDS = (30, 60, 120)
 CONNECTION_NOTIFICATION_DELAY_SECONDS = 120
+
+_NOTIFICATION_FALLBACK_MESSAGES = {
+    "auth_rejected_notification": (
+        "{label}: The stored credentials were rejected by the REST API. "
+        "Please update the integration credentials."
+    ),
+    "connection_unreachable_notification": (
+        "{label}: The local REST API has been unreachable for at least 2 minutes. "
+        "Please check the network, NIBE device, and REST API."
+    ),
+}
 
 
 def fallback_backoff_delay(failure_streak: int) -> int:
@@ -68,7 +80,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         api: NibeLocalApi,
         interval: int,
         command_poll_delay_ms: int = 1000,
-        device_name: str = "NIBE Local REST",
+        device_name: str = "NIBE Local REST API",
     ) -> None:
         super().__init__(
             hass,
@@ -99,10 +111,25 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _connection_label(self) -> str:
         """Return a device/host/IP label for user-facing messages."""
         ip_address = await async_resolve_host_ip(self.api.host)
-        return (
-            f"{self.device_name} – Host: {self.api.host} – "
-            f"IP: {ip_address or 'nicht auflösbar'}"
+        return f"{self.device_name} – Host: {self.api.host} – IP: {ip_address or '–'}"
+
+    async def _translated_message(self, key: str, **placeholders: str) -> str:
+        """Return a localized integration message with English fallback."""
+        translations = await async_get_translations(
+            self.hass,
+            self.hass.config.language,
+            "exceptions",
+            {DOMAIN},
         )
+        translation_key = f"component.{DOMAIN}.exceptions.{key}.message"
+        template = translations.get(
+            translation_key,
+            _NOTIFICATION_FALLBACK_MESSAGES.get(key, key),
+        )
+        try:
+            return template.format(**placeholders)
+        except KeyError:
+            return template
 
     async def _notify_auth_failure(self) -> None:
         """Create the authentication failure notification once per outage."""
@@ -112,13 +139,14 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return
 
         label = await self._connection_label()
+        message = await self._translated_message(
+            "auth_rejected_notification",
+            label=label,
+        )
         persistent_notification.async_create(
             self.hass,
-            (
-                f"{label}: Die gespeicherten Zugangsdaten wurden von der REST API "
-                "abgelehnt. Bitte die Zugangsdaten der Integration aktualisieren."
-            ),
-            title="NIBE Local REST – Zugangsdaten abgelehnt",
+            message,
+            title="NIBE Local REST API",
             notification_id=self._auth_notification_id,
         )
         self._auth_notification_active = True
@@ -138,13 +166,14 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return
 
         label = await self._connection_label()
+        message = await self._translated_message(
+            "connection_unreachable_notification",
+            label=label,
+        )
         persistent_notification.async_create(
             self.hass,
-            (
-                f"{label}: Die lokale REST API ist seit mindestens 2 Minuten nicht "
-                "erreichbar. Bitte Netzwerk, NIBE-Gerät und REST-API prüfen."
-            ),
-            title="NIBE Local REST – REST API nicht erreichbar",
+            message,
+            title="NIBE Local REST API",
             notification_id=self._connection_notification_id,
         )
         self._connection_notification_active = True
@@ -187,7 +216,8 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except NibeAuthError as err:
             await self._notify_auth_failure()
             raise ConfigEntryAuthFailed(
-                "NIBE API rejected the configured credentials"
+                translation_domain=DOMAIN,
+                translation_key="auth_rejected",
             ) from err
         except NibeApiError as err:
             await self._record_connection_failure()
