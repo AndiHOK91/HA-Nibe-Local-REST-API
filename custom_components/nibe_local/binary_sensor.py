@@ -1,6 +1,8 @@
 """Binary sensors for NIBE Local REST."""
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -70,6 +72,11 @@ class NibeApiReachableBinarySensor(CoordinatorEntity[NibeCoordinator], BinarySen
     @property
     def is_on(self) -> bool:
         return self.coordinator.last_update_success
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose connection diagnostics without a separate poll entity."""
+        return {"last_successful_poll": self.coordinator.last_successful_poll}
 
     @property
     def device_info(self):
