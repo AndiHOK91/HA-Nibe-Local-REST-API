@@ -6,15 +6,16 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 
 - Integrationsname in HACS, Home Assistant, Übersetzungen und Dokumentation auf **NIBE Local REST API** vereinheitlicht.
 - Entitätsnamen werden über Home-Assistant-Übersetzungen statt fest im Python-Code gesetzter deutscher Namen bereitgestellt.
+- Deutsche und englische Entitätsnamen systematisch vereinheitlicht: Temperaturen, Pumpen, Verdichter, Lüftung, Brauchwasser sowie EEV-/Abtauwerte verwenden jetzt konsistente und besser lesbare Bezeichnungen.
 - Deutsche und englische Übersetzungen für Sensoren, Binärsensoren, Schalter, Number-, Select- und Time-Entitäten ergänzt.
 - Diagnose-Entitäten und Smart Mode vollständig in die Übersetzungsstruktur aufgenommen.
-- Zustände von Betriebspriorität, Betriebsmodus und Enteisungsanforderung auf stabile, übersetzbare `snake_case`-Werte umgestellt.
+- Zustände von Betriebspriorität, Betriebsmodus und Abtauanforderung auf stabile, übersetzbare `snake_case`-Werte umgestellt.
 - Select-Zustände für Betriebsmodus, Lüftung und Brauchwasserbedarf auf stabile, übersetzbare Werte umgestellt.
 - Fehlende deutsche Übersetzung für `already_configured` ergänzt.
 - **Letzter erfolgreicher Poll** wird nicht mehr als eigener Timestamp-Sensor angelegt, sondern als Attribut `last_successful_poll` des Diagnose-Binärsensors **REST API erreichbar** bereitgestellt. Dadurch erzeugt jeder erfolgreiche Poll keinen eigenen Eintrag mehr im Aktivitätenprotokoll.
 - Hochauflösende `icon@2x.png`- und `dark_icon@2x.png`-Branding-Dateien ergänzt.
 - Geräte- und Einrichtungs-Fallback auf **NIBE API** neutralisiert, da der lokale `/devices/{id}`-Endpunkt nicht auf allen Anlagen einen Produktnamen liefert.
-- Bereits registrierte, automatisch erzeugte Entity-IDs mit dem alten Präfix `nibe_vvm_s320_` werden beim Setup auf `nibe_api_` migriert. Unique IDs bleiben unverändert; bestehende Historie kann dadurch über die Home-Assistant-Entity-Registry weitergeführt werden.
+- Bereits registrierte, automatisch erzeugte Entity-IDs werden beim Setup auf sprachneutrale IDs im Schema `<domain>.nibe_api_<translation_key>` migriert. Beispielsweise wird `sensor.nibe_vvm_s320_aktuelle_aussenlufttemperatur_bt1` zu `sensor.nibe_api_outdoor_temperature_bt1`. Unique IDs und Registry-Einträge bleiben erhalten; benutzerdefinierte Entity-IDs mit einem anderen Präfix werden nicht verändert.
 
 ## 0.7.3
 
