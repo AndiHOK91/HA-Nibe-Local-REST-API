@@ -15,6 +15,8 @@ CONF_AUTH_HEADER = "auth_header"
 CONF_VERIFY_SSL = "verify_ssl"
 CONF_SCAN_INTERVAL = "scan_interval"
 CONF_COMMAND_POLL_DELAY_MS = "command_poll_delay_ms"
+CONF_ENTITY_PROFILE = "entity_profile"
+CONF_SELECTED_POINT_IDS = "selected_point_ids"
 
 AUTH_METHOD_BASIC = "basic"
 AUTH_METHOD_HEADER = "header"

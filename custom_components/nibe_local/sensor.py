@@ -90,11 +90,18 @@ async def async_setup_entry(
     definitions = [
         definition
         for definition in POINTS
-        if definition.platform == "sensor" and coordinator.point(definition.point_id)
+        if definition.platform == "sensor"
+        and coordinator.entity_enabled(definition.point_id)
+        and coordinator.point(definition.point_id)
     ]
     entities: list[SensorEntity] = [
         NibeSensor(coordinator, definition) for definition in definitions
     ]
+    known_ids = {definition.point_id for definition in POINTS}
+    entities.extend(
+        NibeDiscoveredSensor(coordinator, point_id)
+        for point_id in sorted(coordinator.enabled_point_ids - known_ids)
+    )
     entities.extend(
         [
             NibeNotificationSensor(coordinator),
@@ -102,6 +109,65 @@ async def async_setup_entry(
         ]
     )
     async_add_entities(entities)
+
+
+class NibeDiscoveredSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
+    """Read-only sensor for a NIBE point not yet curated by the integration."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: NibeCoordinator, point_id: int) -> None:
+        super().__init__(coordinator)
+        self.point_id = point_id
+        self._attr_unique_id = entity_unique_id(coordinator, point_id)
+
+    @property
+    def point(self) -> dict[str, Any]:
+        return self.coordinator.point(self.point_id) or {}
+
+    @property
+    def name(self) -> str:
+        point = self.point
+        metadata = point.get("metadata") or {}
+        description = (
+            point.get("description")
+            or point.get("name")
+            or metadata.get("description")
+            or metadata.get("name")
+        )
+        if description:
+            return str(description).replace("\u00ad", "").strip()
+        return f"NIBE Variable {self.point_id}"
+
+    @property
+    def native_value(self):
+        return scaled_value(self.point)
+
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        metadata = self.point.get("metadata") or {}
+        return normalize_unit(metadata.get("shortUnit") or metadata.get("unit"))
+
+    @property
+    def available(self) -> bool:
+        if not self.coordinator.last_update_success or not self.point:
+            return False
+        return bool((self.point.get("value") or self.point.get("datavalue") or {}).get("isOk", True))
+
+    @property
+    def device_info(self):
+        return coordinator_device_info(self.coordinator)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        metadata = self.point.get("metadata") or {}
+        return {
+            "point_id": self.point_id,
+            "description": str(self.point.get("description") or "").replace("\u00ad", "").strip(),
+            "variable_type": metadata.get("variableType"),
+            "is_writable": metadata.get("isWritable"),
+            "discovered": True,
+        }
 
 
 class NibeSensor(NibePointEntity, SensorEntity):

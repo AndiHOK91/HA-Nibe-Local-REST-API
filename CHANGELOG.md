@@ -2,6 +2,14 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
+## 0.9.0
+
+- Neue Entitätsprofile **Minimal**, **Standard**, **Erweitert**, **Komplett** und **Individuell** bei der Einrichtung.
+- Nach erfolgreicher Authentifizierung liest der Config Flow die aktuell verfügbaren NIBE-Variablen ein; bei **Individuell** können die gewünschten Variablen per Mehrfachauswahl festgelegt werden.
+- Die Profilwahl und individuelle Variable-IDs werden dauerhaft im Config Entry gespeichert und bleiben bei Neustarts, Reloads und Integrationsupdates erhalten.
+- Die Entitätsauswahl kann später über die Integrationsoptionen geändert werden. Bestehende Installationen ohne Profilfeld verwenden automatisch **Erweitert**, damit der bisherige Entitätsumfang erhalten bleibt.
+- **Komplett** stellt alle vom Gerät gemeldeten Punkte bereit. Noch nicht kuratierte Variablen werden ausschließlich als generische, schreibgeschützte Sensoren angelegt; unbekannte Servicepunkte erhalten keine automatische Schreibfunktion.
+
 ## 0.8.1
 
 - Sicherheits-Härtung der REST-Antwortverarbeitung: JSON-Antworten sind auf 4 MiB begrenzt und übergroße Antworten werden kontrolliert als API-Fehler behandelt.

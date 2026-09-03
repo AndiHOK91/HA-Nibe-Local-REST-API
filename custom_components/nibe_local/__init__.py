@@ -12,7 +12,9 @@ from .const import (
     CONF_AUTH_HEADER,
     CONF_AUTH_METHOD,
     CONF_COMMAND_POLL_DELAY_MS,
+    CONF_ENTITY_PROFILE,
     CONF_SCAN_INTERVAL,
+    CONF_SELECTED_POINT_IDS,
     CONF_VERIFY_SSL,
     DEFAULT_COMMAND_POLL_DELAY_MS,
     DEFAULT_PORT,
@@ -21,6 +23,7 @@ from .const import (
     DOMAIN,
 )
 from .coordinator import NibeCoordinator
+from .profiles import DEFAULT_ENTITY_PROFILE
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -72,6 +75,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data.get(CONF_COMMAND_POLL_DELAY_MS, DEFAULT_COMMAND_POLL_DELAY_MS),
         device_name=entry.title or "NIBE Local REST API",
         instance_id=entry.entry_id,
+        entity_profile=data.get(CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE),
+        selected_point_ids=data.get(CONF_SELECTED_POINT_IDS, ()),
     )
     await coordinator.async_config_entry_first_refresh()
     await _async_migrate_entity_unique_ids(hass, entry)

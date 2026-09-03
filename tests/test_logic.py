@@ -46,6 +46,15 @@ from custom_components.nibe_local.coordinator import (
 )
 from custom_components.nibe_local.entity import entity_unique_id, scaled_value, to_raw
 from custom_components.nibe_local.number import metadata_limits, value_is_representable
+from custom_components.nibe_local.profiles import (
+    DEFAULT_ENTITY_PROFILE,
+    PROFILE_COMPLETE,
+    PROFILE_EXTENDED,
+    PROFILE_INDIVIDUAL,
+    PROFILE_MINIMAL,
+    PROFILE_STANDARD,
+    point_enabled,
+)
 from custom_components.nibe_local.select import (
     NibePointSelect,
     mapped_option,
@@ -133,6 +142,27 @@ def test_entity_unique_ids_are_scoped_per_config_entry() -> None:
     assert entity_unique_id(first, 4) == "entry-one_4"
     assert entity_unique_id(second, 4) == "entry-two_4"
     assert entity_unique_id(first, 4) != entity_unique_id(second, 4)
+
+
+def test_entity_profiles_are_monotonic_for_curated_points() -> None:
+    minimal = {p.point_id for p in POINTS if point_enabled(PROFILE_MINIMAL, p.point_id)}
+    standard = {p.point_id for p in POINTS if point_enabled(PROFILE_STANDARD, p.point_id)}
+    extended = {p.point_id for p in POINTS if point_enabled(PROFILE_EXTENDED, p.point_id)}
+    assert minimal < standard < extended
+    assert DEFAULT_ENTITY_PROFILE == PROFILE_EXTENDED
+
+
+def test_complete_profile_accepts_unknown_discovered_points() -> None:
+    assert point_enabled(PROFILE_COMPLETE, 999999)
+    assert not point_enabled(PROFILE_EXTENDED, 999999)
+
+
+def test_individual_profile_uses_only_persisted_ids() -> None:
+    selected = [4, "8", 3096]
+    assert point_enabled(PROFILE_INDIVIDUAL, 4, selected)
+    assert point_enabled(PROFILE_INDIVIDUAL, 8, selected)
+    assert point_enabled(PROFILE_INDIVIDUAL, 3096, selected)
+    assert not point_enabled(PROFILE_INDIVIDUAL, 10, selected)
 
 
 def test_periodic_hot_water_date_epoch() -> None:

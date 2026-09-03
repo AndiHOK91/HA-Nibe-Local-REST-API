@@ -47,6 +47,8 @@ async def async_setup_entry(
     for definition in POINTS:
         if definition.platform != "time":
             continue
+        if not coordinator.entity_enabled(definition.point_id):
+            continue
         point = coordinator.point(definition.point_id)
         if not point:
             continue

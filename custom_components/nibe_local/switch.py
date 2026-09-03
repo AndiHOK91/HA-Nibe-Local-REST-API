@@ -42,6 +42,8 @@ async def async_setup_entry(
     for definition in POINTS:
         if definition.platform != "switch":
             continue
+        if not coordinator.entity_enabled(definition.point_id):
+            continue
         point = coordinator.point(definition.point_id)
         if not point or not (point.get("metadata") or {}).get("isWritable", False):
             continue
@@ -52,8 +54,12 @@ async def async_setup_entry(
             entities.append(NibeSwitch(coordinator, definition))
 
     ventilation_point = coordinator.point(POINT_VENTILATION_MODE)
-    if ventilation_point and (ventilation_point.get("metadata") or {}).get(
-        "isWritable", False
+    if (
+        coordinator.entity_enabled(POINT_VENTILATION_MODE)
+        and ventilation_point
+        and (ventilation_point.get("metadata") or {}).get(
+            "isWritable", False
+        )
     ):
         entities.append(NibeVentilationPlusSwitch(coordinator))
 

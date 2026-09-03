@@ -15,6 +15,7 @@ from homeassistant.util import dt as dt_util
 
 from .api import NibeApiError, NibeAuthError, NibeLocalApi, async_resolve_host_ip
 from .const import DOMAIN, POINTS
+from .profiles import DEFAULT_ENTITY_PROFILE, point_enabled
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -77,6 +78,8 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         command_poll_delay_ms: int = 1000,
         device_name: str = "NIBE Local REST API",
         instance_id: str | None = None,
+        entity_profile: str = DEFAULT_ENTITY_PROFILE,
+        selected_point_ids=None,
     ) -> None:
         super().__init__(
             hass,
@@ -88,6 +91,8 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.command_poll_delay_ms = command_poll_delay_ms
         self.device_name = device_name
         self.instance_id = instance_id or api.device_id
+        self.entity_profile = entity_profile
+        self.selected_point_ids = tuple(selected_point_ids or ())
         self._fallback_failure_streak = 0
         self._next_fallback_attempt = 0.0
         self._connection_failure_started_at: float | None = None
@@ -271,6 +276,25 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
         return merge_point_updates(previous_points, fresh_points)
+
+    def entity_enabled(self, point_id: int) -> bool:
+        """Return whether this point should be exposed as an entity."""
+        return point_enabled(
+            self.entity_profile, point_id, self.selected_point_ids
+        )
+
+    @property
+    def enabled_point_ids(self) -> set[int]:
+        """Return currently available point IDs selected by the active profile."""
+        result: set[int] = set()
+        for point_id in (self.data or {}).get("points", {}):
+            try:
+                normalized = int(point_id)
+            except (TypeError, ValueError):
+                continue
+            if self.entity_enabled(normalized):
+                result.add(normalized)
+        return result
 
     def point(self, point_id: int) -> dict[str, Any] | None:
         return (self.data or {}).get("points", {}).get(str(point_id))

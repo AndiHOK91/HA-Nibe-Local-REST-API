@@ -29,6 +29,7 @@ async def async_setup_entry(
         NibeBinarySensor(coordinator, definition)
         for definition in POINTS
         if definition.platform == "binary_sensor"
+        and coordinator.entity_enabled(definition.point_id)
         and coordinator.point(definition.point_id)
     )
     async_add_entities(entities)
