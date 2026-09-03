@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from json import JSONDecodeError, loads
 import socket
 import ssl
 from typing import Any
@@ -9,6 +10,9 @@ from typing import Any
 from aiohttp import BasicAuth, ClientResponseError, ClientSession, ClientTimeout
 
 from .const import AUTH_METHOD_BASIC, AUTH_METHOD_HEADER, NIBE_DEVICE_ID
+
+MAX_RESPONSE_BYTES = 4 * 1024 * 1024
+MAX_NORMALIZE_DEPTH = 64
 
 
 async def async_resolve_host_ip(host: str) -> str | None:
@@ -93,8 +97,28 @@ class NibeLocalApi:
                 response.raise_for_status()
                 if response.status == 204:
                     return None
-                return await response.json(content_type=None)
-        except NibeAuthError:
+
+                if (
+                    response.content_length is not None
+                    and response.content_length > MAX_RESPONSE_BYTES
+                ):
+                    raise NibeApiError(
+                        f"NIBE API response exceeds {MAX_RESPONSE_BYTES} bytes"
+                    )
+
+                body = bytearray()
+                async for chunk in response.content.iter_chunked(64 * 1024):
+                    if len(body) + len(chunk) > MAX_RESPONSE_BYTES:
+                        raise NibeApiError(
+                            f"NIBE API response exceeds {MAX_RESPONSE_BYTES} bytes"
+                        )
+                    body.extend(chunk)
+
+                try:
+                    return loads(body)
+                except (JSONDecodeError, UnicodeDecodeError) as err:
+                    raise NibeApiError("NIBE API returned invalid JSON") from err
+        except (NibeAuthError, NibeApiError):
             raise
         except ClientResponseError as err:
             raise NibeApiError(f"HTTP {err.status}: {err.message}") from err
@@ -132,40 +156,51 @@ class NibeLocalApi:
 
     @staticmethod
     def _normalize_points(payload: Any) -> dict[str, Any]:
-        """Normalize NIBE point responses from different firmware/API shapes."""
+        """Normalize NIBE point responses with bounded nesting depth."""
         result: dict[str, Any] = {}
+        stack: list[tuple[Any, int]] = [(payload, 0)]
+        visited: set[int] = set()
 
-        def visit(node: Any) -> None:
+        while stack:
+            node, depth = stack.pop()
+            if depth > MAX_NORMALIZE_DEPTH:
+                raise NibeApiError(
+                    f"NIBE point response exceeds nesting depth {MAX_NORMALIZE_DEPTH}"
+                )
+
+            if not isinstance(node, (dict, list)):
+                continue
+
+            node_id = id(node)
+            if node_id in visited:
+                continue
+            visited.add(node_id)
+
             if isinstance(node, list):
-                for item in node:
-                    visit(item)
-                return
-
-            if not isinstance(node, dict):
-                return
+                stack.extend((item, depth + 1) for item in reversed(node))
+                continue
 
             metadata = node.get("metadata")
             if isinstance(metadata, dict) and metadata.get("variableId") is not None:
-                point_id = str(metadata["variableId"])
-                result[point_id] = node
-                return
+                result[str(metadata["variableId"])] = node
+                continue
 
             for wrapper in ("points", "data", "items", "values"):
                 wrapped = node.get(wrapper)
                 if isinstance(wrapped, (dict, list)):
-                    visit(wrapped)
+                    stack.append((wrapped, depth + 1))
 
             for key, value in node.items():
-                if isinstance(value, dict):
-                    md = value.get("metadata")
-                    if isinstance(md, dict) and md.get("variableId") is not None:
-                        result[str(md["variableId"])] = value
-                    elif str(key).isdigit() and (
-                        "value" in value or "datavalue" in value or "metadata" in value
-                    ):
-                        result[str(key)] = value
+                if not isinstance(value, dict):
+                    continue
+                md = value.get("metadata")
+                if isinstance(md, dict) and md.get("variableId") is not None:
+                    result[str(md["variableId"])] = value
+                elif str(key).isdigit() and (
+                    "value" in value or "datavalue" in value or "metadata" in value
+                ):
+                    result[str(key)] = value
 
-        visit(payload)
         return result
 
     async def get_notifications(self) -> dict[str, Any]:

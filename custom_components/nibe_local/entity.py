@@ -56,6 +56,11 @@ def to_raw(point: dict[str, Any], value: float) -> int:
     return int(round(value * divisor))
 
 
+def entity_unique_id(coordinator: NibeCoordinator, suffix: str | int) -> str:
+    """Return a config-entry-scoped stable entity unique ID."""
+    return f"{coordinator.instance_id}_{suffix}"
+
+
 def coordinator_device_info(coordinator: NibeCoordinator) -> DeviceInfo:
     """Build the shared Home Assistant device info for coordinator entities."""
     device = (coordinator.data or {}).get("device", {})
@@ -78,7 +83,7 @@ class NibePointEntity(CoordinatorEntity[NibeCoordinator]):
     def __init__(self, coordinator: NibeCoordinator, definition: PointDef) -> None:
         super().__init__(coordinator)
         self.definition = definition
-        self._attr_unique_id = f"{coordinator.api.device_id}_{definition.point_id}"
+        self._attr_unique_id = entity_unique_id(coordinator, definition.point_id)
         self._attr_translation_key = definition.key
         if definition.diagnostic:
             self._attr_entity_category = EntityCategory.DIAGNOSTIC

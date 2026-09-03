@@ -76,6 +76,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         interval: int,
         command_poll_delay_ms: int = 1000,
         device_name: str = "NIBE Local REST API",
+        instance_id: str | None = None,
     ) -> None:
         super().__init__(
             hass,
@@ -86,6 +87,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.api = api
         self.command_poll_delay_ms = command_poll_delay_ms
         self.device_name = device_name
+        self.instance_id = instance_id or api.device_id
         self._fallback_failure_streak = 0
         self._next_fallback_attempt = 0.0
         self._connection_failure_started_at: float | None = None
@@ -97,11 +99,11 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @property
     def _auth_notification_id(self) -> str:
-        return f"{DOMAIN}_{self.api.device_id}_auth"
+        return f"{DOMAIN}_{self.instance_id}_auth"
 
     @property
     def _connection_notification_id(self) -> str:
-        return f"{DOMAIN}_{self.api.device_id}_connection"
+        return f"{DOMAIN}_{self.instance_id}_connection"
 
     async def _connection_label(self) -> str:
         """Return a device/host/IP label for user-facing messages."""

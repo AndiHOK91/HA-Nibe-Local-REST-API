@@ -4,11 +4,19 @@ import asyncio
 from datetime import time
 import json
 from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
 
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 
 from custom_components.nibe_local.alarms import normalize_alarm
-from custom_components.nibe_local.api import NibeLocalApi
+from custom_components.nibe_local.api import (
+    MAX_NORMALIZE_DEPTH,
+    MAX_RESPONSE_BYTES,
+    NibeApiError,
+    NibeLocalApi,
+)
 from custom_components.nibe_local.config_flow import (
     _connection_schema,
     _reauth_schema,
@@ -36,7 +44,7 @@ from custom_components.nibe_local.coordinator import (
     merge_point_updates,
     should_skip_fallback_scan,
 )
-from custom_components.nibe_local.entity import scaled_value, to_raw
+from custom_components.nibe_local.entity import entity_unique_id, scaled_value, to_raw
 from custom_components.nibe_local.number import metadata_limits, value_is_representable
 from custom_components.nibe_local.select import (
     NibePointSelect,
@@ -94,6 +102,37 @@ def test_normalize_points_accepts_single_point_and_wrappers() -> None:
 def test_normalize_points_accepts_mapping_without_variable_id() -> None:
     point = {"value": {"integerValue": 1, "stringValue": ""}}
     assert NibeLocalApi._normalize_points({"3920": point}) == {"3920": point}
+
+
+def test_normalize_points_rejects_excessive_nesting() -> None:
+    point = {
+        "metadata": {"variableId": 4},
+        "value": {"integerValue": 222, "stringValue": ""},
+    }
+    payload = point
+    for _ in range(MAX_NORMALIZE_DEPTH + 1):
+        payload = {"data": payload}
+
+    with pytest.raises(NibeApiError, match="nesting depth"):
+        NibeLocalApi._normalize_points(payload)
+
+
+def test_normalize_points_handles_cycles_without_recursing_forever() -> None:
+    payload: dict = {}
+    payload["data"] = payload
+    assert NibeLocalApi._normalize_points(payload) == {}
+
+
+def test_response_size_limit_is_bounded() -> None:
+    assert MAX_RESPONSE_BYTES == 4 * 1024 * 1024
+
+
+def test_entity_unique_ids_are_scoped_per_config_entry() -> None:
+    first = SimpleNamespace(instance_id="entry-one")
+    second = SimpleNamespace(instance_id="entry-two")
+    assert entity_unique_id(first, 4) == "entry-one_4"
+    assert entity_unique_id(second, 4) == "entry-two_4"
+    assert entity_unique_id(first, 4) != entity_unique_id(second, 4)
 
 
 def test_periodic_hot_water_date_epoch() -> None:

@@ -5,6 +5,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers import entity_registry as er
 
 from .api import NibeLocalApi
 from .const import (
@@ -17,6 +18,7 @@ from .const import (
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
     PLATFORMS,
+    DOMAIN,
 )
 from .coordinator import NibeCoordinator
 
@@ -24,6 +26,29 @@ from .coordinator import NibeCoordinator
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload the integration when options are changed."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def _async_migrate_entity_unique_ids(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> None:
+    """Move legacy device-id unique IDs to a config-entry-scoped namespace."""
+    registry = er.async_get(hass)
+    prefix = f"{entry.entry_id}_"
+    legacy_prefix = "0_"
+
+    for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        old_unique_id = registry_entry.unique_id
+        if old_unique_id.startswith(prefix) or not old_unique_id.startswith(legacy_prefix):
+            continue
+        new_unique_id = f"{prefix}{old_unique_id[len(legacy_prefix):]}"
+        existing_entity_id = registry.async_get_entity_id(
+            registry_entry.domain, registry_entry.platform, new_unique_id
+        )
+        if existing_entity_id and existing_entity_id != registry_entry.entity_id:
+            continue
+        registry.async_update_entity(
+            registry_entry.entity_id, new_unique_id=new_unique_id
+        )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -46,8 +71,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
         data.get(CONF_COMMAND_POLL_DELAY_MS, DEFAULT_COMMAND_POLL_DELAY_MS),
         device_name=entry.title or "NIBE Local REST API",
+        instance_id=entry.entry_id,
     )
     await coordinator.async_config_entry_first_refresh()
+    await _async_migrate_entity_unique_ids(hass, entry)
 
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))

@@ -63,7 +63,7 @@ class NibeApiReachableBinarySensor(CoordinatorEntity[NibeCoordinator], BinarySen
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.api.device_id}_api_reachable"
+        self._attr_unique_id = entity_unique_id(coordinator, "api_reachable")
 
     @property
     def available(self) -> bool:
@@ -88,7 +88,7 @@ class NibeFallbackActiveBinarySensor(CoordinatorEntity[NibeCoordinator], BinaryS
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.api.device_id}_fallback_active"
+        self._attr_unique_id = entity_unique_id(coordinator, "fallback_active")
 
     @property
     def available(self) -> bool:

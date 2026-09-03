@@ -16,7 +16,7 @@ from .const import (
     POINT_VENTILATION_MODE,
 )
 from .coordinator import NibeCoordinator
-from .entity import NibePointEntity, coordinator_device_info, raw_value
+from .entity import NibePointEntity, coordinator_device_info, entity_unique_id, raw_value
 
 PARALLEL_UPDATES = 1
 
@@ -128,7 +128,7 @@ class NibeSmartModeSelect(CoordinatorEntity[NibeCoordinator], SelectEntity):
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.api.device_id}_smart_mode"
+        self._attr_unique_id = entity_unique_id(coordinator, "smart_mode")
 
     @property
     def device_info(self):

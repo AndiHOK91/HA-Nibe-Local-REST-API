@@ -2,7 +2,14 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
-## 0.8.0 (in Entwicklung)
+## 0.8.1
+
+- Sicherheits-Härtung der REST-Antwortverarbeitung: JSON-Antworten sind auf 4 MiB begrenzt und übergroße Antworten werden kontrolliert als API-Fehler behandelt.
+- Die Normalisierung von `/points` arbeitet iterativ mit maximaler Verschachtelungstiefe und kann dadurch nicht mehr durch extrem tief verschachtelte Antworten einen `RecursionError` auslösen.
+- Entity-Unique-IDs und Persistent-Notification-IDs sind jetzt pro Config Entry getrennt, sodass mehrere NIBE-Anlagen keine Kollisionen mehr verursachen. Bestehende Entity-IDs bleiben durch eine Registry-Migration erhalten.
+- Regressionstests für Verschachtelungslimits, zyklische Strukturen, Response-Limit und Multi-Instance-Unique-IDs ergänzt.
+
+## 0.8.0
 
 - Die hellen Icon-Varianten besitzen jetzt einen vollständig transparenten Hintergrund.
 - Die NIBE-Geräte-ID ist jetzt fest auf `0` gesetzt und wird weder bei der Einrichtung noch in den Optionen angeboten.

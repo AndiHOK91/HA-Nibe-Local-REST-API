@@ -21,7 +21,13 @@ from .const import (
     POINT_TIME_TO_DEFROST,
 )
 from .coordinator import NibeCoordinator
-from .entity import NibePointEntity, coordinator_device_info, raw_value, scaled_value
+from .entity import (
+    NibePointEntity,
+    coordinator_device_info,
+    entity_unique_id,
+    raw_value,
+    scaled_value,
+)
 
 PARALLEL_UPDATES = 0
 
@@ -207,7 +213,7 @@ class NibeNotificationSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.api.device_id}_notifications"
+        self._attr_unique_id = entity_unique_id(coordinator, "notifications")
 
     @property
     def device_info(self):
@@ -266,7 +272,7 @@ class NibeLastConnectionErrorSensor(_NibeHealthTimestampSensor):
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.api.device_id}_last_connection_error"
+        self._attr_unique_id = entity_unique_id(coordinator, "last_connection_error")
 
     @property
     def native_value(self) -> datetime | None:

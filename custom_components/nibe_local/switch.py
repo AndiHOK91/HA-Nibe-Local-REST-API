@@ -20,7 +20,7 @@ from .const import (
     POINT_VENTILATION_MODE,
 )
 from .coordinator import NibeCoordinator
-from .entity import NibePointEntity, raw_value
+from .entity import NibePointEntity, entity_unique_id, raw_value
 
 PARALLEL_UPDATES = 1
 
@@ -141,7 +141,7 @@ class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator, MORE_HOT_WATER_DEFINITION)
-        self._attr_unique_id = f"{coordinator.api.device_id}_more_hot_water"
+        self._attr_unique_id = entity_unique_id(coordinator, "more_hot_water")
         self._optimistic_state: bool | None = None
         self._verify_task: asyncio.Task[None] | None = None
 
@@ -257,7 +257,7 @@ class NibeVentilationPlusSwitch(NibePointEntity, SwitchEntity):
 
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator, VENTILATION_MODE_DEFINITION)
-        self._attr_unique_id = f"{coordinator.api.device_id}_ventilation_plus"
+        self._attr_unique_id = entity_unique_id(coordinator, "ventilation_plus")
         self._attr_translation_key = "ventilation_plus"
         self._optimistic_state: bool | None = None
         self._expected_modes: set[int] | None = None
