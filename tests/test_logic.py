@@ -18,6 +18,8 @@ from custom_components.nibe_local.api import (
     NibeLocalApi,
 )
 from custom_components.nibe_local.config_flow import (
+    CONF_BACKUP_BEFORE_CLEANUP,
+    _async_create_cleanup_backup,
     _basic_auth_schema,
     _connection_schema,
     _header_auth_schema,
@@ -662,3 +664,65 @@ def test_basic_auth_form_only_contains_basic_credentials() -> None:
 def test_header_auth_form_only_contains_header() -> None:
     keys = {marker.schema for marker in _header_auth_schema().schema}
     assert keys == {CONF_AUTH_HEADER}
+
+
+def test_cleanup_backup_option_defaults_to_enabled() -> None:
+    from custom_components.nibe_local.config_flow import _options_schema
+
+    backup_marker = next(
+        item
+        for item in _options_schema({}).schema
+        if getattr(item, "schema", None) == CONF_BACKUP_BEFORE_CLEANUP
+    )
+    default = backup_marker.default
+    assert (default() if callable(default) else default) is True
+
+
+def test_cleanup_backup_prefers_supervisor_full_backup() -> None:
+    class Services:
+        def __init__(self):
+            self.calls = []
+
+        def has_service(self, domain, service):
+            return (domain, service) in {
+                ("hassio", "backup_full"),
+                ("backup", "create"),
+            }
+
+        async def async_call(self, domain, service, data, *, blocking=False):
+            self.calls.append((domain, service, data, blocking))
+
+    async def run_test():
+        services = Services()
+        hass = SimpleNamespace(services=services)
+        await _async_create_cleanup_backup(hass)
+        assert services.calls == [
+            (
+                "hassio",
+                "backup_full",
+                {"name": "NIBE Local REST API - Registry cleanup"},
+                True,
+            )
+        ]
+
+    asyncio.run(run_test())
+
+
+def test_cleanup_backup_uses_core_backup_when_supervisor_unavailable() -> None:
+    class Services:
+        def __init__(self):
+            self.calls = []
+
+        def has_service(self, domain, service):
+            return (domain, service) == ("backup", "create")
+
+        async def async_call(self, domain, service, data, *, blocking=False):
+            self.calls.append((domain, service, data, blocking))
+
+    async def run_test():
+        services = Services()
+        hass = SimpleNamespace(services=services)
+        await _async_create_cleanup_backup(hass)
+        assert services.calls == [("backup", "create", {}, True)]
+
+    asyncio.run(run_test())
