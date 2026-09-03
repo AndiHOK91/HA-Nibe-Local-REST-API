@@ -67,7 +67,7 @@
       },
       "entity_preview": {
         "title": "Review entity overview",
-        "description": "Review the selection before applying it. **Profile:** {profile} · **discovered variables:** {discovered}. **Active/selected:** {active_count} (already in the registry: {active_existing}, new: {active_new}).\n\n**Active / selected**\n{active_list}\n\n**Not selected / deselected ({inactive_count})**\n{inactive_list}\n\n**Scheduled for registry deletion ({delete_count})**\n{delete_list}\n\n**Additional integration entities ({special_count})**\n{special_list}\n\nRegistry cleanup: **{cleanup}** · Backup beforehand: **{backup}**. For large lists, at most 50 entries per section are shown; the counters remain complete. Settings, backup and any registry deletion are only applied after you press Submit."
+        "description": "Review the selection before applying it. **Profile:** {profile} · **discovered variables:** {discovered}. **Active/selected:** {active_count} (already in the registry: {active_existing}, new: {active_new}).\n\n**Active / selected**\n{active_list}\n\n**Not selected / deselected ({inactive_count})**\n{inactive_list}\n\n**Scheduled for registry deletion ({delete_count})**\n{delete_list}\n\n**Additional integration entities ({special_count})**\n{special_list}\n\nRegistry cleanup: **{cleanup}** · Backup beforehand: **{backup}**. For large lists, at most 50 entries per section are shown; the counters remain complete. Settings, backup and any registry deletion are only applied after you press OK."
       }
     },
     "error": {
@@ -130,7 +130,7 @@
       },
       "entity_preview": {
         "title": "Review entity overview",
-        "description": "Review the selection before applying it. **Profile:** {profile} · **discovered variables:** {discovered}. **Active/selected:** {active_count} (already in the registry: {active_existing}, new: {active_new}).\n\n**Active / selected**\n{active_list}\n\n**Not selected / deselected ({inactive_count})**\n{inactive_list}\n\n**Scheduled for registry deletion ({delete_count})**\n{delete_list}\n\n**Additional integration entities ({special_count})**\n{special_list}\n\nRegistry cleanup: **{cleanup}** · Backup beforehand: **{backup}**. For large lists, at most 50 entries per section are shown; the counters remain complete. Settings, backup and any registry deletion are only applied after you press Submit."
+        "description": "Review the selection before applying it. **Profile:** {profile} · **discovered variables:** {discovered}. **Active/selected:** {active_count} (already in the registry: {active_existing}, new: {active_new}).\n\n**Active / selected**\n{active_list}\n\n**Not selected / deselected ({inactive_count})**\n{inactive_list}\n\n**Scheduled for registry deletion ({delete_count})**\n{delete_list}\n\n**Additional integration entities ({special_count})**\n{special_list}\n\nRegistry cleanup: **{cleanup}** · Backup beforehand: **{backup}**. For large lists, at most 50 entries per section are shown; the counters remain complete. Settings, backup and any registry deletion are only applied after you press OK."
       }
     },
     "error": {

@@ -67,7 +67,7 @@
       },
       "entity_preview": {
         "title": "Entitätsübersicht prüfen",
-        "description": "Prüfe die Auswahl vor dem Anwenden. **Profil:** {profile} · **erkannte Variablen:** {discovered}. **Aktiv/ausgewählt:** {active_count} (bereits in der Registry: {active_existing}, neu: {active_new}).\n\n**Aktiv / ausgewählt**\n{active_list}\n\n**Nicht ausgewählt / abgewählt ({inactive_count})**\n{inactive_list}\n\n**Zur Registry-Löschung vorgesehen ({delete_count})**\n{delete_list}\n\n**Zusätzliche Integrationsentitäten ({special_count})**\n{special_list}\n\nRegistry-Bereinigung: **{cleanup}** · Backup davor: **{backup}**. Bei großen Listen werden höchstens 50 Einträge je Bereich angezeigt; die Zähler sind vollständig. Erst mit „Senden“ werden die Einstellungen angewendet und gegebenenfalls Backup und Registry-Löschung ausgeführt."
+        "description": "Prüfe die Auswahl vor dem Anwenden. **Profil:** {profile} · **erkannte Variablen:** {discovered}. **Aktiv/ausgewählt:** {active_count} (bereits in der Registry: {active_existing}, neu: {active_new}).\n\n**Aktiv / ausgewählt**\n{active_list}\n\n**Nicht ausgewählt / abgewählt ({inactive_count})**\n{inactive_list}\n\n**Zur Registry-Löschung vorgesehen ({delete_count})**\n{delete_list}\n\n**Zusätzliche Integrationsentitäten ({special_count})**\n{special_list}\n\nRegistry-Bereinigung: **{cleanup}** · Backup davor: **{backup}**. Bei großen Listen werden höchstens 50 Einträge je Bereich angezeigt; die Zähler sind vollständig. Erst mit „OK“ werden die Einstellungen angewendet und gegebenenfalls Backup und Registry-Löschung ausgeführt."
       }
     },
     "error": {
@@ -130,7 +130,7 @@
       },
       "entity_preview": {
         "title": "Entitätsübersicht prüfen",
-        "description": "Prüfe die Auswahl vor dem Anwenden. **Profil:** {profile} · **erkannte Variablen:** {discovered}. **Aktiv/ausgewählt:** {active_count} (bereits in der Registry: {active_existing}, neu: {active_new}).\n\n**Aktiv / ausgewählt**\n{active_list}\n\n**Nicht ausgewählt / abgewählt ({inactive_count})**\n{inactive_list}\n\n**Zur Registry-Löschung vorgesehen ({delete_count})**\n{delete_list}\n\n**Zusätzliche Integrationsentitäten ({special_count})**\n{special_list}\n\nRegistry-Bereinigung: **{cleanup}** · Backup davor: **{backup}**. Bei großen Listen werden höchstens 50 Einträge je Bereich angezeigt; die Zähler sind vollständig. Erst mit „Senden“ werden die Einstellungen angewendet und gegebenenfalls Backup und Registry-Löschung ausgeführt."
+        "description": "Prüfe die Auswahl vor dem Anwenden. **Profil:** {profile} · **erkannte Variablen:** {discovered}. **Aktiv/ausgewählt:** {active_count} (bereits in der Registry: {active_existing}, neu: {active_new}).\n\n**Aktiv / ausgewählt**\n{active_list}\n\n**Nicht ausgewählt / abgewählt ({inactive_count})**\n{inactive_list}\n\n**Zur Registry-Löschung vorgesehen ({delete_count})**\n{delete_list}\n\n**Zusätzliche Integrationsentitäten ({special_count})**\n{special_list}\n\nRegistry-Bereinigung: **{cleanup}** · Backup davor: **{backup}**. Bei großen Listen werden höchstens 50 Einträge je Bereich angezeigt; die Zähler sind vollständig. Erst mit „OK“ werden die Einstellungen angewendet und gegebenenfalls Backup und Registry-Löschung ausgeführt."
       }
     },
     "error": {
