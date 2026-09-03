@@ -19,32 +19,39 @@ ENTITY_PROFILES = (
 )
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
-# Small, dashboard-oriented core: operating state, main temperatures,
-# hot water, compressor, flow and the most useful user controls.
+# Minimal intentionally contains only the current core operating state and
+# the most important temperatures. Controls, comfort functions, hydraulic
+# values and detailed compressor data start with Standard.
 MINIMAL_POINT_IDS = frozenset(
     {
-        4, 8, 10, 11, 12, 58, 781, 1758, 1975, 2022,
-        2500, 2657, 3096, 3101, 3697, 3751, 3920, 3921,
-        4030, 4064, 4564,
+        4,     # Outdoor temperature BT1
+        8,     # Supply temperature BT2
+        10,    # Return temperature BT3
+        11,    # Hot-water top BT7
+        12,    # Hot-water charge BT6
+        158,   # Room temperature BT50
+        1758,  # Operating priority
+        2500,  # Compressor status
+        4064,  # Operating mode status
     }
 )
 
-# Normal Home Assistant use: the minimal set plus calculated targets,
-# heating/cooling curves, hot-water controls, energy, compressor runtime and
-# power, selected operating/defrost values, and common ventilation controls.
+# Normal Home Assistant use: Minimal plus the controls, calculated values,
+# hydraulic/energy data, compressor operating values, hot-water functions,
+# heating/cooling settings, selected defrost values and common ventilation.
 # Detailed alarm and EEV/service values remain Extended-only.
 STANDARD_POINT_IDS = MINIMAL_POINT_IDS | frozenset(
     {
-        54, 158,
+        54, 58, 781,
         834, 839, 840,
-        1708, 1716, 1755, 1756, 1829, 1942, 2002,
+        1708, 1716, 1755, 1756, 1829, 1942, 1975, 2002, 2022,
         2491, 2494, 2501, 2505, 2506, 2507,
         25165, 25166,
-        2683, 2685, 2691, 2695, 2729, 2766, 2767,
-        3095, 3097, 3098, 3138, 3170, 3252, 3353, 3354, 3375,
-        3667, 3671,
+        2657, 2683, 2685, 2691, 2695, 2729, 2766, 2767,
+        3095, 3096, 3097, 3098, 3101, 3138, 3170, 3252, 3353, 3354, 3375,
+        3667, 3671, 3697,
         3699, 3700, 3701, 3703, 3704, 3705, 3706, 3707, 3708,
-        3830, 4040, 5025, 5033, 8060,
+        3751, 3830, 3920, 3921, 4030, 4040, 4564, 5025, 5033, 8060,
     }
 )
 
