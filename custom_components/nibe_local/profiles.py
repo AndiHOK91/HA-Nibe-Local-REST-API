@@ -31,14 +31,14 @@ MINIMAL_POINT_IDS = frozenset(
 
 # Normal Home Assistant use: the minimal set plus calculated targets,
 # heating/cooling curves, hot-water controls, energy, compressor runtime and
-# power, the most useful protection/alarm/defrost values, and common
-# ventilation controls. Detailed EEV/service values remain Extended-only.
+# power, selected operating/defrost values, and common ventilation controls.
+# Detailed alarm and EEV/service values remain Extended-only.
 STANDARD_POINT_IDS = MINIMAL_POINT_IDS | frozenset(
     {
         54, 158,
-        832, 834, 839, 840,
+        834, 839, 840,
         1708, 1716, 1755, 1756, 1829, 1942, 2002,
-        2491, 2494, 2501, 2505, 2506, 2507, 2508,
+        2491, 2494, 2501, 2505, 2506, 2507,
         25165, 25166,
         2683, 2685, 2691, 2695, 2729, 2766, 2767, 2792,
         3095, 3097, 3098, 3138, 3170, 3252, 3353, 3354, 3375,
