@@ -1,0 +1,26 @@
+name: Finalize icon assets
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create 2x icons
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y imagemagick >/dev/null
+          convert custom_components/nibe_local/brand/icon.png -filter Lanczos -resize 512x512 custom_components/nibe_local/brand/icon@2x.png
+          cp custom_components/nibe_local/brand/icon.png custom_components/nibe_local/brand/dark_icon.png
+          cp custom_components/nibe_local/brand/icon@2x.png custom_components/nibe_local/brand/dark_icon@2x.png
+          identify custom_components/nibe_local/brand/icon.png custom_components/nibe_local/brand/icon@2x.png
+      - name: Commit assets and remove temporary workflow
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add custom_components/nibe_local/brand/icon.png custom_components/nibe_local/brand/dark_icon.png custom_components/nibe_local/brand/icon@2x.png custom_components/nibe_local/brand/dark_icon@2x.png
+          git rm .github/workflows/icon-upscale.yml
+          git commit -m "Finalize new integration icon assets"
+          git push
