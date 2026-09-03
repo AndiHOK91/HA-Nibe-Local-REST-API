@@ -14,10 +14,12 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
+    SelectSelectorMode,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
 )
+from homeassistant.helpers.translation import async_get_translations
 
 from .api import NibeApiError, NibeAuthError, NibeLocalApi, async_resolve_host_ip
 from .const import (
@@ -40,6 +42,7 @@ from .const import (
     ENTITY_NAMING_MODES,
     MIN_SCAN_INTERVAL,
     NIBE_DEVICE_ID,
+    POINTS,
 )
 from .profiles import (
     DEFAULT_ENTITY_PROFILE,
@@ -301,48 +304,112 @@ async def _validate_and_discover(hass, values: dict) -> tuple[dict, dict[str, An
     return device, points
 
 
-def _point_label(point_id: str, point: dict[str, Any]) -> str:
+def _known_point_fallback_name(point_id: str) -> str | None:
+    'Return a readable fallback name for a curated point.'
+    if not str(point_id).isdigit():
+        return None
+    numeric_id = int(point_id)
+    definition = next(
+        (item for item in POINTS if item.point_id == numeric_id), None
+    )
+    if definition is None:
+        return None
+    return definition.key.replace("_", " ").strip().capitalize()
+
+
+async def _async_translated_point_names(hass) -> dict[int, str]:
+    'Load localized Home Assistant names for curated NIBE points.'
+    resources = await async_get_translations(
+        hass,
+        hass.config.language,
+        "entity",
+        [DOMAIN],
+    )
+    names: dict[int, str] = {}
+    for definition in POINTS:
+        key = (
+            f"component.{DOMAIN}.entity.{definition.platform}."
+            f"{definition.key}.name"
+        )
+        if name := resources.get(key):
+            names[definition.point_id] = str(name)
+    return names
+
+
+def _point_label(
+    point_id: str,
+    point: dict[str, Any],
+    point_names: dict[int, str] | None = None,
+) -> str:
+    'Build a human-readable selection label with name, ID and unit.'
     metadata = point.get("metadata") or {}
+    numeric_id = int(point_id) if str(point_id).isdigit() else None
+    translated_name = (
+        point_names.get(numeric_id)
+        if point_names is not None and numeric_id is not None
+        else None
+    )
     description = (
-        point.get("description")
+        translated_name
+        or point.get("description")
         or point.get("name")
         or metadata.get("description")
         or metadata.get("name")
-        or f"Variable {point_id}"
+        or _known_point_fallback_name(point_id)
     )
-    text = str(description).replace("\u00ad", "").strip().replace("\n", " ")
     unit = metadata.get("shortUnit") or metadata.get("unit")
-    suffix = f" [{unit}]" if unit else ""
-    return f"{point_id} | {text[:120]}{suffix}"
+    unit_suffix = f" [{unit}]" if unit else ""
+    if description:
+        cleaned = (
+            str(description)
+            .replace("\u00ad", "")
+            .strip()
+            .replace("\n", " ")
+        )
+        return f"{cleaned[:120]} · Variable ID {point_id}{unit_suffix}"
+    return f"Variable ID {point_id}{unit_suffix}"
 
 
-def _point_options(points: dict[str, Any]) -> list[str]:
+def _point_options(
+    points: dict[str, Any], point_names: dict[int, str] | None = None
+) -> list[dict[str, str]]:
     def sort_key(item: tuple[str, Any]) -> tuple[int, str]:
         key = str(item[0])
         return (int(key) if key.isdigit() else 2**31, key)
 
-    return [_point_label(str(pid), point) for pid, point in sorted(points.items(), key=sort_key)]
+    return [
+        {
+            "value": str(pid),
+            "label": _point_label(str(pid), point, point_names),
+        }
+        for pid, point in sorted(points.items(), key=sort_key)
+    ]
 
 
 def _selected_options(points: dict[str, Any], selected_ids) -> list[str]:
     selected = normalize_selected_ids(selected_ids)
-    labels = {int(pid): _point_label(str(pid), point) for pid, point in points.items() if str(pid).isdigit()}
-    return [labels[pid] for pid in sorted(selected) if pid in labels]
+    available = {int(pid) for pid in points if str(pid).isdigit()}
+    return [str(pid) for pid in sorted(selected) if pid in available]
 
 
 def _parse_selected_options(values) -> list[int]:
+    'Parse new ID values and legacy labels from earlier 0.9.0 forms.'
     point_ids: set[int] = set()
     for value in values or ():
-        prefix = str(value).split(" | ", 1)[0].strip()
+        text = str(value).strip()
+        candidate = text if text.isdigit() else text.split(" | ", 1)[0].strip()
         try:
-            point_ids.add(int(prefix))
+            point_ids.add(int(candidate))
         except ValueError:
             continue
     return sorted(point_ids)
 
 
 def _entity_selection_schema(
-    points: dict[str, Any], selected_ids=None
+    points: dict[str, Any],
+    selected_ids=None,
+    *,
+    point_names: dict[int, str] | None = None,
 ) -> vol.Schema:
     return vol.Schema(
         {
@@ -351,8 +418,9 @@ def _entity_selection_schema(
                 default=_selected_options(points, selected_ids),
             ): SelectSelector(
                 SelectSelectorConfig(
-                    options=_point_options(points),
+                    options=_point_options(points, point_names),
                     multiple=True,
+                    mode=SelectSelectorMode.LIST,
                 )
             )
         }
@@ -480,6 +548,7 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self._pending_data is None:
             return self.async_abort(reason="setup_state_missing")
         points = self._available_points or {}
+        point_names = await _async_translated_point_names(self.hass)
         if user_input is not None:
             self._pending_data[CONF_SELECTED_POINT_IDS] = _parse_selected_options(
                 user_input.get(CONF_SELECTED_POINT_IDS)
@@ -488,7 +557,7 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="entity_selection",
-            data_schema=_entity_selection_schema(points),
+            data_schema=_entity_selection_schema(points, point_names=point_names),
             description_placeholders={"count": str(len(points))},
         )
 
@@ -644,6 +713,7 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
         if self._pending_options is None:
             return self.async_abort(reason="setup_state_missing")
         points = self._available_points or {}
+        point_names = await _async_translated_point_names(self.hass)
         if user_input is not None:
             self._pending_options[CONF_SELECTED_POINT_IDS] = _parse_selected_options(
                 user_input.get(CONF_SELECTED_POINT_IDS)
@@ -656,7 +726,9 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
                         return self.async_show_form(
                             step_id="entity_selection",
                             data_schema=_entity_selection_schema(
-                                points, self._pending_options[CONF_SELECTED_POINT_IDS]
+                                points,
+                                self._pending_options[CONF_SELECTED_POINT_IDS],
+                                point_names=point_names,
                             ),
                             errors={"base": "backup_failed"},
                             description_placeholders={"count": str(len(points))},
@@ -674,6 +746,7 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             data_schema=_entity_selection_schema(
                 points,
                 self._pending_options.get(CONF_SELECTED_POINT_IDS),
+                point_names=point_names,
             ),
             description_placeholders={"count": str(len(points))},
         )

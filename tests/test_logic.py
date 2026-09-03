@@ -22,7 +22,10 @@ from custom_components.nibe_local.config_flow import (
     _async_create_cleanup_backup,
     _basic_auth_schema,
     _connection_schema,
+    _entity_selection_schema,
     _header_auth_schema,
+    _parse_selected_options,
+    _point_options,
     _reauth_schema,
     auth_method_from_values,
     merge_auth_settings,
@@ -664,6 +667,64 @@ def test_basic_auth_form_only_contains_basic_credentials() -> None:
 def test_header_auth_form_only_contains_header() -> None:
     keys = {marker.schema for marker in _header_auth_schema().schema}
     assert keys == {CONF_AUTH_HEADER}
+
+
+def test_individual_selection_uses_checkbox_list_and_readable_labels() -> None:
+    points = {
+        "4": {"metadata": {"shortUnit": "°C"}},
+        "999999": {"metadata": {}},
+    }
+    point_names = {4: "Außentemperatur (BT1)"}
+    schema = _entity_selection_schema(
+        points,
+        [4],
+        point_names=point_names,
+    )
+    marker = next(
+        item
+        for item in schema.schema
+        if getattr(item, "schema", None) == "selected_point_ids"
+    )
+    selector = schema.schema[marker]
+    assert selector.config["multiple"] is True
+    assert selector.config["mode"] == "list"
+    assert selector.config["options"] == [
+        {
+            "value": "4",
+            "label": "Außentemperatur (BT1) · Variable ID 4 [°C]",
+        },
+        {
+            "value": "999999",
+            "label": "Variable ID 999999",
+        },
+    ]
+    default = marker.default
+    assert (default() if callable(default) else default) == ["4"]
+
+
+def test_individual_selection_prefers_api_name_when_no_translation_exists() -> None:
+    options = _point_options(
+        {
+            "123": {
+                "description": "API endpoint name",
+                "metadata": {"unit": "kW"},
+            }
+        }
+    )
+    assert options == [
+        {
+            "value": "123",
+            "label": "API endpoint name · Variable ID 123 [kW]",
+        }
+    ]
+
+
+def test_individual_selection_parser_accepts_new_ids_and_legacy_labels() -> None:
+    assert _parse_selected_options(["4", "3096", "8 | Legacy label"]) == [
+        4,
+        8,
+        3096,
+    ]
 
 
 def test_cleanup_backup_option_defaults_to_enabled() -> None:

@@ -42,7 +42,7 @@
       },
       "entity_selection": {
         "title": "Entitäten individuell auswählen",
-        "description": "{count} Variablen wurden von der NIBE erkannt. Wähle die Variablen aus, die als Entitäten angelegt werden sollen.",
+        "description": "{count} Variablen wurden von der NIBE erkannt. Setze oder entferne die Häkchen für die gewünschten Entitäten. Bekannte Punkte werden mit Name, Variable-ID und Einheit angezeigt.",
         "data": {
           "selected_point_ids": "NIBE-Variablen"
         }
@@ -100,7 +100,7 @@
       },
       "entity_selection": {
         "title": "Entitäten individuell auswählen",
-        "description": "{count} Variablen wurden von der NIBE erkannt. Wähle die Variablen aus, die als Entitäten angelegt werden sollen.",
+        "description": "{count} Variablen wurden von der NIBE erkannt. Setze oder entferne die Häkchen für die gewünschten Entitäten. Bekannte Punkte werden mit Name, Variable-ID und Einheit angezeigt.",
         "data": {
           "selected_point_ids": "NIBE-Variablen"
         }

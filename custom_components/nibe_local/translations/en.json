@@ -42,7 +42,7 @@
       },
       "entity_selection": {
         "title": "Choose entities individually",
-        "description": "{count} variables were discovered on the NIBE. Select the variables that should be exposed as entities.",
+        "description": "{count} variables were discovered on the NIBE. Tick or untick the entities you want. Known points are shown with name, variable ID and unit.",
         "data": {
           "selected_point_ids": "NIBE variables"
         }
@@ -100,7 +100,7 @@
       },
       "entity_selection": {
         "title": "Choose entities individually",
-        "description": "{count} variables were discovered on the NIBE. Select the variables that should be exposed as entities.",
+        "description": "{count} variables were discovered on the NIBE. Tick or untick the entities you want. Known points are shown with name, variable ID and unit.",
         "data": {
           "selected_point_ids": "NIBE variables"
         }

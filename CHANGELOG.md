@@ -2,6 +2,12 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
+## 0.9.1
+
+- **Individuell** verwendet jetzt eine direkt anklickbare Mehrfachliste im Home-Assistant-Listenmodus, sodass Variablen per Checkbox an- und abgewählt werden können.
+- Bekannte NIBE-Punkte werden in der individuellen Auswahl mit dem lokalisierten Home-Assistant-Namen, der Variable-ID und – sofern vorhanden – der Einheit angezeigt. Bei unbekannten Punkten wird ein von der lokalen API gelieferter Name verwendet, falls die API einen bereitstellt.
+- Die gespeicherte Auswahl bleibt weiterhin ausschließlich auf stabilen numerischen Variable-IDs basiert; alte 0.9.0-Auswahlwerte werden beim Einlesen weiterhin akzeptiert.
+
 ## 0.9.0
 
 - Entitätsprofile final geschärft: **Minimal** konzentriert sich auf Betriebsmodus/-priorität, Haupt- und Brauchwassertemperaturen, Verdichterstatus und Verdichterfrequenz; **Standard** ergänzt normale Bedienung, Komfort-, Energie- und Betriebsdiagnosewerte, während technische Druck-/Elektronik-, Zusatzheizungs- und detaillierte Service-/Abtauwerte **Erweitert** vorbehalten bleiben.

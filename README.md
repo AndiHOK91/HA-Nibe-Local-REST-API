@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-Anlage über die **lokale REST API** d
 
 Die Integration wurde für eine Anlage mit **VVM S320, S2125 und ERS S40-400** entwickelt und wird dort im realen Betrieb getestet. Andere Geräte oder Anlagenkonfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.9.0**
+Aktuelle Integrationsversion: **0.9.1**
 
 ---
 
@@ -134,6 +134,8 @@ Damit bedeutet „Komplett“ ausdrücklich:
 ## ☑️ Individuelle Auswahl
 
 Bei **Individuell** wird nach der Verbindung die Liste der tatsächlich vom Gerät gemeldeten Variablen angezeigt.
+
+Die Auswahl wird als **anklickbare Mehrfachliste mit Checkboxen** dargestellt. Bekannte Punkte zeigen ihren lokalisierten Namen zusammen mit **Variable-ID und Einheit**; bei nicht kuratierten Punkten wird zusätzlich ein von der lokalen API gelieferter Name verwendet, sofern vorhanden.
 
 Die Auswahl enthält – soweit von der lokalen API geliefert – unter anderem:
 
