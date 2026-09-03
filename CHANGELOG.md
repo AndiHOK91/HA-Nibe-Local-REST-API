@@ -2,6 +2,14 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
+## 0.9.3
+
+- Neuer letzter Schritt **Entitätsübersicht** bei Ersteinrichtung und Optionen: Vor dem Anwenden werden aktive/ausgewählte, abgewählte/beibehaltene und zur Registry-Löschung vorgesehene Punkt-Entitäten mit Name, Variable-ID und Einheit angezeigt.
+- Bei bestehenden Installationen zeigt die Vorschau zusätzlich, wie viele aktive Punkte bereits in der Entity Registry vorhanden bzw. neu sind; Diagnose- und Spezialentitäten werden separat aufgeführt.
+- Große Vorschaugruppen werden auf 50 sichtbare Einträge begrenzt, während die Zähler weiterhin den vollständigen Umfang anzeigen.
+- Backup und Registry-Bereinigung werden erst nach der finalen Bestätigung ausgeführt. Ein Abbruch der Vorschau verändert die Registry nicht; ein fehlgeschlagenes angefordertes Backup verhindert weiterhin jede Löschung.
+- Regressionstests für Vorschaugruppierung und die verzögerte Cleanup-Ausführung ergänzt.
+
 ## 0.9.2
 
 - Binärsensor-Plattform repariert: `entity_unique_id` wird wieder korrekt importiert. Der fehlende Import in 0.9.1 verhinderte das Setup der gesamten `binary_sensor`-Plattform und ließ unter anderem **REST API erreichbar**, **Einzelpunkt-Fallback aktiv**, Kühl-/Abtauzustände, Pumpen- und weitere Binärsensoren als nicht verfügbar erscheinen.

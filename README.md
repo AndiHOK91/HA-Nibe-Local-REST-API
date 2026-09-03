@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-Anlage über die **lokale REST API** d
 
 Die Integration wurde für eine Anlage mit **VVM S320, S2125 und ERS S40-400** entwickelt und wird dort im realen Betrieb getestet. Andere Geräte oder Anlagenkonfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.9.2**
+Aktuelle Integrationsversion: **0.9.3**
 
 ---
 
@@ -23,6 +23,7 @@ Aktuelle Integrationsversion: **0.9.2**
 - [Funktionsumfang](#-funktionsumfang)
 - [Entitätsprofile](#-entitätsprofile)
 - [Individuelle Auswahl](#-individuelle-auswahl)
+- [Entitätsvorschau vor dem Anwenden](#-entitätsvorschau-vor-dem-anwenden)
 - [Benennung der Entitäten](#-benennung-der-entitäten)
 - [Unterstützte Home-Assistant-Plattformen](#-unterstützte-home-assistant-plattformen)
 - [Schreibzugriffe und Sicherheitsmodell](#-schreibzugriffe-und-sicherheitsmodell)
@@ -151,6 +152,25 @@ Es werden die **konkreten Variable-IDs** gespeichert. Dadurch bleibt die Auswahl
 - Update der Custom Integration
 
 Die Auswahl kann später erneut über die Integrationsoptionen geändert werden.
+
+
+---
+
+## 🔎 Entitätsvorschau vor dem Anwenden
+
+Vor dem Abschluss der Ersteinrichtung und vor dem Speichern geänderter Optionen zeigt die Integration eine letzte **Entitätsübersicht**. Dadurch ist vorab sichtbar, welche Auswirkungen das gewählte Profil oder die individuelle Auswahl hat.
+
+Die Vorschau zeigt:
+
+- **aktiv / ausgewählt** – erkannte Punkte, die nach dem Bestätigen bereitgestellt werden
+- bei bestehenden Installationen zusätzlich, wie viele davon **bereits in der Entity Registry** vorhanden und wie viele **neu** sind
+- **nicht ausgewählt / abgewählt** – Punkte, die nicht zum gewählten Umfang gehören und nicht zur Löschung vorgesehen sind
+- **zur Registry-Löschung vorgesehen** – ausschließlich die numerischen Punkt-Entitäten, die die optionale Registry-Bereinigung tatsächlich entfernen würde
+- **zusätzliche Integrationsentitäten** wie API-Erreichbarkeit, Fallback-Status, Meldungen/Alarme und – falls verfügbar – Smart Mode oder Lüftung+
+
+Die Einträge werden mit **Name, Variable-ID und Einheit** dargestellt. Bei sehr großen Anlagen werden pro Bereich höchstens 50 Einträge angezeigt; die angezeigten Zähler enthalten trotzdem immer den vollständigen Umfang.
+
+**Wichtig:** Ein angefordertes Backup und die Registry-Bereinigung werden erst nach der Bestätigung dieses letzten Dialogs ausgeführt. Wird der Dialog verlassen, bevor bestätigt wurde, erfolgt keine Registry-Löschung. Schlägt das angeforderte Backup fehl, bleibt die bereits vorhandene Schutzlogik bestehen und es wird nichts aus der Registry gelöscht.
 
 ---
 

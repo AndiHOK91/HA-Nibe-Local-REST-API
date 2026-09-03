@@ -43,6 +43,7 @@ from .const import (
     MIN_SCAN_INTERVAL,
     NIBE_DEVICE_ID,
     POINTS,
+    POINT_VENTILATION_MODE,
 )
 from .profiles import (
     DEFAULT_ENTITY_PROFILE,
@@ -57,6 +58,7 @@ _AUTH_KEYS = (CONF_AUTH_METHOD, CONF_USERNAME, CONF_PASSWORD, CONF_AUTH_HEADER)
 _AUTH_METHODS = (AUTH_METHOD_BASIC, AUTH_METHOD_HEADER)
 CONF_REMOVE_INACTIVE_ENTITIES = "remove_inactive_entities"
 CONF_BACKUP_BEFORE_CLEANUP = "backup_before_cleanup"
+PREVIEW_LIST_LIMIT = 50
 
 
 def _secret_selector(*, autocomplete: str | None = None) -> TextSelector:
@@ -427,6 +429,183 @@ def _entity_selection_schema(
     )
 
 
+def _registered_point_ids(hass, entry: ConfigEntry | None) -> frozenset[int]:
+    """Return numeric point IDs currently present in this entry's registry."""
+    if entry is None:
+        return frozenset()
+    registry = er.async_get(hass)
+    prefix = f"{entry.entry_id}_"
+    result: set[int] = set()
+    for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        unique_id = registry_entry.unique_id
+        if not unique_id.startswith(prefix):
+            continue
+        suffix = unique_id[len(prefix):]
+        if suffix.isdigit():
+            result.add(int(suffix))
+    return frozenset(result)
+
+
+def _preview_point_groups(
+    points: dict[str, Any],
+    profile: str,
+    selected_ids,
+    *,
+    registered_ids=(),
+    cleanup: bool = False,
+) -> dict[str, frozenset[int]]:
+    """Split discovered/registered points into the final preview groups."""
+    available = normalize_selected_ids(points.keys())
+    registered = normalize_selected_ids(registered_ids)
+    active = frozenset(
+        point_id
+        for point_id in available
+        if point_enabled(profile, point_id, selected_ids)
+    )
+    disabled_registered = frozenset(
+        point_id
+        for point_id in registered
+        if not point_enabled(profile, point_id, selected_ids)
+    )
+    delete = disabled_registered if cleanup else frozenset()
+    inactive = frozenset(((available - active) | disabled_registered) - delete)
+    return {
+        "active": active,
+        "active_existing": frozenset(active & registered),
+        "active_new": frozenset(active - registered),
+        "inactive": inactive,
+        "delete": delete,
+    }
+
+
+def _format_preview_ids(
+    point_ids,
+    points: dict[str, Any],
+    point_names: dict[int, str],
+    *,
+    german: bool,
+) -> str:
+    """Format a bounded, human-readable point list for a config-flow preview."""
+    ordered = sorted(normalize_selected_ids(point_ids))
+    if not ordered:
+        return "– Keine" if german else "– None"
+    visible = ordered[:PREVIEW_LIST_LIMIT]
+    lines = [
+        f"- {_point_label(str(point_id), points.get(str(point_id), {}), point_names)}"
+        for point_id in visible
+    ]
+    remaining = len(ordered) - len(visible)
+    if remaining:
+        lines.append(
+            f"- … + {remaining} weitere" if german else f"- … + {remaining} more"
+        )
+    return "\n".join(lines)
+
+
+def _preview_special_entities(
+    points: dict[str, Any], profile: str, selected_ids, device: dict[str, Any] | None,
+    *, german: bool,
+) -> list[str]:
+    """Return non-point helper entities that the integration will provide."""
+    if german:
+        result = [
+            "REST API erreichbar",
+            "Einzelpunkt-Fallback aktiv",
+            "Meldungen / Alarme",
+            "Letzter Verbindungsfehler",
+        ]
+    else:
+        result = [
+            "REST API reachable",
+            "Individual-point fallback active",
+            "Notifications / alarms",
+            "Last connection error",
+        ]
+
+    if isinstance(device, dict) and "smartMode" in device:
+        result.append("Smart Mode")
+
+    ventilation = points.get(str(POINT_VENTILATION_MODE)) or {}
+    ventilation_metadata = ventilation.get("metadata") or {}
+    if (
+        ventilation
+        and point_enabled(profile, POINT_VENTILATION_MODE, selected_ids)
+        and bool(ventilation_metadata.get("isWritable"))
+    ):
+        result.append("Lüftung+" if german else "Ventilation+")
+    return result
+
+
+def _profile_preview_label(profile: str, *, german: bool) -> str:
+    labels_de = {
+        "minimal": "Minimal",
+        "standard": "Standard",
+        "extended": "Erweitert",
+        "complete": "Komplett",
+        "individual": "Individuell",
+    }
+    labels_en = {
+        "minimal": "Minimal",
+        "standard": "Standard",
+        "extended": "Extended",
+        "complete": "Complete",
+        "individual": "Individual",
+    }
+    return (labels_de if german else labels_en).get(profile, profile)
+
+
+async def _async_entity_preview_placeholders(
+    hass,
+    *,
+    points: dict[str, Any],
+    profile: str,
+    selected_ids,
+    device: dict[str, Any] | None,
+    entry: ConfigEntry | None = None,
+    cleanup: bool = False,
+    backup: bool = False,
+) -> dict[str, str]:
+    """Build localized placeholders for the final entity overview."""
+    german = str(getattr(hass.config, "language", "")).lower().startswith("de")
+    point_names = await _async_translated_point_names(hass)
+    registered = _registered_point_ids(hass, entry)
+    groups = _preview_point_groups(
+        points,
+        profile,
+        selected_ids,
+        registered_ids=registered,
+        cleanup=cleanup,
+    )
+    special = _preview_special_entities(
+        points, profile, selected_ids, device, german=german
+    )
+    yes = "Ja" if german else "Yes"
+    no = "Nein" if german else "No"
+    backup_value = yes if cleanup and backup else (no if cleanup else "–")
+    return {
+        "profile": _profile_preview_label(profile, german=german),
+        "discovered": str(len(normalize_selected_ids(points.keys()))),
+        "active_count": str(len(groups["active"])),
+        "active_existing": str(len(groups["active_existing"])),
+        "active_new": str(len(groups["active_new"])),
+        "inactive_count": str(len(groups["inactive"])),
+        "delete_count": str(len(groups["delete"])),
+        "special_count": str(len(special)),
+        "active_list": _format_preview_ids(
+            groups["active"], points, point_names, german=german
+        ),
+        "inactive_list": _format_preview_ids(
+            groups["inactive"], points, point_names, german=german
+        ),
+        "delete_list": _format_preview_ids(
+            groups["delete"], points, point_names, german=german
+        ),
+        "special_list": "\n".join(f"- {name}" for name in special),
+        "cleanup": yes if cleanup else no,
+        "backup": backup_value,
+    }
+
+
 class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     # Keep the config-entry schema version at 1. The 0.9.0 additions are optional
     # fields with defaults and therefore require no Home Assistant data migration.
@@ -517,7 +696,7 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
             if profile == PROFILE_INDIVIDUAL:
                 return await self.async_step_entity_selection()
-            return self._create_pending_entry()
+            return await self.async_step_entity_preview()
 
         points = self._available_points or {}
         counts = profile_counts(points.keys())
@@ -553,12 +732,35 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._pending_data[CONF_SELECTED_POINT_IDS] = _parse_selected_options(
                 user_input.get(CONF_SELECTED_POINT_IDS)
             )
-            return self._create_pending_entry()
+            return await self.async_step_entity_preview()
 
         return self.async_show_form(
             step_id="entity_selection",
             data_schema=_entity_selection_schema(points, point_names=point_names),
             description_placeholders={"count": str(len(points))},
+        )
+
+    async def async_step_entity_preview(self, user_input=None):
+        if self._pending_data is None or self._pending_device is None:
+            return self.async_abort(reason="setup_state_missing")
+        if user_input is not None:
+            return self._create_pending_entry()
+
+        profile = str(
+            self._pending_data.get(CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE)
+        )
+        points = self._available_points or {}
+        placeholders = await _async_entity_preview_placeholders(
+            self.hass,
+            points=points,
+            profile=profile,
+            selected_ids=self._pending_data.get(CONF_SELECTED_POINT_IDS, ()),
+            device=self._pending_device,
+        )
+        return self.async_show_form(
+            step_id="entity_preview",
+            data_schema=vol.Schema({}),
+            description_placeholders=placeholders,
         )
 
     async def async_step_reauth(self, entry_data: dict):
@@ -619,6 +821,7 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
 
     _pending_options: dict | None = None
     _available_points: dict[str, Any] | None = None
+    _pending_device: dict[str, Any] | None = None
     _cleanup_inactive = False
     _backup_before_cleanup = True
 
@@ -649,7 +852,7 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
         profile = str(candidate.get(CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE))
         errors: dict[str, str] = {}
         try:
-            _device, points = await _validate_and_discover(self.hass, candidate)
+            device, points = await _validate_and_discover(self.hass, candidate)
         except NibeAuthError:
             errors["base"] = "invalid_auth"
         except NibeApiError:
@@ -657,29 +860,10 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
         else:
             self._pending_options = candidate
             self._available_points = points
+            self._pending_device = device
             if profile == PROFILE_INDIVIDUAL:
                 return await self.async_step_entity_selection()
-            if self._cleanup_inactive:
-                if self._backup_before_cleanup:
-                    try:
-                        await _async_create_cleanup_backup(self.hass)
-                    except Exception as err:
-                        errors["base"] = "backup_failed"
-                        return self.async_show_form(
-                            step_id=step_id,
-                            data_schema=(
-                                _header_auth_schema()
-                                if step_id == "auth_header"
-                                else _basic_auth_schema(
-                                    {**self.config_entry.data, **self.config_entry.options}
-                                )
-                            ),
-                            errors=errors,
-                        )
-                await _async_remove_inactive_point_entities(
-                    self.hass, self.config_entry, profile, candidate.get(CONF_SELECTED_POINT_IDS, ())
-                )
-            return self.async_create_entry(title="", data=candidate)
+            return await self.async_step_entity_preview()
 
         current = {**self.config_entry.data, **self.config_entry.options}
         schema = (
@@ -718,28 +902,7 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             self._pending_options[CONF_SELECTED_POINT_IDS] = _parse_selected_options(
                 user_input.get(CONF_SELECTED_POINT_IDS)
             )
-            if self._cleanup_inactive:
-                if self._backup_before_cleanup:
-                    try:
-                        await _async_create_cleanup_backup(self.hass)
-                    except Exception:
-                        return self.async_show_form(
-                            step_id="entity_selection",
-                            data_schema=_entity_selection_schema(
-                                points,
-                                self._pending_options[CONF_SELECTED_POINT_IDS],
-                                point_names=point_names,
-                            ),
-                            errors={"base": "backup_failed"},
-                            description_placeholders={"count": str(len(points))},
-                        )
-                await _async_remove_inactive_point_entities(
-                    self.hass,
-                    self.config_entry,
-                    PROFILE_INDIVIDUAL,
-                    self._pending_options[CONF_SELECTED_POINT_IDS],
-                )
-            return self.async_create_entry(title="", data=self._pending_options)
+            return await self.async_step_entity_preview()
 
         return self.async_show_form(
             step_id="entity_selection",
@@ -750,3 +913,49 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             ),
             description_placeholders={"count": str(len(points))},
         )
+
+    async def async_step_entity_preview(self, user_input=None):
+        if self._pending_options is None or self._pending_device is None:
+            return self.async_abort(reason="setup_state_missing")
+
+        profile = str(
+            self._pending_options.get(CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE)
+        )
+        points = self._available_points or {}
+        placeholders = await _async_entity_preview_placeholders(
+            self.hass,
+            points=points,
+            profile=profile,
+            selected_ids=self._pending_options.get(CONF_SELECTED_POINT_IDS, ()),
+            device=self._pending_device,
+            entry=self.config_entry,
+            cleanup=self._cleanup_inactive,
+            backup=self._backup_before_cleanup,
+        )
+
+        if user_input is not None:
+            if self._cleanup_inactive:
+                if self._backup_before_cleanup:
+                    try:
+                        await _async_create_cleanup_backup(self.hass)
+                    except Exception:
+                        return self.async_show_form(
+                            step_id="entity_preview",
+                            data_schema=vol.Schema({}),
+                            errors={"base": "backup_failed"},
+                            description_placeholders=placeholders,
+                        )
+                await _async_remove_inactive_point_entities(
+                    self.hass,
+                    self.config_entry,
+                    profile,
+                    self._pending_options.get(CONF_SELECTED_POINT_IDS, ()),
+                )
+            return self.async_create_entry(title="", data=self._pending_options)
+
+        return self.async_show_form(
+            step_id="entity_preview",
+            data_schema=vol.Schema({}),
+            description_placeholders=placeholders,
+        )
+

@@ -2,6 +2,7 @@
 
 import asyncio
 from datetime import time
+import inspect
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -19,6 +20,8 @@ from custom_components.nibe_local.api import (
 )
 from custom_components.nibe_local.config_flow import (
     CONF_BACKUP_BEFORE_CLEANUP,
+    NibeLocalConfigFlow,
+    NibeLocalOptionsFlow,
     _async_create_cleanup_backup,
     _basic_auth_schema,
     _connection_schema,
@@ -26,6 +29,7 @@ from custom_components.nibe_local.config_flow import (
     _header_auth_schema,
     _parse_selected_options,
     _point_options,
+    _preview_point_groups,
     _reauth_schema,
     auth_method_from_values,
     merge_auth_settings,
@@ -181,6 +185,55 @@ def test_individual_profile_uses_only_persisted_ids() -> None:
     assert point_enabled(PROFILE_INDIVIDUAL, 8, selected)
     assert point_enabled(PROFILE_INDIVIDUAL, 3096, selected)
     assert not point_enabled(PROFILE_INDIVIDUAL, 10, selected)
+
+
+def test_entity_preview_groups_match_cleanup_scope() -> None:
+    points = {"4": {}, "8": {}, "1755": {}, "999999": {}}
+    preview = _preview_point_groups(
+        points,
+        PROFILE_MINIMAL,
+        (),
+        registered_ids={4, 1755, 999999},
+        cleanup=True,
+    )
+    assert preview["active"] == frozenset({4, 8})
+    assert preview["active_existing"] == frozenset({4})
+    assert preview["active_new"] == frozenset({8})
+    assert preview["delete"] == frozenset({1755, 999999})
+    assert preview["inactive"] == frozenset()
+
+
+def test_entity_preview_retains_deselected_registry_entries_without_cleanup() -> None:
+    points = {"4": {}, "8": {}, "1755": {}, "999999": {}}
+    preview = _preview_point_groups(
+        points,
+        PROFILE_MINIMAL,
+        (),
+        registered_ids={4, 1755, 999999},
+        cleanup=False,
+    )
+    assert preview["delete"] == frozenset()
+    assert preview["inactive"] == frozenset({1755, 999999})
+
+
+def test_registry_cleanup_is_deferred_to_final_preview() -> None:
+    selection_source = inspect.getsource(NibeLocalOptionsFlow.async_step_entity_selection)
+    finish_source = inspect.getsource(NibeLocalOptionsFlow._async_finish_auth)
+    preview_source = inspect.getsource(NibeLocalOptionsFlow.async_step_entity_preview)
+    assert "_async_create_cleanup_backup" not in selection_source
+    assert "_async_remove_inactive_point_entities" not in selection_source
+    assert "_async_remove_inactive_point_entities" not in finish_source
+    assert "_async_create_cleanup_backup" in preview_source
+    assert "_async_remove_inactive_point_entities" in preview_source
+
+
+def test_setup_waits_for_preview_before_creating_entry() -> None:
+    profile_source = inspect.getsource(NibeLocalConfigFlow.async_step_entity_profile)
+    selection_source = inspect.getsource(NibeLocalConfigFlow.async_step_entity_selection)
+    preview_source = inspect.getsource(NibeLocalConfigFlow.async_step_entity_preview)
+    assert "async_step_entity_preview" in profile_source
+    assert "async_step_entity_preview" in selection_source
+    assert "_create_pending_entry()" in preview_source
 
 
 def test_periodic_hot_water_date_epoch() -> None:
