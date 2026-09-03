@@ -1,0 +1,95 @@
+name: Optimize brand assets
+
+on:
+  push:
+    paths:
+      - '.github/workflows/optimize-brand-assets.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  optimize-brand-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow
+
+      - name: Crop and resize light and dark logos identically
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+
+          brand = Path('custom_components/nibe_local/brand')
+          crop_box = (112, 30, 1396, 482)
+          normal_size = (727, 256)
+          hdpi_size = (1454, 512)
+
+          sources = {
+              'logo.png': 'logo@2x.png',
+              'dark_logo.png': 'dark_logo@2x.png',
+          }
+
+          for source_name, hdpi_name in sources.items():
+              source_path = brand / source_name
+              image = Image.open(source_path).convert('RGB')
+
+              if image.size != (1536, 512):
+                  raise RuntimeError(
+                      f'{source_name}: expected original size 1536x512, got {image.size}'
+                  )
+
+              cropped = image.crop(crop_box)
+              normal = cropped.resize(normal_size, Image.Resampling.LANCZOS)
+              hdpi = cropped.resize(hdpi_size, Image.Resampling.LANCZOS)
+
+              normal.save(source_path, format='PNG', optimize=True)
+              hdpi.save(brand / hdpi_name, format='PNG', optimize=True)
+
+              print(f'{source_name}: {image.size} -> crop {cropped.size} -> {normal.size}')
+              print(f'{hdpi_name}: {hdpi.size}')
+          PY
+
+      - name: Verify matching geometry
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+
+          brand = Path('custom_components/nibe_local/brand')
+          pairs = [
+              ('logo.png', 'dark_logo.png', (727, 256)),
+              ('logo@2x.png', 'dark_logo@2x.png', (1454, 512)),
+          ]
+          for light, dark, expected in pairs:
+              light_size = Image.open(brand / light).size
+              dark_size = Image.open(brand / dark).size
+              assert light_size == expected, (light, light_size)
+              assert dark_size == expected, (dark, dark_size)
+              assert light_size == dark_size
+              print(f'{light} / {dark}: {expected}')
+          PY
+
+      - name: Commit optimized assets and remove one-time workflow
+        run: |
+          rm .github/workflows/optimize-brand-assets.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add custom_components/nibe_local/brand/logo.png \
+                  custom_components/nibe_local/brand/dark_logo.png \
+                  custom_components/nibe_local/brand/logo@2x.png \
+                  custom_components/nibe_local/brand/dark_logo@2x.png \
+                  .github/workflows/optimize-brand-assets.yml
+          git commit -m 'Optimize Home Assistant brand logos'
+          git push
