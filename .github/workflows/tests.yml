@@ -30,7 +30,7 @@ jobs:
         env:
           HA_VERSION: ${{ matrix.homeassistant-version }}
         run: |
-          python -m pip install --upgrade pip pytest
+          python -m pip install --upgrade pip pytest ruff
           if [ "$HA_VERSION" = "latest" ]; then
             python -m pip install homeassistant
           else
@@ -51,6 +51,9 @@ jobs:
                   json.load(handle)
               print(f"OK: {path}")
           PY
+
+      - name: Undefinierte Python-Namen prüfen
+        run: ruff check custom_components/nibe_local tests --select F821
 
       - name: Python-Syntax prüfen
         run: python -m compileall -q custom_components/nibe_local tests
