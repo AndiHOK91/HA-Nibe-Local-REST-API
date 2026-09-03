@@ -222,6 +222,9 @@
       "hot_water_charge_bt6": {
         "name": "Brauchwassertemperatur Ladung (BT6)"
       },
+      "hot_water_outlet_bt70": {
+        "name": "Brauchwasseraustritt (BT70)"
+      },
       "aux_heat_hot_water_total_time": {
         "name": "Betriebszeit Zusatzheizung Brauchwasser"
       },

@@ -726,3 +726,18 @@ def test_cleanup_backup_uses_core_backup_when_supervisor_unavailable() -> None:
         assert services.calls == [("backup", "create", {}, True)]
 
     asyncio.run(run_test())
+
+
+def test_minimal_profile_core_contract() -> None:
+    from custom_components.nibe_local.profiles import MINIMAL_POINT_IDS
+
+    expected = {4, 8, 10, 11, 12, 116, 158, 1758, 2500, 3096, 4064}
+    assert MINIMAL_POINT_IDS == expected
+
+
+def test_bt70_is_known_read_only_sensor() -> None:
+    definitions = {definition.point_id: definition for definition in POINTS}
+    bt70 = definitions[116]
+    assert bt70.key == "hot_water_outlet_bt70"
+    assert bt70.group == "hot_water"
+    assert bt70.platform == "sensor"

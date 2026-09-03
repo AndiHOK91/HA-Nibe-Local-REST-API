@@ -87,15 +87,12 @@ Das Minimal-Profil konzentriert sich auf den normalen Anlagenzustand, zum Beispi
 
 - Außentemperatur
 - Vorlauf und Rücklauf
-- Brauchwassertemperaturen
-- Volumenstrom
-- Gradminuten
+- Außentemperatur
+- Vorlauf und Rücklauf
+- Raumtemperatur
+- Brauchwassertemperaturen BT7, BT6 und BT70
 - Betriebspriorität und Betriebsmodus
-- Heizungsumwälzpumpe
-- Verdichterstatus, -frequenz und -leistung
-- Heizung/Kühlung zulassen
-- Brauchwasserbedarf
-- Mehr Brauchwasser
+- Verdichterstatus und Verdichterfrequenz
 
 ### Standard
 

@@ -93,6 +93,7 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(5033, "cooling_curve_offset", "cooling", "number"),
     PointDef(11, "hot_water_top_bt7", "hot_water"),
     PointDef(12, "hot_water_charge_bt6", "hot_water"),
+    PointDef(116, "hot_water_outlet_bt70", "hot_water"),
     PointDef(1829, "hot_water_circulation_gp11", "hot_water", "binary_sensor"),
     PointDef(1865, "aux_heat_hot_water_total_time", "hot_water"),
     PointDef(1942, "more_hot_water_status", "hot_water", "binary_sensor"),

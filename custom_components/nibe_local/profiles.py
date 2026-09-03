@@ -29,9 +29,11 @@ MINIMAL_POINT_IDS = frozenset(
         10,    # Return temperature BT3
         11,    # Hot-water top BT7
         12,    # Hot-water charge BT6
+        116,   # Hot-water outlet BT70
         158,   # Room temperature BT50
         1758,  # Operating priority
         2500,  # Compressor status
+        3096,  # Compressor frequency
         4064,  # Operating mode status
     }
 )

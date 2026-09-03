@@ -222,6 +222,9 @@
       "hot_water_charge_bt6": {
         "name": "Hot water charging temperature (BT6)"
       },
+      "hot_water_outlet_bt70": {
+        "name": "Hot water outlet (BT70)"
+      },
       "aux_heat_hot_water_total_time": {
         "name": "Auxiliary heat operating time for hot water"
       },
