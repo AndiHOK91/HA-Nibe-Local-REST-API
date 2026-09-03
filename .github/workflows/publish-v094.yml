@@ -1,0 +1,39 @@
+name: Publish v0.9.4
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-v094.yml'
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > /tmp/release-notes.md <<'EOF'
+          ## NIBE Local REST API v0.9.4
+
+          Dieser Release konzentriert sich auf Diagnosefähigkeit, Qualitätssicherung und eine vollständigere Dokumentation auf dem Weg zu 1.0.
+
+          ### Highlights
+
+          - Home-Assistant-**Diagnosedaten** für Support und Fremdhardware-Tests ergänzt, mit bewusstem Ausschluss sensibler Daten wie Host/IP, Benutzername, Passwort, Authorization-Header, Seriennummern, aktuellen Mess-/Einstellwerten und Alarmtexten.
+          - CI um **Ruff F821** ergänzt, damit undefinierte Python-Namen bereits vor einem Release auffallen.
+          - **Migrationsschutz** und **Plattform-Smoke-Test** ergänzt.
+          - README um NIBE-REST-API-Voraussetzungen erweitert, einschließlich Firmware 4.4.7 als technischer Mindestbasis und Aktivierung unter **Menü 7 → Service → 7.5.15 – Lokale REST API**.
+          - Einrichtungs-/Optionshinweise, Entitätsbenennung und Branding überarbeitet.
+          - Python-Cache-Dateien aus dem Repository entfernt und über `.gitignore` ausgeschlossen.
+
+          Unterstützt und in der CI geprüft werden weiterhin **Home Assistant 2024.12.0** und die jeweils aktuelle Home-Assistant-Version.
+
+          Die vollständigen Änderungen stehen im `CHANGELOG.md`.
+          EOF
+          gh release create v0.9.4 \
+            --repo "$GITHUB_REPOSITORY" \
+            --target bf68808936778a76dc40c8eb86dcece581ddb35a \
+            --title "v0.9.4" \
+            --notes-file /tmp/release-notes.md
