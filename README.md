@@ -8,196 +8,680 @@
 
 # NIBE Local REST API – Home Assistant Custom Integration
 
-> 🏠 **Lokal** · ⚡ **Schnell** · 🔒 **Ohne Cloud-Zwang** · 🌡️ **Heizung** · 💧 **Brauchwasser** · 🌬️ **Lüftung**
+> 🏠 **Lokal** · 🔒 **Sicherheitsorientiert** · ☁️ **ohne Cloud-Zwang** · 🌡️ **Heizung** · ❄️ **Kühlung** · 💧 **Brauchwasser** · 🌬️ **Lüftung**
 
-Diese Custom Integration bindet eine NIBE-Anlage über die **lokale REST API** direkt in Home Assistant ein. Sie wurde für eine Anlage mit **VVM S320, S2125 und ERS S40-400** entwickelt und wird dort im laufenden Betrieb getestet.
+Diese Custom Integration bindet eine NIBE-Anlage über die **lokale REST API** direkt in Home Assistant ein. Für das normale Auslesen und die unterstützten Steuerfunktionen ist keine Verbindung zu myUplink erforderlich.
 
-Die Kommunikation erfolgt lokal im eigenen Netzwerk. Für das normale Auslesen ist keine Cloud-Verbindung zu myUplink erforderlich.
+Die Integration wurde für eine Anlage mit **VVM S320, S2125 und ERS S40-400** entwickelt und wird dort im realen Betrieb getestet. Andere Geräte oder Anlagenkonfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-## ✨ Was die Integration kann
+Aktuelle Integrationsversion: **0.9.0**
 
-Die Integration stellt zahlreiche Werte und Funktionen der NIBE-Anlage als Home-Assistant-Entitäten bereit, unter anderem:
+---
 
-- 🌡️ Temperaturen für Außenluft, Vorlauf, Rücklauf, Raum, Brauchwasser und Lüftung
-- 🔥 Heizungs- und Kühlungswerte einschließlich Gradminuten und berechneten Vorlauftemperaturen
-- ⚙️ Verdichterdaten wie Frequenz, Leistung, Strom, Starts und Betriebszeiten
+## Inhalt
+
+- [Funktionsumfang](#-funktionsumfang)
+- [Entitätsprofile](#-entitätsprofile)
+- [Individuelle Auswahl](#-individuelle-auswahl)
+- [Benennung der Entitäten](#-benennung-der-entitäten)
+- [Unterstützte Home-Assistant-Plattformen](#-unterstützte-home-assistant-plattformen)
+- [Schreibzugriffe und Sicherheitsmodell](#-schreibzugriffe-und-sicherheitsmodell)
+- [Heizung und Kühlung](#-heizung-und-kühlung)
+- [Brauchwasser](#-brauchwasser)
+- [Lüftung](#-lüftung)
+- [Verdichter, Außeneinheit und Abtauung](#-verdichter-außeneinheit-und-abtauung)
+- [Alarme und Diagnose](#-alarme-und-diagnose)
+- [Authentifizierung und TLS](#-authentifizierung-und-tls)
+- [Kommunikation, Polling und Robustheit](#-kommunikation-polling-und-robustheit)
+- [Installation](#-installation)
+- [Optionen nach der Einrichtung](#-optionen-nach-der-einrichtung)
+- [Updates und Beständigkeit](#-updates-und-beständigkeit)
+- [Grenzen und bekannte Einschränkungen](#-grenzen-und-bekannte-einschränkungen)
+- [Entwicklung und Tests](#-entwicklung-und-tests)
+- [Haftung](#-haftung)
+
+---
+
+## ✨ Funktionsumfang
+
+Die Integration liest die von der lokalen REST API bereitgestellten Anlagenvariablen und bildet bekannte Punkte auf passende Home-Assistant-Entitäten ab.
+
+Unterstützt werden unter anderem:
+
+- 🌡️ Außen-, Vorlauf-, Rücklauf-, Raum-, Brauchwasser- und Lüftungstemperaturen
+- 🔥 Heizungswerte, Gradminuten, Heizkurve und berechnete Vorlauftemperaturen
+- ❄️ Kühlstatus, Kühlgradminuten, Kühlkurve und Kühlfreigabe
+- 💧 Brauchwasserbedarf, Temperaturen, Zeitprogramme und Zusatzfunktionen
+- ⚙️ Verdichterstatus, Frequenz, Leistung, Strom, Starts und Betriebszeiten
+- 💨 Pumpen-, Hydraulik- und Ventilatorwerte
+- 🌬️ Lüftungsmodus, Luftfeuchtigkeit, Temperaturen und Nachtabsenkung
+- 🧊 EEV-/EVI-, Kältekreis- und Abtauwerte
 - ⚡ Energie- und Leistungswerte
-- 💧 Pumpen-, Hydraulik- und Brauchwasserwerte
-- 🌬️ Lüftungswerte wie Temperaturen, Luftfeuchtigkeit und Ventilatordrehzahlen
-- 🧊 Diagnosewerte der Außeneinheit, EEV/EVI und Abtauung
 - 🚨 Alarm- und Meldungsinformationen
-- 🎛️ Schreibbare Einstellungen als Schalter, Auswahlfelder, Zahlenwerte und Uhrzeiten
-- 🔐 Automatische Neuauthentifizierung bei abgelehnten Zugangsdaten
-- 🔔 Home-Assistant-Benachrichtigungen bei Authentifizierungs- und länger anhaltenden Verbindungsfehlern
-- 🩺 Diagnose-Entitäten für REST-API-Erreichbarkeit, Fallback-Status und den letzten Verbindungsfehler
+- 🎛️ geprüfte Schreibfunktionen über `switch`, `select`, `number` und `time`
+- 🩺 Diagnose-Entitäten für API-Erreichbarkeit, Fallback und Verbindungsfehler
+- 🔔 Benachrichtigungen bei Authentifizierungs- und längeren Verbindungsproblemen
+- 🧩 mehrere NIBE-Config-Entries ohne Kollision der Entity-Unique-IDs
 
-Die Entitäten werden regelmäßig über die lokale REST API aktualisiert. Das Polling-Intervall kann in den Optionen angepasst werden.
+Welche Entitäten tatsächlich angelegt werden, bestimmt seit **0.9.0** das gewählte Entitätsprofil.
+
+---
+
+## 🧩 Entitätsprofile
+
+Nach erfolgreicher Eingabe der Verbindungs- und Authentifizierungsdaten liest die Integration zuerst die tatsächlich verfügbaren Variablen des Geräts ein. Anschließend kann der gewünschte Umfang gewählt werden.
+
+Im Einrichtungsdialog wird zusätzlich angezeigt, wie viele Variablen des verbundenen Geräts in den jeweiligen Profilen verfügbar sind.
+
+| Profil | Zweck | Verhalten |
+|---|---|---|
+| **Minimal** | Kernwerte für Dashboard und Grundbetrieb | Nur die wichtigsten Betriebs-, Temperatur-, Brauchwasser- und Verdichterwerte sowie zentrale Bedienfunktionen |
+| **Standard** | Typische Home-Assistant-Nutzung | Minimal plus häufig benötigte Heiz-/Kühlwerte, Komfortfunktionen, Energie, Verdichterdetails, Abtau- und grundlegende Lüftungswerte |
+| **Erweitert** | Ausführliche Anlagenanalyse | Der vollständig kuratierte und von dieser Integration bekannte `POINTS`-Umfang einschließlich detaillierter Diagnose- und Servicewerte |
+| **Komplett** | Maximale Sichtbarkeit | Alle von der lokalen API aktuell gemeldeten Variablen; bekannte Punkte mit ihrer definierten Plattform, unbekannte Punkte ausschließlich als Read-only-Sensor |
+| **Individuell** | Volle Auswahlkontrolle | Der Nutzer wählt nach der Erkennung selbst die gewünschten Variablen aus |
+
+### Minimal
+
+Das Minimal-Profil konzentriert sich auf den normalen Anlagenzustand, zum Beispiel:
+
+- Außentemperatur
+- Vorlauf und Rücklauf
+- Brauchwassertemperaturen
+- Volumenstrom
+- Gradminuten
+- Betriebspriorität und Betriebsmodus
+- Heizungsumwälzpumpe
+- Verdichterstatus, -frequenz und -leistung
+- Heizung/Kühlung zulassen
+- Brauchwasserbedarf
+- Mehr Brauchwasser
+
+### Standard
+
+Standard erweitert Minimal unter anderem um:
+
+- mittlere Außen- und Raumtemperatur
+- berechnete Heiz- und Kühlvorläufe
+- Heiz- und Kühlkurven
+- ausgewählte Brauchwasserparameter und Zeitprogramme
+- Energie- und Leistungswerte
+- Verdichterstarts und Betriebszeiten
+- relevante Außeneinheit-/Kältekreiswerte
+- Abtauzustand
+- grundlegende Lüftungswerte
+
+### Erweitert
+
+Erweitert entspricht dem großen, von der Integration gepflegten bekannten Punktumfang. Dazu gehören zusätzlich zahlreiche:
+
+- Hydraulikwerte
+- detaillierte Verdichterwerte
+- EEV-/EVI-Werte
+- Abtau- und Diagnosewerte
+- Lüftungsparameter
+- Zusatzheizungs- und Serviceinformationen
+
+Für bestehende Konfigurationen aus Versionen vor 0.9.0 wird **Erweitert** als Kompatibilitätsstandard verwendet, damit der bisherige Umfang nicht überraschend reduziert wird.
+
+### Komplett
+
+Komplett zeigt zusätzlich Variablen, die der installierten Integrationsversion noch nicht als eigener `PointDef` bekannt sind.
+
+**Wichtig:** Ein unbekannter Punkt wird immer nur lesend als generischer Sensor bereitgestellt – selbst wenn die lokale API für ihn `isWritable=true` meldet.
+
+Damit bedeutet „Komplett“ ausdrücklich:
+
+> **Alle verfügbaren Werte sichtbar machen, aber nur verstandene und von der Integration explizit abgesicherte Funktionen beschreibbar machen.**
+
+---
+
+## ☑️ Individuelle Auswahl
+
+Bei **Individuell** wird nach der Verbindung die Liste der tatsächlich vom Gerät gemeldeten Variablen angezeigt.
+
+Die Auswahl enthält – soweit von der lokalen API geliefert – unter anderem:
+
+- Variable-ID
+- Beschreibung
+- Einheit
+
+Es werden die **konkreten Variable-IDs** gespeichert. Dadurch bleibt die Auswahl erhalten bei:
+
+- Neustart von Home Assistant
+- Reload der Integration
+- Änderung anderer Optionen
+- Update der Custom Integration
+
+Die Auswahl kann später erneut über die Integrationsoptionen geändert werden.
+
+---
+
+## 🏷️ Benennung der Entitäten
+
+Seit 0.9.0 kann bei der Einrichtung und später in den Optionen gewählt werden, wie die Integration den **Entitätsnamen** bereitstellt.
+
+### Home-Assistant-Standard – empfohlen
+
+Die Integration verwendet ihre übersetzten Home-Assistant-Namen und `translation_key`s.
+
+Beispiel:
+
+`Außentemperatur (BT1)`
+
+Dies ist der empfohlene Modus und passt am besten zum modernen Home-Assistant-Namensmodell.
+
+### Lokale API
+
+Der Name wird möglichst direkt aus der Beschreibung der lokalen REST API übernommen.
+
+Beispiel:
+
+`Current outdoor temperature (BT1)`
+
+Die Sprache und genaue Schreibweise hängen dabei von den durch das Gerät gelieferten Metadaten ab.
+
+### Technisch
+
+Verwendet die lokale API-Bezeichnung und ergänzt die Variable-ID.
+
+Beispiel:
+
+`Current outdoor temperature (BT1) [ID 4]`
+
+Dieser Modus ist besonders für Entwicklung, Diagnose und Vergleich mit API-/Modbus-Dokumentation geeignet.
+
+### Entity-ID-Format von Home Assistant
+
+Die Integration bestimmt **nicht** das globale Format der endgültigen Home-Assistant-Entity-ID.
+
+Home Assistant kann selbst festlegen, wie neue Entity-IDs aus Bereich, Gerät und Entitätsname aufgebaut werden. Diese globale Home-Assistant-Einstellung bleibt unangetastet.
+
+Die Namensoption dieser Integration verändert daher den **von der Integration bereitgestellten Namen**, nicht die globale Entity-ID-Regel von Home Assistant.
+
+---
+
+## 🧱 Unterstützte Home-Assistant-Plattformen
+
+Die Integration verwendet je nach bekannter Semantik des NIBE-Punkts:
+
+- `sensor` – Mess-, Status-, Energie- und Diagnosewerte
+- `binary_sensor` – boolesche Zustände
+- `switch` – ausdrücklich unterstützte Ein/Aus-Funktionen
+- `select` – bekannte Enum-/Modusauswahl
+- `number` – numerische Einstellungen mit validierbaren Grenzen
+- `time` – unterstützte Zeitwerte
+
+Nicht jeder von der lokalen API als schreibbar gemeldete Punkt wird automatisch zu einer schreibbaren Home-Assistant-Entität.
+
+---
+
+## 🛡️ Schreibzugriffe und Sicherheitsmodell
+
+Die Integration verfolgt bewusst ein **Allowlist-Prinzip für Schreibzugriffe**.
+
+### Bekannte Punkte
+
+Schreibbar sind nur Punkte, für die die Integration die Bedeutung und erforderliche Home-Assistant-Plattform ausdrücklich definiert hat.
+
+Dazu gehören beispielsweise bestimmte:
+
+- Betriebsmodus-Auswahlen
+- Heiz-/Kühlfreigaben
+- Brauchwasserfunktionen
+- Lüftungsfunktionen
+- Heiz-/Kühlkurven
+- validierte numerische Einstellungen
+- Zeitparameter
+
+### Unbekannte Punkte
+
+Ein von der lokalen API neu entdeckter, aber der Integration unbekannter Punkt bleibt **Read-only**.
+
+Auch bei:
+
+`isWritable = true`
+
+wird nicht automatisch ein `switch`, `number` oder `select` erzeugt.
+
+Der Grund: `isWritable` sagt nur aus, dass die API grundsätzlich einen Schreibzugriff zulässt. Daraus folgt nicht sicher:
+
+- welche Werte semantisch erlaubt sind
+- ob ein Wert ein Enum, Bitfeld oder numerischer Parameter ist
+- ob Min/Max-Metadaten ausreichend verlässlich sind
+- ob ein Parameter nur für Installateur-/Servicezwecke vorgesehen ist
+- ob ein Wert nur in bestimmten Betriebszuständen geändert werden darf
+
+### Serialisierte Schreibbefehle
+
+Alle schreibenden REST-Aufrufe werden integrationsweit über einen gemeinsamen Lock serialisiert.
+
+Dadurch sendet die Integration keine parallelen `PATCH`-/`POST`-Befehle an die NIBE, auch wenn mehrere Home-Assistant-Automationen gleichzeitig Änderungen auslösen.
+
+Schreibende Plattformen begrenzen zusätzlich parallele Entity-Updates.
+
+### Verifikation nach Schreibzugriff
+
+Nach einem Schreibbefehl wird der betroffene Punkt gezielt erneut gelesen. Die Anzeige in Home Assistant richtet sich damit möglichst nach dem tatsächlich von der NIBE bestätigten Zustand und nicht nur nach dem angeforderten Wert.
+
+---
+
+## 🔥 Heizung und Kühlung
+
+Für die Funktionen **Heizung zulassen** und **Kühlung zulassen** wird der aktuelle Betriebsmodus unmittelbar vor einem Schreibversuch erneut geprüft.
+
+Aktuelle Schutzlogik:
+
+| Betriebsmodus | Heizung | Kühlung |
+|---|---:|---:|
+| Auto | nur lesen | nur lesen |
+| Manuell | schreiben erlaubt | schreiben erlaubt |
+| Nur Zusatzheizung | schreiben erlaubt | nur lesen |
+| unbekannt / nicht sicher lesbar | blockiert | blockiert |
+
+Kann der erforderliche Betriebsmodus nicht zuverlässig gelesen werden, wird **kein Schreibbefehl** gesendet.
+
+---
+
+## 🎚️ Numerische Einstellungen
+
+`number`-Entitäten verwenden die von der NIBE gelieferten Metadaten nur dann zum Schreiben, wenn sie plausibel ausgewertet werden können.
+
+Geprüft werden unter anderem:
+
+- Min-/Max-Grenzen
+- Divisor
+- darstellbare Schrittweite
+- exakte Abbildbarkeit des Home-Assistant-Werts auf den Rohwert
+
+Sicherheitsregeln:
+
+- Divisor muss positiv sein
+- unplausible oder fehlende Grenzen können einen Schreibzugriff blockieren
+- Werte außerhalb der erlaubten Grenzen werden abgewiesen
+- Werte, die nicht exakt auf die NIBE-Rohwertdarstellung passen, werden nicht stillschweigend gerundet
+
+Im Zweifel gilt: **nicht schreiben statt raten**.
+
+---
+
+## 💧 Brauchwasser
+
+Unterstützte Funktionen und Werte umfassen – abhängig von Gerät und Profil – unter anderem:
+
+- Brauchwassertemperatur oben
+- Temperatur während der Brauchwasserbereitung
+- Brauchwasserbedarf
+- Mehr Brauchwasser
+- verbleibende Laufzeit von Mehr Brauchwasser
+- Brauchwasserzirkulation
+- Start-/Stopptemperaturen
+- periodische Brauchwassererhöhung
+- Intervall und Startzeit
+- Betriebs- und Stillstandszeiten
+
+### Mehr Brauchwasser
+
+Der Schalter **Mehr Brauchwasser** kann die Zusatzfunktion aktivieren und beenden. Nach der Änderung wird der relevante Zustand erneut abgefragt.
+
+---
 
 ## 🌬️ Lüftung
 
-Für die Lüftung stehen unter anderem Abluft, Fortluft, Zuluft, Außenlufttemperatur, Luftfeuchtigkeit, Ventilatordrehzahlen, Lüftungsmodus, Nachtabsenkung und Rückstellzeiten bereit.
+Bei vorhandener Lüftung können – abhängig vom Gerät – unter anderem bereitgestellt werden:
 
-### ➕ Lüftung +
+- Ablufttemperatur
+- Fortlufttemperatur
+- Zulufttemperatur
+- Außenlufttemperatur der Lüftung
+- relative Luftfeuchtigkeit
+- Abluft- und Zuluftventilatordrehzahl
+- Lüftungsmodus
+- Nachtabsenkung
+- Rückstellzeiten der Lüftungsstufen
 
-Der Schalter **„Lüftung +“** setzt die Lüftung beim Einschalten auf **Erhöht** und beim Ausschalten zurück auf **Normal**. Anschließend wird der tatsächlich von der NIBE gemeldete Zustand geprüft, damit die Anzeige in Home Assistant stabil bleibt.
+### Lüftung +
 
-## 💧 Mehr Brauchwasser
+Der Komfortschalter **Lüftung +** setzt die Lüftung beim Einschalten auf **Erhöht** und beim Ausschalten auf **Normal**. Anschließend wird der von der Anlage gemeldete Zustand erneut geprüft.
 
-Mit **„Mehr Brauchwasser“** kann die zusätzliche Brauchwasserbereitung direkt aus Home Assistant angefordert und wieder beendet werden.
+---
 
-Die Integration berücksichtigt zusätzlich die von der Anlage gemeldete verbleibende Laufzeit. Weitere Brauchwasserparameter umfassen Temperaturen, Bedarf, Start-/Stopptemperaturen, periodische Brauchwassererhöhung sowie Zirkulationszeiten.
+## ⚙️ Verdichter, Außeneinheit und Abtauung
 
-## 🔥 Heizung und ❄️ Kühlung
+Je nach Gerät und gewähltem Profil stehen unter anderem zur Verfügung:
 
-Die Integration liest unter anderem Außen-, Vorlauf-, Rücklauf- und Raumtemperaturen sowie Gradminuten und Heizkurvenwerte aus.
-
-Für **„Heizung zulassen“** und **„Kühlung zulassen“** wird vor jedem Schreibversuch der aktuelle Betriebsmodus der NIBE gezielt neu gelesen:
-
-- **Auto:** beide Schalter nur lesbar
-- **Manuell:** Heizung und Kühlung schreibbar
-- **Nur Zusatzheizung:** Heizung schreibbar, Kühlung nur lesbar
-- **Unbekannter oder nicht verfügbarer Betriebsmodus:** beide Schreibvorgänge werden blockiert
-
-Kann der Betriebsmodus nicht sicher neu gelesen werden, wird vorsorglich **kein Schreibbefehl** gesendet.
-
-## 🎚️ Schreibbare Zahlenwerte
-
-Number-Entitäten verwenden die von der NIBE gelieferten Metadaten für Min-/Max-Grenzen und Schrittweite. Unplausible Metadaten werden aus Sicherheitsgründen nicht zum Schreiben verwendet.
-
-Es werden nur positive Divisoren akzeptiert. Werte, die sich nicht exakt auf die von NIBE vorgegebene Rohwert-Schrittweite abbilden lassen, werden blockiert statt stillschweigend gerundet.
-
-## ⚙️ Außeneinheit und Verdichter
-
-Bereitgestellt werden unter anderem:
-
-- Verdichterstatus und -frequenzen
+- Verdichterstatus
+- aktuelle und angeforderte Verdichterfrequenz
 - elektrische Leistung und Strom
-- Verdichterstarts und Betriebszeiten
-- Kältekreis-Temperaturen
-- Ventilatordrehzahl
-- Hoch- und Niederdruckwerte
-- EEV-/EVI-Werte
-- Enteisungsstatus und Enteisungsinformationen
+- Verdichterstarts
+- Gesamt-, Heiz-/Kühl- und Brauchwasserlaufzeiten
+- Rücklauf und Kondensatorvorlauf
+- Heißgas-, Flüssigkeits- und Sauggastemperaturen
+- Verdampfertemperaturen
+- Hoch-/Niederdruckwerte
+- Ventilatordrehzahlen
+- Wechselrichtertemperatur
+- Schutz- und Alarmzustände
+- Abtauzustand und Zeit bis Abtauung
+- EEV-/EVI-Überhitzung, Sollwerte, Fehler und Öffnungsgrade
 
-## ⚡ Energie
+Viele dieser Werte gehören bewusst erst zu **Erweitert** bzw. **Komplett**, damit normale Installationen nicht mit Diagnosewerten überladen werden.
 
-Vorhandene Energie- und Leistungswerte der NIBE werden als Home-Assistant-Sensoren bereitgestellt, darunter der Energiezähler BE6 und aktuelle Leistungswerte des Energieprotokolls.
+---
 
-Geeignete Entitäten verwenden passende Home-Assistant-State-Classes für Langzeitstatistiken und Energieverläufe.
+## ⚡ Energie und Einheiten
 
-Von NIBE gelieferte Einheiten werden, wo nötig, auf Home-Assistant-konforme Schreibweisen normalisiert. Dazu gehören insbesondere `%RH` → `%` für Luftfeuchtigkeit und `l/min` → `L/min` für Volumenstrom. Die Luftfeuchtigkeits-Device-Class wird nur gesetzt, wenn NIBE den Wert ursprünglich ausdrücklich als `%RH` kennzeichnet; andere Prozentwerte bleiben unverändert klassifiziert.
+Vorhandene Energie- und Leistungswerte der NIBE werden – soweit bekannt – mit passenden Home-Assistant-Klassen versehen.
 
-## 🚨 Alarme und Meldungen
+Geeignete Zähler verwenden `TOTAL_INCREASING`, damit Home Assistant Langzeitstatistiken korrekt aufbauen kann.
 
-Aktive NIBE-Meldungen werden nur lesend dargestellt. Soweit von der REST API geliefert, können Alarmnummer, Beschreibung, Schweregrad, Zeitpunkt und Quelle angezeigt werden.
+Einheiten werden bei Bedarf normalisiert, beispielsweise:
 
-Wenn die NIBE einen eigenen Alarmtext liefert, wird dieser bevorzugt. Dadurch bleibt die am Gerät verwendete Sprache erhalten. Bei deutscher Home-Assistant-Sprache kann für bekannte Alarmnummern ein verifizierter deutscher Fallbacktext verwendet werden, falls die API selbst keinen Text liefert. In anderen Sprachen sowie bei unbekannten Alarmnummern bleibt der Fallback sprachneutral, zum Beispiel `Alarm 1234`.
+- `%RH` → `%`
+- `l/min` → `L/min`
 
-Eine Quittier- oder Reset-Funktion ist bewusst nicht enthalten.
+Device Classes werden nur gesetzt, wenn die Bedeutung ausreichend sicher aus Punkt und Metadaten hervorgeht.
 
-> ℹ️ Die Alarmdarstellung konnte bislang noch nicht praktisch getestet werden, da während der Entwicklung keine Alarme an der Anlage aufgetreten sind.
+---
 
-## 🔐 Zugangsdaten und Neuauthentifizierung
+## 🚨 Alarme und Diagnose
 
-Bei Einrichtung und in den Optionen wird eine eindeutige Authentifizierungsmethode gewählt:
+### Alarme und Meldungen
 
-- **Benutzername + Passwort**
-- **Authorization-Header**
+Aktive Meldungen werden nur lesend dargestellt. Je nach API-Antwort können enthalten sein:
 
-Es ist immer nur die ausgewählte Methode aktiv. Wird die Authentifizierungsmethode gewechselt, werden die gespeicherten Zugangsdaten der vorherigen Methode entfernt. Damit kann beispielsweise kein alter Authorization-Header unbemerkt ein neu eingetragenes Passwort übersteuern.
+- Alarmnummer
+- Beschreibung
+- Schweregrad
+- Zeitpunkt
+- Quelle
 
-Für bestehende Konfigurationen ohne gespeicherte Authentifizierungsmethode wird ein vorhandener Authorization-Header weiterhin als Header-Authentifizierung erkannt; andernfalls wird Benutzername + Passwort verwendet.
+Von der Anlage gelieferte Alarmtexte werden bevorzugt. Dadurch bleibt die Gerätesprache erhalten.
 
-Wenn die NIBE REST API die gespeicherten Zugangsdaten ablehnt, startet Home Assistant den Reauthentifizierungsablauf. Dabei werden nur die Felder der aktuell verwendeten Authentifizierungsmethode abgefragt. Ein leeres geheimes Feld behält den bisherigen gespeicherten Wert bei.
+Für bekannte Alarmnummern kann bei deutscher Home-Assistant-Sprache ein verifizierter deutscher Fallback verwendet werden. Ansonsten bleibt der Fallback neutral, beispielsweise `Alarm 1234`.
 
-Im Dialog werden Gerätename, konfigurierter Host und aufgelöste IP-Adresse angezeigt. Passwort und Authorization-Header werden maskiert dargestellt.
+Eine automatische Alarmquittierung oder ein Alarm-Reset ist bewusst **nicht** implementiert.
 
-Bei Header-Authentifizierung wird ein vollständiger HTTP-Authorization-Header verwendet, zum Beispiel `Basic dXNlcjpwYXNzd29ydA==`.
+> ℹ️ Die Alarmdarstellung konnte bislang nur eingeschränkt praktisch getestet werden, da während der Entwicklung nicht alle Alarmfälle real aufgetreten sind.
 
-Die lokale NIBE-Geräte-ID ist in der Integration fest auf **`0`** gesetzt und wird nicht als Benutzereinstellung angeboten.
+### Diagnose-Entitäten
 
-## 🔔 Home-Assistant-Benachrichtigungen
-
-- **Zugangsdaten abgelehnt:** sofortige Meldung, pro zusammenhängender Authentifizierungsstörung nur einmal
-- **REST API nicht erreichbar:** Meldung erst nach mindestens **2 Minuten** durchgehender Störung
-- **Verbindung wiederhergestellt:** bestehende Auth-/Verbindungsbenachrichtigungen werden automatisch entfernt
-
-Die Meldungen enthalten Gerätename, Host und aufgelöste IP-Adresse, aber keine Zugangsdaten.
-
-## 🩺 Diagnose und Verbindungsstatus
-
-Zusätzliche Diagnose-Entitäten am bestehenden NIBE-Gerät:
+Zusätzlich werden Diagnoseinformationen bereitgestellt, darunter:
 
 - **REST API erreichbar**
 - **Einzelpunkt-Fallback aktiv**
 - **Letzter Verbindungsfehler**
+- aktive Meldungen/Alarme
 
-Der frühere separate Sensor **„Letzter erfolgreicher Poll“** wird nicht mehr angelegt. Auch das frühere Attribut `last_successful_poll` von **„REST API erreichbar“** wird nicht mehr nach außen geschrieben. Der Coordinator führt den Zeitpunkt intern weiter, ohne dadurch bei jedem erfolgreichen Poll einen neuen Recorder-Zustand für die Diagnose-Entität zu erzeugen.
+Der interne Zeitpunkt des letzten erfolgreichen Polls wird nicht fortlaufend als Recorder-relevantes Entity-Attribut veröffentlicht, um unnötige Zustandsänderungen zu vermeiden.
 
-Der Fallback-Status bedeutet nicht automatisch, dass die gesamte REST API ausgefallen ist. Daten können weiterhin über Einzelpunktabfragen geliefert werden.
+---
 
-## 🔄 Lokale Kommunikation und Polling
+## 🔐 Authentifizierung und TLS
 
-Im Normalbetrieb werden die Punkte gesammelt über den lokalen `/points`-Endpunkt abgefragt. Kann dessen Antwort nicht ausgewertet werden, nutzt die Integration einen Einzelpunkt-Fallback.
+Unterstützte Authentifizierungsmethoden:
 
-Der vollständige Fallback verwendet einen Backoff von **30 / 60 / 120 Sekunden**. Die Sammelabfrage selbst wird weiterhin bei jedem regulären Poll versucht. Bereits bekannte Punktwerte bleiben bei unvollständigen Fallbacks erhalten.
+- **Benutzername + Passwort**
+- **vollständiger Authorization-Header**
 
-Nach einem Schreibbefehl wird der betroffene Punkt gezielt neu gelesen, statt jedes Mal die komplette Anlage abzufragen.
+Es ist immer genau die ausgewählte Methode aktiv.
 
-Alle schreibenden REST-Aufrufe werden zusätzlich integrationsweit serialisiert. Dadurch erhält die NIBE auch dann keine parallelen `PATCH`-/`POST`-Befehle, wenn mehrere Home-Assistant-Automationen gleichzeitig Einstellungen ändern. Die schreibenden Entity-Plattformen sind zusätzlich auf einen parallelen Vorgang pro Plattform begrenzt; reine Leseplattformen werden vollständig über den Coordinator versorgt.
+Beim Wechsel der Authentifizierungsmethode werden nicht mehr benötigte Zugangsdaten der vorherigen Methode entfernt. Dadurch kann ein alter Header nicht unbemerkt eine neu eingetragene Benutzername-/Passwort-Konfiguration übersteuern.
 
-Bekannte Auswahlwerte werden auch dann korrekt verarbeitet, wenn die Firmware numerische Enum-Werte als Strings liefert.
+Passwort und Authorization-Header werden in Home Assistant als geheime Eingabefelder behandelt und nicht in Diagnose- oder Fehlerbenachrichtigungen ausgegeben.
 
-Das zusätzliche Entity-Attribut `group` verwendet sprachneutrale technische Schlüssel: `system`, `heating`, `cooling`, `hot_water`, `energy`, `hydraulics`, `heat_pump`, `eev_defrost` und `ventilation`.
+### Reauthentifizierung
+
+Lehnt die lokale API die gespeicherten Zugangsdaten ab, startet Home Assistant den Reauthentifizierungsablauf.
+
+Die Integration erzeugt während einer zusammenhängenden Authentifizierungsstörung nur eine Benachrichtigung und entfernt sie nach erfolgreicher Wiederherstellung wieder.
+
+### TLS-Zertifikatsprüfung
+
+Die lokale API verwendet häufig ein selbstsigniertes Zertifikat. Deshalb kann die TLS-Zertifikatsprüfung deaktiviert werden.
+
+**Sicherheitshinweis:** Mit deaktivierter Zertifikatsprüfung ist die Verbindung zwar weiterhin TLS-verschlüsselt, die Identität der Gegenstelle wird aber nicht kryptografisch verifiziert. Ein Angreifer mit geeigneter Position im lokalen Netzwerk könnte dadurch prinzipiell einen Man-in-the-Middle-Angriff versuchen.
+
+Wenn eine vertrauenswürdige Zertifikatskette zur Verfügung steht, sollte die Zertifikatsprüfung aktiviert werden.
+
+---
+
+## 🌐 Kommunikation, Polling und Robustheit
+
+### Lokaler Betrieb
+
+Die Integration kommuniziert direkt mit dem konfigurierten Host im lokalen Netzwerk. Für die normalen Funktionen wird keine NIBE-/myUplink-Cloud benötigt.
+
+Die NIBE-Geräte-ID ist derzeit fest auf **`0`** gesetzt, da dies dem verwendeten lokalen API-Modell entspricht.
+
+### Sammelabfrage und Fallback
+
+Im Normalbetrieb werden Werte gesammelt über `/points` gelesen.
+
+Kann eine Sammelantwort nicht sinnvoll verwendet werden, kann die Integration auf Einzelpunktabfragen zurückfallen.
+
+Der vollständige Fallback verwendet einen Backoff von:
+
+- 30 Sekunden
+- 60 Sekunden
+- 120 Sekunden
+
+Bereits bekannte Punktwerte bleiben bei unvollständigen Fallbacks erhalten.
+
+### Begrenzung der Antwortgröße
+
+REST-Antworten werden auf maximal **4 MiB** begrenzt.
+
+Das Limit wird nicht nur anhand eines eventuell vorhandenen `Content-Length`-Headers geprüft, sondern auch während des tatsächlichen Einlesens der Antwort.
+
+Damit kann ein fehlerhaftes oder manipuliertes Gegenüber nicht unbegrenzt große JSON-Antworten in den Home-Assistant-Prozess laden.
+
+### Begrenzung der JSON-Verschachtelung
+
+Die Normalisierung der `/points`-Antwort arbeitet iterativ statt unbegrenzt rekursiv.
+
+Die maximal akzeptierte Verschachtelungstiefe beträgt **64 Ebenen**. Tiefere Strukturen werden kontrolliert als API-Fehler behandelt statt einen Python-`RecursionError` auszulösen.
+
+Zyklische Objektstrukturen werden bei der internen Normalisierung ebenfalls abgefangen.
+
+### Verbindungsbenachrichtigungen
+
+- Authentifizierung abgelehnt: sofortige Benachrichtigung, einmal pro zusammenhängender Störung
+- API nicht erreichbar: Benachrichtigung nach mindestens **2 Minuten** durchgehender Störung
+- Verbindung wiederhergestellt: vorhandene Auth-/Verbindungsbenachrichtigungen werden entfernt
+
+Die Meldungen können Gerätename, Host und aufgelöste IP-Adresse enthalten, jedoch keine Zugangsdaten.
+
+---
 
 ## 🧩 Installation
 
-1. Den Ordner `custom_components/nibe_local` nach `/config/custom_components/nibe_local` kopieren oder die Integration über HACS installieren.
+### Manuell
+
+1. `custom_components/nibe_local` nach `/config/custom_components/nibe_local` kopieren.
 2. Home Assistant neu starten.
-3. Unter **Einstellungen → Geräte & Dienste** die Integration **NIBE Local REST API** hinzufügen.
-4. Host/IP-Adresse und Port eintragen, die Authentifizierungsmethode auswählen und die dazugehörigen Zugangsdaten angeben.
-5. Bei einem lokal selbstsignierten Zertifikat kann die SSL-Zertifikatsprüfung deaktiviert werden.
+3. **Einstellungen → Geräte & Dienste → Integration hinzufügen** öffnen.
+4. **NIBE Local REST API** auswählen.
 
-Die NIBE-Geräte-ID wird nicht abgefragt. Die Integration verwendet fest die Geräte-ID **`0`**.
+### HACS
 
-Mindestens **Home Assistant 2024.12.0** ist vorgesehen. Der GitHub-Actions-Testworkflow prüft die Integration gegen diese Mindestversion und gegen die jeweils aktuelle Home-Assistant-Version.
+Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden.
+
+### Einrichtungsablauf ab 0.9.0
+
+1. Host/IP-Adresse und Port eingeben.
+2. Authentifizierungsmethode wählen.
+3. Zugangsdaten eingeben.
+4. TLS-Zertifikatsprüfung festlegen.
+5. Polling-Einstellungen wählen.
+6. Verbindung und Gerät werden geprüft.
+7. Die Integration lädt die verfügbaren Variablen über die lokale API.
+8. **Minimal / Standard / Erweitert / Komplett / Individuell** auswählen.
+9. Benennung **Home-Assistant-Standard / Lokale API / Technisch** auswählen.
+10. Bei **Individuell** die gewünschten Variablen auswählen.
+
+Die Geräte-ID wird nicht abgefragt; die Integration verwendet intern **`0`**.
+
+---
+
+## ⚙️ Optionen nach der Einrichtung
+
+Über **Einstellungen → Geräte & Dienste → NIBE Local REST API → Konfigurieren** können später unter anderem geändert werden:
+
+- Host / IP-Adresse
+- Port
+- Authentifizierungsmethode
+- Zugangsdaten
+- TLS-Zertifikatsprüfung
+- Polling-Intervall
+- Verzögerung nach Schreibbefehlen
+- Entitätsprofil
+- Benennungsmodus
+- individuelle Variable-Auswahl
+
+Vor dem Speichern geänderter Verbindungsdaten wird die Verbindung erneut geprüft.
+
+Änderungen an den Optionen führen zu einem Reload der Integration.
+
+---
+
+## 🔄 Updates und Beständigkeit
+
+### Individuelle Auswahl
+
+Die ausgewählten Variable-IDs werden im Config Entry gespeichert. Ein Update der Integration überschreibt diese Auswahl nicht.
+
+### Automatische Profile
+
+Bei Minimal, Standard und Erweitert wird das gewählte Profil gespeichert. Wenn eine spätere Version einen zusätzlichen bekannten Punkt sinnvoll einem Profil zuordnet und das Gerät diesen Punkt liefert, kann er dadurch künftig automatisch erscheinen.
+
+Bei **Individuell** werden dagegen nur die explizit gespeicherten Variable-IDs verwendet.
+
+### Unique IDs und mehrere Anlagen
+
+Entity-Unique-IDs sind seit 0.8.1 pro Config Entry getrennt. Dadurch können mehrere NIBE-Anlagen mit der intern festen API-Geräte-ID `0` parallel betrieben werden, ohne dass deren Home-Assistant-Entities dieselbe Unique ID erhalten.
+
+Bestehende ältere `0_*`-Unique-IDs werden bei Bedarf in der Entity Registry auf den config-entry-spezifischen Namensraum migriert.
+
+### Bestehende Entity-IDs
+
+Die Integration versucht bestehende Registry-Zuordnungen beizubehalten. Dennoch gilt generell: Wer Entity-IDs manuell umbenennt oder Home Assistants globale Entity-ID-Formatierung verändert, sollte Automationen und Dashboards nach größeren Änderungen prüfen.
+
+---
+
+## ⚠️ Grenzen und bekannte Einschränkungen
+
+Die Integration ist bewusst nicht als universeller Schreibeditor für sämtliche NIBE-Servicevariablen ausgelegt.
+
+### Nicht automatisch unterstützt
+
+- unbekannte schreibbare Punkte als generische Steuerung
+- automatisches Erkennen der korrekten Semantik unbekannter Enums
+- automatisches Freischalten unbekannter Service-/Installerparameter
+- Alarmquittierung oder Alarmreset
+- Cloud-Funktionen von myUplink
+
+### Komplett bedeutet nicht „alles schreibbar“
+
+Das Komplett-Profil stellt alle gefundenen Variablen sichtbar bereit. Unbekannte Variablen bleiben jedoch Read-only.
+
+### Geräteabhängigkeit
+
+Die tatsächlich verfügbaren Variablen hängen von unter anderem folgenden Faktoren ab:
+
+- NIBE-Modell
+- angeschlossenen Modulen
+- Firmware
+- Anlagenkonfiguration
+- aktivierten Funktionen
+
+Eine Variable, die in der Integration definiert ist, wird nur angelegt, wenn sie am verbundenen Gerät tatsächlich vorhanden ist.
+
+### API-Metadaten
+
+Die Integration kann nur mit den Informationen arbeiten, die die lokale API liefert. Fehlerhafte oder unvollständige Metadaten können dazu führen, dass eine Funktion vorsorglich nur lesbar bleibt oder ein Schreibzugriff blockiert wird.
+
+### Mindestversion von Home Assistant
+
+Vorgesehen ist mindestens **Home Assistant 2024.12.0**.
+
+Einige Darstellungsmöglichkeiten – insbesondere lokales Branding und neuere Home-Assistant-Namens-/Entity-ID-Funktionen – hängen von neueren Home-Assistant-Versionen ab.
+
+---
+
+## 🧪 Entwicklung und Tests
+
+Das Repository enthält Regressionstests für zentrale Logikbereiche.
+
+Geprüft werden unter anderem:
+
+- API-Antwortnormalisierung
+- maximale Verschachtelung
+- Response-Größenlimit
+- Authentifizierungslogik
+- Schreibserialisierung
+- Number-Grenzen und Schrittweite
+- Enum-/Select-Verhalten
+- Alarm-Fallbacks
+- Einheiten und Device Classes
+- Multi-Instance-Unique-IDs
+- Entitätsprofile
+- individuelle Auswahl
+- Entitätsbenennung
+- Profilzählung anhand tatsächlich verfügbarer Punkte
+
+GitHub Actions prüft die Integration gegen die vorgesehene Mindestversion **Home Assistant 2024.12.0** und gegen eine aktuelle Home-Assistant-Version.
+
+---
 
 ## 🎨 Branding
 
-Die Integration bringt ihre Brand-Dateien direkt im Integrationsordner mit:
+Die Integration liefert lokale Brand-Dateien mit:
 
-- `custom_components/nibe_local/brand/icon.png`
-- `custom_components/nibe_local/brand/dark_icon.png`
-- `custom_components/nibe_local/brand/icon@2x.png`
-- `custom_components/nibe_local/brand/dark_icon@2x.png`
-- `custom_components/nibe_local/brand/logo.png`
-- `custom_components/nibe_local/brand/dark_logo.png`
+- `brand/icon.png`
+- `brand/dark_icon.png`
+- `brand/icon@2x.png`
+- `brand/dark_icon@2x.png`
+- `brand/logo.png`
+- `brand/dark_logo.png`
+- `brand/logo@2x.png`
+- `brand/dark_logo@2x.png`
 
-Home Assistant ab 2026.3 kann diese lokalen Brand-Dateien direkt verwenden. Die README wechselt das Logo automatisch passend zum Light-/Dark-Mode.
+Neuere Home-Assistant-Versionen können diese lokalen Brand-Dateien direkt für Custom Integrations verwenden.
+
+---
 
 ## 📝 Changelog
 
-Die wesentlichen Änderungen pro Version sind in [`CHANGELOG.md`](CHANGELOG.md) zusammengefasst.
+Die wesentlichen Änderungen pro Version stehen in [`CHANGELOG.md`](CHANGELOG.md).
 
-## ⚠️ Hinweise
+---
 
-Die Integration ist ein **inoffizielles Community-Projekt** und steht in keiner Verbindung zu NIBE.
+## ⚖️ Projektstatus
 
-Die Integration befindet sich weiterhin vor Version 1.0 und wird auf einer realen Anlage weiterentwickelt und getestet.
+Diese Integration ist ein **inoffizielles Community-Projekt** und steht in keiner Verbindung zu NIBE.
 
-## 🛡️ Haftungs- und Gewährleistungsausschluss
+Sie befindet sich weiterhin vor Version 1.0 und wird auf einer realen Anlage weiterentwickelt und getestet.
 
-Diese Software wird als Open-Source-Projekt **ohne Gewährleistung oder Garantie** bereitgestellt. Die Nutzung erfolgt **auf eigene Gefahr**.
+---
 
-Die Integration kann Einstellungen einer Heizungs-, Kühlungs-, Lüftungs- und Brauchwasseranlage verändern. Nutzer sind selbst dafür verantwortlich, Änderungen vor der Verwendung zu prüfen und sicherzustellen, dass die eingestellten Werte für ihre konkrete Anlage zulässig und sicher sind.
+## 🛡️ Haftung
 
-Bei sicherheitsrelevanten oder kritischen Funktionen dürfen die von dieser Integration angezeigten Werte und Zustände nicht als alleinige Entscheidungsgrundlage verwendet werden. Maßgeblich sind im Zweifel die Anzeigen und Einstellungen am NIBE-Gerät sowie die offizielle Dokumentation des Herstellers.
+Diese Software wird als Open-Source-Projekt **ohne Gewährleistung oder Garantie** bereitgestellt. Die Nutzung erfolgt auf eigene Gefahr.
 
-Soweit gesetzlich zulässig, haften die Autoren und Mitwirkenden nicht für Schäden oder Nachteile, die aus Installation, Konfiguration, Nutzung, Fehlfunktion oder Nichtverfügbarkeit dieser Software entstehen.
+Die Integration kann Einstellungen einer Heizungs-, Kühlungs-, Lüftungs- und Brauchwasseranlage verändern. Nutzer müssen selbst sicherstellen, dass Änderungen für die konkrete Anlage zulässig und sicher sind.
+
+Die Schutzmechanismen dieser Integration reduzieren Risiken, ersetzen aber weder die Schutzfunktionen der NIBE-Anlage noch Herstellerdokumentation, fachgerechte Inbetriebnahme oder erforderliche Sicherheitsprüfungen.
+
+Bei sicherheitsrelevanten oder kritischen Funktionen dürfen die von dieser Integration angezeigten Werte und Zustände nicht als alleinige Entscheidungsgrundlage verwendet werden. Maßgeblich sind im Zweifel die Anzeigen und Einstellungen am Gerät sowie die offizielle Dokumentation des Herstellers.
+
+Soweit gesetzlich zulässig, haften Autoren und Mitwirkende nicht für Schäden oder Nachteile aus Installation, Konfiguration, Nutzung, Fehlfunktion oder Nichtverfügbarkeit dieser Software.
 
 Dieser Hinweis ergänzt den Haftungs- und Gewährleistungsausschluss der **MIT-Lizenz**.
+
+---
 
 ## 👥 Autoren
 
 - AndiO91
-- ChatGPT (OpenAI) – Unterstützung bei Entwicklung, REST-API-Auswertung und Home-Assistant-Integration
+- ChatGPT (OpenAI) – Unterstützung bei Entwicklung, REST-API-Auswertung, Tests und Home-Assistant-Integration
