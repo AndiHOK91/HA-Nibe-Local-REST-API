@@ -38,6 +38,9 @@
         "data": {
           "entity_profile": "Entitätsprofil",
           "entity_naming": "Benennung der Entitäten"
+        },
+        "data_description": {
+          "entity_naming": "Legt fest, welchen Anzeigenamen die Integration an Home Assistant übergibt:\n• Home-Assistant-Standard (empfohlen): übersetzte, gut lesbare Namen, z. B. „Außentemperatur (BT1)“.\n• Lokale API: Name/Beschreibung direkt aus der lokalen NIBE-API, z. B. „Current outdoor temperature (BT1)“.\n• Technisch: API-Name zusätzlich mit Variable-ID, z. B. „Current outdoor temperature (BT1) [ID 4]“."
         }
       },
       "entity_selection": {
@@ -99,7 +102,8 @@
           "backup_before_cleanup": "Vor der Registry-Bereinigung ein Home-Assistant-Backup erstellen"
         },
         "data_description": {
-          "auth_header": "Vollständiger HTTP-Authorization-Header, z. B. „Basic dXNlcjpwYXNzd29ydA==“. Der Wert nach „Basic“ muss Base64-codiert sein und wird maskiert dargestellt."
+          "auth_header": "Vollständiger HTTP-Authorization-Header, z. B. „Basic dXNlcjpwYXNzd29ydA==“. Der Wert nach „Basic“ muss Base64-codiert sein und wird maskiert dargestellt.",
+          "entity_naming": "Legt fest, welchen Anzeigenamen die Integration an Home Assistant übergibt:\n• Home-Assistant-Standard (empfohlen): übersetzte, gut lesbare Namen, z. B. „Außentemperatur (BT1)“.\n• Lokale API: Name/Beschreibung direkt aus der lokalen NIBE-API, z. B. „Current outdoor temperature (BT1)“.\n• Technisch: API-Name zusätzlich mit Variable-ID, z. B. „Current outdoor temperature (BT1) [ID 4]“."
         }
       },
       "entity_selection": {

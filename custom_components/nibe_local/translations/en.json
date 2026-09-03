@@ -38,6 +38,9 @@
         "data": {
           "entity_profile": "Entity profile",
           "entity_naming": "Entity naming"
+        },
+        "data_description": {
+          "entity_naming": "Controls which display name the integration provides to Home Assistant:\n• Home Assistant standard (recommended): translated, easy-to-read names, e.g. “Outdoor temperature (BT1)”.\n• Local API: name/description directly from the local NIBE API, e.g. “Current outdoor temperature (BT1)”.\n• Technical: API name plus variable ID, e.g. “Current outdoor temperature (BT1) [ID 4]”."
         }
       },
       "entity_selection": {
@@ -99,7 +102,8 @@
           "backup_before_cleanup": "Create a Home Assistant backup before registry cleanup"
         },
         "data_description": {
-          "auth_header": "Complete HTTP Authorization header, for example “Basic dXNlcjpwYXNzd29ydA==”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
+          "auth_header": "Complete HTTP Authorization header, for example “Basic dXNlcjpwYXNzd29ydA==”. The value after “Basic” must be Base64 encoded and is shown as a masked value.",
+          "entity_naming": "Controls which display name the integration provides to Home Assistant:\n• Home Assistant standard (recommended): translated, easy-to-read names, e.g. “Outdoor temperature (BT1)”.\n• Local API: name/description directly from the local NIBE API, e.g. “Current outdoor temperature (BT1)”.\n• Technical: API name plus variable ID, e.g. “Current outdoor temperature (BT1) [ID 4]”."
         }
       },
       "entity_selection": {
