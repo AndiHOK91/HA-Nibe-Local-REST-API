@@ -68,7 +68,7 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 - Geräte- und Einrichtungs-Fallback auf **NIBE API** neutralisiert, da der lokale `/devices/{id}`-Endpunkt nicht auf allen Anlagen einen Produktnamen liefert.
 - Bereits registrierte, automatisch erzeugte Entity-IDs werden beim Setup auf sprachneutrale IDs im Schema `<domain>.nibe_api_<translation_key>` migriert. Beispielsweise wird `sensor.nibe_vvm_s320_aktuelle_aussenlufttemperatur_bt1` zu `sensor.nibe_api_outdoor_temperature_bt1`.
 - Die Entity-ID-Migration basiert auf den unveränderten Unique IDs bzw. NIBE-Punktnummern. Benutzerdefinierte Entity-IDs mit einem anderen Präfix werden nicht verändert; bei Namenskollisionen wird die vorhandene Entity-ID beibehalten und eine Warnung protokolliert.
-- Repository-Verweise im Manifest auf **AndiO91/HomeAssistant-Local-REST-API** aktualisiert.
+- Repository-Verweise im Manifest auf **AndiO91/HA-Nibe-Local-REST-API** aktualisiert.
 
 ## 0.7.4
 
