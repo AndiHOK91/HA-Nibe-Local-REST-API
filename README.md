@@ -75,7 +75,7 @@ Im Einrichtungsdialog wird zusätzlich angezeigt, wie viele Variablen des verbun
 
 | Profil | Zweck | Verhalten |
 |---|---|---|
-| **Minimal** | Kernwerte für Dashboard und Grundbetrieb | Nur die wichtigsten Betriebs-, Temperatur-, Brauchwasser- und Verdichterwerte sowie zentrale Bedienfunktionen |
+| **Minimal** | Kernwerte für Dashboard und Grundbetrieb | Kernzustände, Haupttemperaturen, Brauchwassertemperaturen sowie Verdichterstatus und -frequenz |
 | **Standard** | Typische Home-Assistant-Nutzung | Minimal plus häufig benötigte Heiz-/Kühlwerte, Komfortfunktionen, Energie, Verdichterdetails, Abtau- und grundlegende Lüftungswerte |
 | **Erweitert** | Ausführliche Anlagenanalyse | Der vollständig kuratierte und von dieser Integration bekannte `POINTS`-Umfang einschließlich detaillierter Diagnose- und Servicewerte |
 | **Komplett** | Maximale Sichtbarkeit | Alle von der lokalen API aktuell gemeldeten Variablen; bekannte Punkte mit ihrer definierten Plattform, unbekannte Punkte ausschließlich als Read-only-Sensor |
@@ -85,8 +85,6 @@ Im Einrichtungsdialog wird zusätzlich angezeigt, wie viele Variablen des verbun
 
 Das Minimal-Profil konzentriert sich auf den normalen Anlagenzustand, zum Beispiel:
 
-- Außentemperatur
-- Vorlauf und Rücklauf
 - Außentemperatur
 - Vorlauf und Rücklauf
 - Raumtemperatur
@@ -308,6 +306,7 @@ Unterstützte Funktionen und Werte umfassen – abhängig von Gerät und Profil 
 
 - Brauchwassertemperatur oben
 - Temperatur während der Brauchwasserbereitung
+- Brauchwasseraustritt (BT70)
 - Brauchwasserbedarf
 - Mehr Brauchwasser
 - verbleibende Laufzeit von Mehr Brauchwasser

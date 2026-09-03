@@ -4,6 +4,9 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 
 ## 0.9.0
 
+- Entitätsprofile final geschärft: **Minimal** konzentriert sich auf Betriebsmodus/-priorität, Haupt- und Brauchwassertemperaturen, Verdichterstatus und Verdichterfrequenz; **Standard** ergänzt normale Bedienung, Komfort-, Energie- und Betriebsdiagnosewerte, während technische Druck-/Elektronik-, Zusatzheizungs- und detaillierte Service-/Abtauwerte **Erweitert** vorbehalten bleiben.
+- Punkt **116 – Brauchwasseraustritt (BT70)** als bekannter schreibgeschützter Temperatursensor ergänzt und in Minimal aufgenommen.
+- **Mehr Brauchwasser** und **Lüftung+** bleiben im Standardprofil als alltagstaugliche Bedienfunktionen verfügbar.
 - Authentifizierung in Einrichtung und Optionen in zwei Schritte getrennt: Nach Wahl der Methode werden nur Benutzername + Passwort oder nur der Authorization-Header angezeigt.
 - Optionale Registry-Bereinigung ergänzt: Abgewählte Punkt-Entitäten werden nur auf ausdrücklichen Wunsch aus der Entity Registry entfernt; standardmäßig bleiben sie für stabile Entity-IDs erhalten.
 - Registry-Bereinigung zusätzlich abgesichert: Home-Assistant-Backup ist davor standardmäßig aktiviert; ohne Backup muss der Nutzer die vorausgewählte Option bewusst abschalten. Bei fehlgeschlagenem Backup erfolgt keine Löschung.
