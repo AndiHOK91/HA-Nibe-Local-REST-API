@@ -1,0 +1,143 @@
+name: Refine 0.9.0 auth cleanup with backup
+
+on:
+  push:
+    paths:
+      - '.github/workflows/refine-090-auth-cleanup-backup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Reuse previous transformation and add backup safety
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          src = Path('.github/workflows/refine-090-options-auth.yml').read_text(encoding='utf-8').splitlines()
+          marker = '      - name: Apply auth-step and registry-cleanup changes'
+          start = src.index(marker)
+          run_idx = next(i for i in range(start + 1, len(src)) if src[i].strip() == 'run: |')
+          lines = []
+          for line in src[run_idx + 1:]:
+              if line.startswith('      - name:'):
+                  break
+              lines.append(line[10:] if line.startswith('          ') else line)
+          script = '\n'.join(lines) + '\n'
+          Path('/tmp/base-transform.sh').write_text(script, encoding='utf-8')
+          subprocess.run(['bash', '/tmp/base-transform.sh'], check=True)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          p = Path('custom_components/nibe_local/config_flow.py')
+          text = p.read_text(encoding='utf-8')
+
+          text = text.replace(
+              'from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME\n',
+              'from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME\nfrom homeassistant.exceptions import HomeAssistantError\n'
+          )
+          text = text.replace(
+              'CONF_REMOVE_INACTIVE_ENTITIES = "remove_inactive_entities"\n',
+              'CONF_REMOVE_INACTIVE_ENTITIES = "remove_inactive_entities"\nCONF_BACKUP_BEFORE_CLEANUP = "backup_before_cleanup"\n'
+          )
+          text = text.replace(
+              '    fields[vol.Optional(CONF_REMOVE_INACTIVE_ENTITIES, default=False)] = bool\n    return vol.Schema(fields)\n',
+              '    fields[vol.Optional(CONF_REMOVE_INACTIVE_ENTITIES, default=False)] = bool\n    fields[vol.Optional(CONF_BACKUP_BEFORE_CLEANUP, default=True)] = bool\n    return vol.Schema(fields)\n'
+          )
+
+          anchor = '''async def _async_remove_inactive_point_entities(\n    hass, entry: ConfigEntry, profile: str, selected_ids\n) -> int:\n'''
+          helper = '''async def _async_create_cleanup_backup(hass) -> None:\n    """Create and await the safest available Home Assistant backup before cleanup."""\n    # Home Assistant OS / Supervised (including 2024.12) exposes a full\n    # Supervisor backup service. With blocking=True this waits for the call.\n    if hass.services.has_service("hassio", "backup_full"):\n        await hass.services.async_call(\n            "hassio",\n            "backup_full",\n            {"name": "NIBE Local REST API - Registry cleanup"},\n            blocking=True,\n        )\n        return\n\n    # Core / Container exposes backup.create. In 2024.12 the service handler\n    # directly awaits BackupManager.async_create_backup().\n    if hass.services.has_service("backup", "create"):\n        await hass.services.async_call("backup", "create", {}, blocking=True)\n        return\n\n    # Newer Home Assistant releases have a public backup manager API that can\n    # await an automatic backup to completion. Import lazily for compatibility\n    # with 2024.12 where this helper did not exist.\n    try:\n        from homeassistant.components.backup import async_get_backup_manager\n    except ImportError:\n        async_get_backup_manager = None\n    if async_get_backup_manager is not None:\n        manager = async_get_backup_manager(hass)\n        create_automatic = getattr(manager, "async_create_automatic_backup", None)\n        if create_automatic is not None:\n            await create_automatic()\n            return\n\n    if hass.services.has_service("backup", "create_automatic"):\n        await hass.services.async_call(\n            "backup", "create_automatic", {}, blocking=True\n        )\n        return\n\n    raise HomeAssistantError("No Home Assistant backup action is available")\n\n\n'''
+          if helper.strip() not in text:
+              text = text.replace(anchor, helper + anchor)
+
+          text = text.replace(
+              '    _cleanup_inactive = False\n\n    async def async_step_init',
+              '    _cleanup_inactive = False\n    _backup_before_cleanup = True\n\n    async def async_step_init'
+          )
+          text = text.replace(
+              '''            self._cleanup_inactive = bool(\n                submitted.pop(CONF_REMOVE_INACTIVE_ENTITIES, False)\n            )\n            self._pending_options = merge_auth_settings(submitted, current)\n''',
+              '''            self._cleanup_inactive = bool(\n                submitted.pop(CONF_REMOVE_INACTIVE_ENTITIES, False)\n            )\n            self._backup_before_cleanup = bool(\n                submitted.pop(CONF_BACKUP_BEFORE_CLEANUP, True)\n            )\n            self._pending_options = merge_auth_settings(submitted, current)\n'''
+          )
+
+          old_cleanup = '''            if self._cleanup_inactive:\n                await _async_remove_inactive_point_entities(\n                    self.hass, self.config_entry, profile, candidate.get(CONF_SELECTED_POINT_IDS, ())\n                )\n            return self.async_create_entry(title="", data=candidate)\n'''
+          new_cleanup = '''            if self._cleanup_inactive:\n                if self._backup_before_cleanup:\n                    try:\n                        await _async_create_cleanup_backup(self.hass)\n                    except Exception as err:\n                        errors["base"] = "backup_failed"\n                        return self.async_show_form(\n                            step_id=step_id,\n                            data_schema=(\n                                _header_auth_schema()\n                                if step_id == "auth_header"\n                                else _basic_auth_schema(\n                                    {**self.config_entry.data, **self.config_entry.options}\n                                )\n                            ),\n                            errors=errors,\n                        )\n                await _async_remove_inactive_point_entities(\n                    self.hass, self.config_entry, profile, candidate.get(CONF_SELECTED_POINT_IDS, ())\n                )\n            return self.async_create_entry(title="", data=candidate)\n'''
+          if old_cleanup not in text:
+              raise RuntimeError('automatic-profile cleanup block not found')
+          text = text.replace(old_cleanup, new_cleanup)
+
+          old_individual = '''            if self._cleanup_inactive:\n                await _async_remove_inactive_point_entities(\n                    self.hass,\n                    self.config_entry,\n                    PROFILE_INDIVIDUAL,\n                    self._pending_options[CONF_SELECTED_POINT_IDS],\n                )\n            return self.async_create_entry(title="", data=self._pending_options)\n'''
+          new_individual = '''            if self._cleanup_inactive:\n                if self._backup_before_cleanup:\n                    try:\n                        await _async_create_cleanup_backup(self.hass)\n                    except Exception:\n                        return self.async_show_form(\n                            step_id="entity_selection",\n                            data_schema=_entity_selection_schema(\n                                points, self._pending_options[CONF_SELECTED_POINT_IDS]\n                            ),\n                            errors={"base": "backup_failed"},\n                            description_placeholders={"count": str(len(points))},\n                        )\n                await _async_remove_inactive_point_entities(\n                    self.hass,\n                    self.config_entry,\n                    PROFILE_INDIVIDUAL,\n                    self._pending_options[CONF_SELECTED_POINT_IDS],\n                )\n            return self.async_create_entry(title="", data=self._pending_options)\n'''
+          if old_individual not in text:
+              raise RuntimeError('individual cleanup block not found')
+          text = text.replace(old_individual, new_individual)
+          p.write_text(text, encoding='utf-8')
+
+          for lang in ('de', 'en'):
+              path = Path(f'custom_components/nibe_local/translations/{lang}.json')
+              data = json.loads(path.read_text(encoding='utf-8'))
+              opt = data['options']['step']['init']
+              errors = data['options'].setdefault('error', {})
+              if lang == 'de':
+                  opt['data']['backup_before_cleanup'] = 'Vor der Registry-Bereinigung ein Home-Assistant-Backup erstellen'
+                  opt['description'] = 'Verbindung, Abfrage, Entitätsprofil, Benennung und Authentifizierungsmethode ändern. Zugangsdaten werden im nächsten Schritt passend zur Methode abgefragt. Die Registry-Bereinigung ist optional. Wenn sie aktiviert wird, ist das Backup davor standardmäßig eingeschaltet und muss bewusst abgewählt werden, falls ohne Backup gelöscht werden soll.'
+                  errors['backup_failed'] = 'Das Home-Assistant-Backup konnte nicht erfolgreich angelegt werden. Es wurden keine Registry-Entitäten gelöscht.'
+              else:
+                  opt['data']['backup_before_cleanup'] = 'Create a Home Assistant backup before registry cleanup'
+                  opt['description'] = 'Change connection, polling, entity profile, naming, and authentication method. Credentials are requested in the next step for the selected method only. Registry cleanup is optional. When cleanup is enabled, creating a backup first is enabled by default and must be explicitly disabled to delete without a backup.'
+                  errors['backup_failed'] = 'The Home Assistant backup could not be created successfully. No registry entities were removed.'
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          rp = Path('README.md')
+          readme = rp.read_text(encoding='utf-8')
+          readme = readme.replace(
+              'In den Optionen kann ausdrücklich **„Nicht mehr verwendete Punkt-Entitäten aus der Registry entfernen“** aktiviert werden. Nur dann entfernt die Integration abgewählte, punktbasierte Entitäten aus der Registry. Diagnose- und Integrationsentitäten werden dabei nicht gelöscht. Diese Bereinigung ist bewusst nicht automatisch aktiviert.',
+              'In den Optionen kann ausdrücklich **„Nicht mehr verwendete Punkt-Entitäten aus der Registry entfernen“** aktiviert werden. Nur dann entfernt die Integration abgewählte, punktbasierte Entitäten aus der Registry. Diagnose- und Integrationsentitäten werden dabei nicht gelöscht. **Vor der Bereinigung ist ein Home-Assistant-Backup standardmäßig aktiviert.** Wer ohne Backup löschen möchte, muss die vorausgewählte Backup-Option bewusst deaktivieren. Schlägt die Backup-Erstellung fehl, wird die Registry nicht bereinigt.'
+          )
+          rp.write_text(readme, encoding='utf-8')
+
+          cp = Path('CHANGELOG.md')
+          change = cp.read_text(encoding='utf-8')
+          needle = '- Optionale Registry-Bereinigung ergänzt: Abgewählte Punkt-Entitäten werden nur auf ausdrücklichen Wunsch aus der Entity Registry entfernt; standardmäßig bleiben sie für stabile Entity-IDs erhalten.\n'
+          replacement = needle + '- Registry-Bereinigung zusätzlich abgesichert: Home-Assistant-Backup ist davor standardmäßig aktiviert; ohne Backup muss der Nutzer die vorausgewählte Option bewusst abschalten. Bei fehlgeschlagenem Backup erfolgt keine Löschung.\n'
+          if replacement not in change:
+              change = change.replace(needle, replacement)
+          cp.write_text(change, encoding='utf-8')
+          PY
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip pytest
+          python -m pip install 'homeassistant==2024.12.0'
+
+      - name: Validate and test
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          python -m json.tool custom_components/nibe_local/translations/de.json >/dev/null
+          python -m json.tool custom_components/nibe_local/translations/en.json >/dev/null
+          python -m compileall -q custom_components/nibe_local tests
+          pytest -q
+
+      - name: Commit and remove one-time workflows
+        run: |
+          git config user.name 'AndiO91'
+          git config user.email '60509228+AndiO91@users.noreply.github.com'
+          rm -f .github/workflows/refine-090-options-auth.yml
+          rm -f .github/workflows/refine-090-auth-cleanup-backup.yml
+          git add -A
+          git commit -m 'Refine auth flow and protect registry cleanup with backups'
+          git push
