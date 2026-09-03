@@ -1,0 +1,129 @@
+name: Fix binary sensors and publish v0.9.2
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-binary-sensors-092.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        homeassistant-version: ["2024.12.0", "latest"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Prepare v0.9.2 changes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          tests = Path('tests/test_logic.py')
+          text = tests.read_text(encoding='utf-8')
+          anchor = '''def test_entity_unique_ids_are_scoped_per_config_entry() -> None:\n    first = SimpleNamespace(instance_id="entry-one")\n    second = SimpleNamespace(instance_id="entry-two")\n    assert entity_unique_id(first, 4) == "entry-one_4"\n    assert entity_unique_id(second, 4) == "entry-two_4"\n    assert entity_unique_id(first, 4) != entity_unique_id(second, 4)\n\n\n'''
+          addition = anchor + '''def test_binary_sensor_platform_imports_unique_id_helper() -> None:\n    assert binary_sensor.entity_unique_id is entity_unique_id\n\n\n'''
+          if 'test_binary_sensor_platform_imports_unique_id_helper' not in text:
+              assert anchor in text
+              text = text.replace(anchor, addition, 1)
+              tests.write_text(text, encoding='utf-8')
+
+          manifest = Path('custom_components/nibe_local/manifest.json')
+          payload = json.loads(manifest.read_text(encoding='utf-8'))
+          payload['version'] = '0.9.2'
+          manifest.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          readme = Path('README.md')
+          text = readme.read_text(encoding='utf-8')
+          text = text.replace('Aktuelle Integrationsversion: **0.9.1**', 'Aktuelle Integrationsversion: **0.9.2**', 1)
+          readme.write_text(text, encoding='utf-8')
+
+          changelog = Path('CHANGELOG.md')
+          text = changelog.read_text(encoding='utf-8')
+          if '## 0.9.2' not in text:
+              marker = '## 0.9.1\n'
+              section = '''## 0.9.2\n\n- Binärsensor-Plattform repariert: `entity_unique_id` wird wieder korrekt importiert. Der fehlende Import in 0.9.1 verhinderte das Setup der gesamten `binary_sensor`-Plattform und ließ unter anderem **REST API erreichbar**, **Einzelpunkt-Fallback aktiv**, Kühl-/Abtauzustände, Pumpen- und weitere Binärsensoren als nicht verfügbar erscheinen.\n- Regressionstest ergänzt, der sicherstellt, dass der für Diagnose-Binärsensoren benötigte Unique-ID-Helper im Plattformmodul verfügbar ist.\n\n'''
+              assert marker in text
+              text = text.replace(marker, section + marker, 1)
+              changelog.write_text(text, encoding='utf-8')
+          PY
+      - name: Install test dependencies
+        env:
+          HA_VERSION: ${{ matrix.homeassistant-version }}
+        run: |
+          python -m pip install --upgrade pip pytest
+          if [ "$HA_VERSION" = "latest" ]; then
+            python -m pip install homeassistant
+          else
+            python -m pip install "homeassistant==$HA_VERSION"
+          fi
+      - name: Validate and test
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          python -m json.tool custom_components/nibe_local/manifest.json >/dev/null
+          python -m json.tool custom_components/nibe_local/translations/de.json >/dev/null
+          python -m json.tool custom_components/nibe_local/translations/en.json >/dev/null
+          python -m compileall -q custom_components/nibe_local tests
+          pytest -q
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Prepare and commit v0.9.2
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          tests = Path('tests/test_logic.py')
+          text = tests.read_text(encoding='utf-8')
+          anchor = '''def test_entity_unique_ids_are_scoped_per_config_entry() -> None:\n    first = SimpleNamespace(instance_id="entry-one")\n    second = SimpleNamespace(instance_id="entry-two")\n    assert entity_unique_id(first, 4) == "entry-one_4"\n    assert entity_unique_id(second, 4) == "entry-two_4"\n    assert entity_unique_id(first, 4) != entity_unique_id(second, 4)\n\n\n'''
+          addition = anchor + '''def test_binary_sensor_platform_imports_unique_id_helper() -> None:\n    assert binary_sensor.entity_unique_id is entity_unique_id\n\n\n'''
+          if 'test_binary_sensor_platform_imports_unique_id_helper' not in text:
+              assert anchor in text
+              tests.write_text(text.replace(anchor, addition, 1), encoding='utf-8')
+
+          manifest = Path('custom_components/nibe_local/manifest.json')
+          payload = json.loads(manifest.read_text(encoding='utf-8'))
+          payload['version'] = '0.9.2'
+          manifest.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          readme = Path('README.md')
+          text = readme.read_text(encoding='utf-8')
+          text = text.replace('Aktuelle Integrationsversion: **0.9.1**', 'Aktuelle Integrationsversion: **0.9.2**', 1)
+          readme.write_text(text, encoding='utf-8')
+
+          changelog = Path('CHANGELOG.md')
+          text = changelog.read_text(encoding='utf-8')
+          if '## 0.9.2' not in text:
+              marker = '## 0.9.1\n'
+              section = '''## 0.9.2\n\n- Binärsensor-Plattform repariert: `entity_unique_id` wird wieder korrekt importiert. Der fehlende Import in 0.9.1 verhinderte das Setup der gesamten `binary_sensor`-Plattform und ließ unter anderem **REST API erreichbar**, **Einzelpunkt-Fallback aktiv**, Kühl-/Abtauzustände, Pumpen- und weitere Binärsensoren als nicht verfügbar erscheinen.\n- Regressionstest ergänzt, der sicherstellt, dass der für Diagnose-Binärsensoren benötigte Unique-ID-Helper im Plattformmodul verfügbar ist.\n\n'''
+              assert marker in text
+              changelog.write_text(text.replace(marker, section + marker, 1), encoding='utf-8')
+          PY
+
+          git config user.name 'AndiO91'
+          git config user.email '60509228+AndiO91@users.noreply.github.com'
+          rm -f .github/workflows/fix-binary-sensors-092.yml
+          git add custom_components/nibe_local/binary_sensor.py custom_components/nibe_local/manifest.json tests/test_logic.py README.md CHANGELOG.md .github/workflows/fix-binary-sensors-092.yml
+          git commit -m 'Release v0.9.2 binary sensor fix'
+          git push
+      - name: Publish v0.9.2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git tag v0.9.2
+          git push origin v0.9.2
+          gh release create v0.9.2 --title 'v0.9.2' --notes $'## NIBE Local REST API 0.9.2\n\nHotfix für die in 0.9.1 nicht geladenen Binärsensoren.\n\n- Fehlenden `entity_unique_id`-Import in `binary_sensor.py` ergänzt.\n- Dadurch lädt die komplette Binärsensor-Plattform wieder, einschließlich **REST API erreichbar**, **Einzelpunkt-Fallback aktiv**, Kühl-/Abtauzuständen, Pumpen- und weiteren Binärsensoren.\n- Regressionstest ergänzt.\n- Verifiziert mit Home Assistant 2024.12.0 und der aktuellen Home-Assistant-Version.\n'
