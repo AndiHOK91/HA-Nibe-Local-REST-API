@@ -34,6 +34,7 @@ Aktuelle Integrationsversion: **0.9.3**
 - [Alarme und Diagnose](#-alarme-und-diagnose)
 - [Authentifizierung und TLS](#-authentifizierung-und-tls)
 - [Kommunikation, Polling und Robustheit](#-kommunikation-polling-und-robustheit)
+- [Voraussetzungen](#-voraussetzungen)
 - [Installation](#-installation)
 - [Optionen nach der Einrichtung](#-optionen-nach-der-einrichtung)
 - [Updates und Beständigkeit](#-updates-und-beständigkeit)
@@ -512,6 +513,43 @@ Die Meldungen können Gerätename, Host und aufgelöste IP-Adresse enthalten, je
 
 ---
 
+## ✅ Voraussetzungen
+
+### Home Assistant
+
+- mindestens **Home Assistant 2024.12.0**
+- Home Assistant muss die NIBE-Steuerung über das lokale Netzwerk erreichen können
+- für die lokale REST API wird standardmäßig **HTTPS auf Port 8443** verwendet
+
+### NIBE-Anlage und Firmware
+
+Die Integration benötigt eine **NIBE S-Series-Steuerung mit lokaler REST API**. NIBE hat die Unterstützung für die lokale REST API mit der **S-Series-Firmware 4.4.7** im Menü **7.5.15** eingeführt.
+
+Da die ersten Firmwarestände mit lokaler REST API noch Fehler bei Erreichbarkeit und Kommunikation enthielten und NIBE die Funktion in späteren Versionen weiter korrigiert und erweitert hat, wird ausdrücklich eine **aktuelle S-Series-Firmware** empfohlen.
+
+Die Integration wurde mit **VVM S320 + S2125 + ERS S40-400** entwickelt und getestet. Andere S-Series-Steuerungen können ebenfalls funktionieren, sind aber nicht automatisch verifiziert.
+
+### Lokale REST API an der NIBE aktivieren
+
+Die Schnittstelle muss **vor der Einrichtung in Home Assistant direkt an der NIBE-Steuerung aktiviert und konfiguriert** werden.
+
+An der Inneneinheit bzw. dem Regelgerät:
+
+1. **Menü 7 → Service** öffnen.
+2. Zu **7.5.15 – Lokale REST API** wechseln.
+3. Die lokale REST API **einschalten**.
+4. **Benutzername und Passwort** für den REST-Zugriff festlegen.
+5. Falls eine **IP-Adressenbeschränkung** verwendet wird, die IP-Adresse des Home-Assistant-Systems bzw. des Geräts eintragen, von dem die REST-Anfragen kommen.
+6. Sicherstellen, dass NIBE-Steuerung und Home Assistant sich im selben erreichbaren lokalen Netzwerk befinden und Port **8443** nicht durch Firewall-, VLAN- oder Router-Regeln blockiert wird.
+
+> ⚠️ **Ohne aktivierte und eingerichtete lokale REST API in Menü 7.5.15 kann diese Integration keine Verbindung zur NIBE herstellen.** Die Aktivierung von Modbus TCP/IP allein genügt dafür nicht.
+
+Die in Menü 7.5.15 vergebenen Zugangsdaten werden anschließend im Home-Assistant-Einrichtungsdialog als **Benutzername + Passwort** verwendet. Alternativ unterstützt die Integration einen vollständigen `Authorization`-Header.
+
+Eine Verbindung zu **myUplink** ist für den lokalen Betrieb dieser Integration nicht erforderlich.
+
+---
+
 ## 🧩 Installation
 
 ### Manuell
@@ -536,7 +574,9 @@ Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Inte
 7. Die Integration lädt die verfügbaren Variablen über die lokale API.
 8. **Minimal / Standard / Erweitert / Komplett / Individuell** auswählen.
 9. Benennung **Home-Assistant-Standard / Lokale API / Technisch** auswählen.
-10. Bei **Individuell** die gewünschten Variablen auswählen.
+10. Bei **Individuell** die gewünschten Variablen über die Mehrfachauswahl auswählen.
+11. Die abschließende **Entitätsübersicht** prüfen. Sie zeigt aktive/ausgewählte, abgewählte und gegebenenfalls zur Registry-Löschung vorgesehene Entitäten.
+12. Erst mit **„OK“** werden die Einstellungen angewendet und die Einrichtung abgeschlossen.
 
 Die Geräte-ID wird nicht abgefragt; die Integration verwendet intern **`0`**.
 
@@ -619,9 +659,9 @@ Eine Variable, die in der Integration definiert ist, wird nur angelegt, wenn sie
 
 Die Integration kann nur mit den Informationen arbeiten, die die lokale API liefert. Fehlerhafte oder unvollständige Metadaten können dazu führen, dass eine Funktion vorsorglich nur lesbar bleibt oder ein Schreibzugriff blockiert wird.
 
-### Mindestversion von Home Assistant
+### Home-Assistant-Version
 
-Vorgesehen ist mindestens **Home Assistant 2024.12.0**.
+Die Mindestversion und die weiteren Installationsvoraussetzungen sind im Abschnitt **[Voraussetzungen](#-voraussetzungen)** zusammengefasst.
 
 Einige Darstellungsmöglichkeiten – insbesondere lokales Branding und neuere Home-Assistant-Namens-/Entity-ID-Funktionen – hängen von neueren Home-Assistant-Versionen ab.
 
