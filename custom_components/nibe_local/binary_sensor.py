@@ -10,7 +10,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import POINTS
 from .coordinator import NibeCoordinator
-from .entity import NibePointEntity, coordinator_device_info, raw_value
+from .entity import NibePointEntity, coordinator_device_info, entity_unique_id, raw_value
 
 PARALLEL_UPDATES = 0
 
