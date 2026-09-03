@@ -4,6 +4,7 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 
 ## 0.9.0
 
+- Upgrade-Kompatibilität zu bestehenden 0.8.x-Config-Entries abgesichert: Die Config-Entry-Schema-Version bleibt bei `1`, da die neuen 0.9.0-Felder optional sind und über Defaults eingelesen werden. Damit ist kein `async_migrate_entry` erforderlich; ein Regressionstest schützt vor unbeabsichtigten Versionssprüngen.
 - Bei der Einrichtung und in den Optionen kann die Entitätsbenennung zwischen **Home-Assistant-Standard**, **Lokale API** und **Technisch** gewählt werden. Home Assistant behält die Kontrolle über das endgültige Entity-ID-Format.
 - Die Profilauswahl zeigt die Anzahl der auf dem verbundenen Gerät tatsächlich verfügbaren Variablen für Minimal, Standard, Erweitert, Komplett und Individuell an.
 - Neue Entitätsprofile **Minimal**, **Standard**, **Erweitert**, **Komplett** und **Individuell** bei der Einrichtung.
