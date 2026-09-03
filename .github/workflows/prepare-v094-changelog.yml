@@ -1,0 +1,36 @@
+name: Prepare v0.9.4 changelog
+on:
+  push:
+    paths:
+      - '.github/workflows/prepare-v094-changelog.yml'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepend v0.9.4 changelog
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('CHANGELOG.md')
+          text = path.read_text(encoding='utf-8')
+          marker = '## 0.9.3\n'
+          if '## 0.9.4\n' in text:
+              raise SystemExit('v0.9.4 already present')
+          if marker not in text:
+              raise SystemExit('v0.9.3 marker not found')
+
+          section = '''## 0.9.4\n\n- Home-Assistant-Diagnosedaten ergänzt: Supportinformationen zu Profil, Polling, Verbindungs-/Fallback-Status, verfügbaren und aktivierten Variable-IDs sowie ungefährlichen Punkt- und Geräte-Metadaten können über **Diagnosedaten herunterladen** exportiert werden. Host/IP, Benutzername, Passwort, Authorization-Header, Seriennummern, aktuelle Mess-/Einstellwerte und Alarmtexte werden bewusst nicht ausgegeben.\n- CI-Härtung ergänzt: Ruff prüft auf undefinierte Python-Namen (`F821`), zusätzlich laufen weiterhin JSON-Prüfung, `compileall` und pytest gegen **Home Assistant 2024.12.0** und **latest**.\n- Migrationsschutz verbessert: Config-Entry-Versionssprünge werden per Regressionstest nur noch zugelassen, wenn ein `async_migrate_entry`-Handler vorhanden ist.\n- Plattform-Smoke-Test ergänzt, der alle deklarierten Home-Assistant-Plattformmodule importiert und damit Import-/Setup-Regressionen früher sichtbar macht.\n- Diagnosedaten werden per Regressionstest auf unbeabsichtigte Preisgabe sensibler Zugangsdaten und Netzwerkziele geprüft.\n- README um Installationsvoraussetzungen für die lokale NIBE REST API erweitert: mindestens Home Assistant 2024.12.0, NIBE S-Series mit lokaler REST API, Firmware 4.4.7 als technische Mindestbasis und Empfehlung einer aktuellen S-Series-Firmware.\n- Einrichtung der NIBE-Schnittstelle dokumentiert: Die lokale REST API muss an der Inneneinheit bzw. Steuerung unter **Menü 7 → Service → 7.5.15 – Lokale REST API** aktiviert und mit Zugangsdaten eingerichtet sein; standardmäßig wird HTTPS auf Port 8443 verwendet.\n- Einrichtungs- und Optionshinweise an den aktuellen Ablauf angepasst, einschließlich Mehrfachauswahl bei **Individuell**, abschließender Entitätsübersicht und Bestätigung über **OK**.\n- Erklärung der Entitätsbenennung **Home-Assistant-Standard / Lokale API / Technisch** mit verständlichen Beispielen verbessert.\n- Lokale Home-Assistant-Branding-Dateien für Icon und Logo überarbeitet und an den aktuellen Integrationsauftritt angepasst.\n- Versehentlich eingecheckte Python-Cache-Dateien entfernt und über `.gitignore` dauerhaft ausgeschlossen.\n\n'''
+          text = text.replace(marker, section + marker, 1)
+          path.write_text(text, encoding='utf-8')
+      - name: Commit changelog
+        run: |
+          grep -Fq '## 0.9.4' CHANGELOG.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add CHANGELOG.md
+          git commit -m 'Document v0.9.4 changes'
+          git push
