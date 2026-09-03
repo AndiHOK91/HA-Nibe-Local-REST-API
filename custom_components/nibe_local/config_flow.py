@@ -286,7 +286,9 @@ def _entity_selection_schema(
 
 
 class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 2
+    # Keep the config-entry schema version at 1. The 0.9.0 additions are optional
+    # fields with defaults and therefore require no Home Assistant data migration.
+    VERSION = 1
 
     _reauth_entry: ConfigEntry | None = None
     _pending_data: dict | None = None
