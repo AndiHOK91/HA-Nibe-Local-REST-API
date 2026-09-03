@@ -21,7 +21,18 @@ jobs:
         with:
           python-version: '3.13'
       - name: Prepare v0.9.3 entity preview changes
-        run: python .github/scripts/add_entity_preview.py
+        run: |
+          python .github/scripts/add_entity_preview.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("custom_components/nibe_local/config_flow.py")
+          text = path.read_text(encoding="utf-8")
+          old = '    inactive = frozenset((available - active) | (disabled_registered - delete))'
+          new = '    inactive = frozenset(((available - active) | disabled_registered) - delete)'
+          if old not in text:
+              raise SystemExit("preview inactive-group patch anchor missing")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          PY
       - name: Install test dependencies
         env:
           HA_VERSION: ${{ matrix.homeassistant-version }}
@@ -53,6 +64,16 @@ jobs:
       - name: Prepare and commit v0.9.3
         run: |
           python .github/scripts/add_entity_preview.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("custom_components/nibe_local/config_flow.py")
+          text = path.read_text(encoding="utf-8")
+          old = '    inactive = frozenset((available - active) | (disabled_registered - delete))'
+          new = '    inactive = frozenset(((available - active) | disabled_registered) - delete)'
+          if old not in text:
+              raise SystemExit("preview inactive-group patch anchor missing")
+          path.write_text(text.replace(old, new, 1), encoding="utf-8")
+          PY
           git config user.name 'AndiO91'
           git config user.email '60509228+AndiO91@users.noreply.github.com'
           rm -f .github/scripts/add_entity_preview.py .github/workflows/entity-preview-093.yml
