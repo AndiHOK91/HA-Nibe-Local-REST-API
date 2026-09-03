@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   pytest:
@@ -62,3 +62,19 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: pytest -q
+
+  publish_release:
+    if: github.event_name == 'push'
+    needs: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish v0.9.4.1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v0.9.4.1 --repo "${{ github.repository }}" >/dev/null 2>&1 && exit 0
+          gh release create v0.9.4.1 \
+            --repo "${{ github.repository }}" \
+            --target "545952dddf0c076a56bf1eb4c05817f77528d8b1" \
+            --title "v0.9.4.1" \
+            --notes "## NIBE Local REST API v0.9.4.1\n\nHotfix für das Branding.\n\n- Neue Brand-Grafiken übernommen.\n- Dateinamen auf \`logo.png\` und \`dark_logo.png\` korrigiert.\n- Integrationsversion auf 0.9.4.1 angehoben."
