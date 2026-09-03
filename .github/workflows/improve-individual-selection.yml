@@ -1,0 +1,376 @@
+name: Improve individual entity selection
+
+on:
+  push:
+    paths:
+      - '.github/workflows/improve-individual-selection.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Update individual selection UX
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          config = Path('custom_components/nibe_local/config_flow.py')
+          text = config.read_text(encoding='utf-8')
+
+          old = '    SelectSelectorConfig,\n    TextSelector,\n'
+          new = '    SelectSelectorConfig,\n    SelectSelectorMode,\n    TextSelector,\n'
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          old = '    TextSelectorType,\n)\n\nfrom .api import'
+          new = '    TextSelectorType,\n)\nfrom homeassistant.helpers.translation import async_get_translations\n\nfrom .api import'
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          old = '    NIBE_DEVICE_ID,\n)\nfrom .profiles import'
+          new = '    NIBE_DEVICE_ID,\n    POINTS,\n)\nfrom .profiles import'
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          start = text.index('def _point_label(')
+          end = text.index('\n\n\nclass NibeLocalConfigFlow', start)
+          replacement = '''def _known_point_fallback_name(point_id: str) -> str | None:
+              """Return a readable fallback name for a curated point."""
+              if not str(point_id).isdigit():
+                  return None
+              numeric_id = int(point_id)
+              definition = next(
+                  (item for item in POINTS if item.point_id == numeric_id), None
+              )
+              if definition is None:
+                  return None
+              return definition.key.replace("_", " ").strip().capitalize()
+
+
+          async def _async_translated_point_names(hass) -> dict[int, str]:
+              """Load localized Home Assistant names for curated NIBE points."""
+              resources = await async_get_translations(
+                  hass,
+                  hass.config.language,
+                  "entity",
+                  [DOMAIN],
+              )
+              names: dict[int, str] = {}
+              for definition in POINTS:
+                  key = (
+                      f"component.{DOMAIN}.entity.{definition.platform}."
+                      f"{definition.key}.name"
+                  )
+                  if name := resources.get(key):
+                      names[definition.point_id] = str(name)
+              return names
+
+
+          def _point_label(
+              point_id: str,
+              point: dict[str, Any],
+              point_names: dict[int, str] | None = None,
+          ) -> str:
+              """Build a human-readable selection label with name, ID and unit."""
+              metadata = point.get("metadata") or {}
+              numeric_id = int(point_id) if str(point_id).isdigit() else None
+              translated_name = (
+                  point_names.get(numeric_id)
+                  if point_names is not None and numeric_id is not None
+                  else None
+              )
+              description = (
+                  translated_name
+                  or point.get("description")
+                  or point.get("name")
+                  or metadata.get("description")
+                  or metadata.get("name")
+                  or _known_point_fallback_name(point_id)
+              )
+              unit = metadata.get("shortUnit") or metadata.get("unit")
+              unit_suffix = f" [{unit}]" if unit else ""
+              if description:
+                  cleaned = (
+                      str(description)
+                      .replace("\\u00ad", "")
+                      .strip()
+                      .replace("\\n", " ")
+                  )
+                  return f"{cleaned[:120]} · Variable ID {point_id}{unit_suffix}"
+              return f"Variable ID {point_id}{unit_suffix}"
+
+
+          def _point_options(
+              points: dict[str, Any], point_names: dict[int, str] | None = None
+          ) -> list[dict[str, str]]:
+              def sort_key(item: tuple[str, Any]) -> tuple[int, str]:
+                  key = str(item[0])
+                  return (int(key) if key.isdigit() else 2**31, key)
+
+              return [
+                  {
+                      "value": str(pid),
+                      "label": _point_label(str(pid), point, point_names),
+                  }
+                  for pid, point in sorted(points.items(), key=sort_key)
+              ]
+
+
+          def _selected_options(points: dict[str, Any], selected_ids) -> list[str]:
+              selected = normalize_selected_ids(selected_ids)
+              available = {
+                  int(pid) for pid in points if str(pid).isdigit()
+              }
+              return [str(pid) for pid in sorted(selected) if pid in available]
+
+
+          def _parse_selected_options(values) -> list[int]:
+              """Parse new ID values and legacy labels from earlier 0.9.0 forms."""
+              point_ids: set[int] = set()
+              for value in values or ():
+                  text = str(value).strip()
+                  candidate = text if text.isdigit() else text.split(" | ", 1)[0].strip()
+                  try:
+                      point_ids.add(int(candidate))
+                  except ValueError:
+                      continue
+              return sorted(point_ids)
+
+
+          def _entity_selection_schema(
+              points: dict[str, Any],
+              selected_ids=None,
+              *,
+              point_names: dict[int, str] | None = None,
+          ) -> vol.Schema:
+              return vol.Schema(
+                  {
+                      vol.Optional(
+                          CONF_SELECTED_POINT_IDS,
+                          default=_selected_options(points, selected_ids),
+                      ): SelectSelector(
+                          SelectSelectorConfig(
+                              options=_point_options(points, point_names),
+                              multiple=True,
+                              mode=SelectSelectorMode.LIST,
+                          )
+                      )
+                  }
+              )
+          '''
+          # The replacement is indented in this workflow source for readability.
+          # Strip exactly ten leading spaces from each line before writing Python.
+          replacement = '\n'.join(
+              line[10:] if line.startswith('          ') else line
+              for line in replacement.splitlines()
+          )
+          text = text[:start] + replacement + text[end:]
+
+          old = '        points = self._available_points or {}\n        if user_input is not None:\n'
+          new = '        points = self._available_points or {}\n        point_names = await _async_translated_point_names(self.hass)\n        if user_input is not None:\n'
+          assert text.count(old) == 2
+          text = text.replace(old, new, 2)
+
+          old = '            data_schema=_entity_selection_schema(points),\n'
+          new = '            data_schema=_entity_selection_schema(points, point_names=point_names),\n'
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          old = '''                            data_schema=_entity_selection_schema(
+                                points, self._pending_options[CONF_SELECTED_POINT_IDS]
+                            ),'''
+          new = '''                            data_schema=_entity_selection_schema(
+                                points,
+                                self._pending_options[CONF_SELECTED_POINT_IDS],
+                                point_names=point_names,
+                            ),'''
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          old = '''            data_schema=_entity_selection_schema(
+                points,
+                self._pending_options.get(CONF_SELECTED_POINT_IDS),
+            ),'''
+          new = '''            data_schema=_entity_selection_schema(
+                points,
+                self._pending_options.get(CONF_SELECTED_POINT_IDS),
+                point_names=point_names,
+            ),'''
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          config.write_text(text, encoding='utf-8')
+
+          # Translation copy: make the checkbox/list behavior explicit.
+          replacements = {
+              'custom_components/nibe_local/translations/de.json': (
+                  '{count} Variablen wurden von der NIBE erkannt. Wähle die Variablen aus, die als Entitäten angelegt werden sollen.',
+                  '{count} Variablen wurden von der NIBE erkannt. Setze oder entferne die Häkchen für die gewünschten Entitäten. Bekannte Punkte werden mit Name, Variable-ID und Einheit angezeigt.'
+              ),
+              'custom_components/nibe_local/translations/en.json': (
+                  '{count} variables were detected by the NIBE. Select the variables that should be created as entities.',
+                  '{count} variables were detected by the NIBE. Tick or untick the entities you want. Known points are shown with name, variable ID and unit.'
+              ),
+          }
+          for filename, (before, after) in replacements.items():
+              path = Path(filename)
+              value = path.read_text(encoding='utf-8')
+              assert before in value, filename
+              value = value.replace(before, after)
+              path.write_text(value, encoding='utf-8')
+
+          # Add regression tests for the list-mode selector and labels.
+          tests = Path('tests/test_logic.py')
+          value = tests.read_text(encoding='utf-8')
+          old = '''    _header_auth_schema,
+    _reauth_schema,
+    auth_method_from_values,'''
+          new = '''    _entity_selection_schema,
+    _header_auth_schema,
+    _parse_selected_options,
+    _point_options,
+    _reauth_schema,
+    auth_method_from_values,'''
+          assert old in value
+          value = value.replace(old, new, 1)
+          anchor = '\n\ndef test_cleanup_backup_option_defaults_to_enabled() -> None:\n'
+          assert anchor in value
+          extra = r'''
+
+          def test_individual_selection_uses_checkbox_list_and_readable_labels() -> None:
+              points = {
+                  "4": {"metadata": {"shortUnit": "°C"}},
+                  "999999": {"metadata": {}},
+              }
+              point_names = {4: "Außentemperatur (BT1)"}
+              schema = _entity_selection_schema(
+                  points,
+                  [4],
+                  point_names=point_names,
+              )
+              marker = next(
+                  item
+                  for item in schema.schema
+                  if getattr(item, "schema", None) == "selected_point_ids"
+              )
+              selector = schema.schema[marker]
+              assert selector.config["multiple"] is True
+              assert selector.config["mode"] == "list"
+              assert selector.config["options"] == [
+                  {
+                      "value": "4",
+                      "label": "Außentemperatur (BT1) · Variable ID 4 [°C]",
+                  },
+                  {
+                      "value": "999999",
+                      "label": "Variable ID 999999",
+                  },
+              ]
+              default = marker.default
+              assert (default() if callable(default) else default) == ["4"]
+
+
+          def test_individual_selection_prefers_api_name_when_no_translation_exists() -> None:
+              options = _point_options(
+                  {
+                      "123": {
+                          "description": "API endpoint name",
+                          "metadata": {"unit": "kW"},
+                      }
+                  }
+              )
+              assert options == [
+                  {
+                      "value": "123",
+                      "label": "API endpoint name · Variable ID 123 [kW]",
+                  }
+              ]
+
+
+          def test_individual_selection_parser_accepts_new_ids_and_legacy_labels() -> None:
+              assert _parse_selected_options(["4", "3096", "8 | Legacy label"]) == [
+                  4,
+                  8,
+                  3096,
+              ]
+          '''
+          extra = '\n'.join(
+              line[10:] if line.startswith('          ') else line
+              for line in extra.splitlines()
+          )
+          value = value.replace(anchor, extra + anchor, 1)
+          tests.write_text(value, encoding='utf-8')
+
+          # Prepare a patch release so HACS can deliver the UX improvement.
+          manifest = Path('custom_components/nibe_local/manifest.json')
+          payload = json.loads(manifest.read_text(encoding='utf-8'))
+          assert payload['version'] == '0.9.0'
+          payload['version'] = '0.9.1'
+          manifest.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+          readme = Path('README.md')
+          value = readme.read_text(encoding='utf-8')
+          assert 'Aktuelle Integrationsversion: **0.9.0**' in value
+          value = value.replace('Aktuelle Integrationsversion: **0.9.0**', 'Aktuelle Integrationsversion: **0.9.1**', 1)
+          needle = 'Bei **Individuell** wird nach der Verbindung die Liste der tatsächlich vom Gerät gemeldeten Variablen angezeigt.\n'
+          assert needle in value
+          addition = (
+              needle
+              + '\nDie Auswahl wird als **anklickbare Mehrfachliste mit Checkboxen** dargestellt. '
+              + 'Bekannte Punkte zeigen ihren lokalisierten Namen zusammen mit **Variable-ID und Einheit**; '
+              + 'bei nicht kuratierten Punkten wird zusätzlich ein von der lokalen API gelieferter Name verwendet, sofern vorhanden.\n'
+          )
+          value = value.replace(needle, addition, 1)
+          readme.write_text(value, encoding='utf-8')
+
+          changelog = Path('CHANGELOG.md')
+          value = changelog.read_text(encoding='utf-8')
+          anchor = '## 0.9.0\n'
+          assert anchor in value
+          section = '''## 0.9.1
+
+- **Individuell** verwendet jetzt eine direkt anklickbare Mehrfachliste im Home-Assistant-Listenmodus, sodass Variablen per Checkbox an- und abgewählt werden können.
+- Bekannte NIBE-Punkte werden in der individuellen Auswahl mit dem lokalisierten Home-Assistant-Namen, der Variable-ID und – sofern vorhanden – der Einheit angezeigt. Bei unbekannten Punkten wird ein von der lokalen API gelieferter Name verwendet, falls die API einen bereitstellt.
+- Die gespeicherte Auswahl bleibt weiterhin ausschließlich auf stabilen numerischen Variable-IDs basiert; alte 0.9.0-Auswahlwerte werden beim Einlesen weiterhin akzeptiert.
+
+'''
+          value = value.replace(anchor, section + anchor, 1)
+          changelog.write_text(value, encoding='utf-8')
+          PY
+
+          python -m json.tool custom_components/nibe_local/manifest.json >/dev/null
+          python -m json.tool custom_components/nibe_local/translations/de.json >/dev/null
+          python -m json.tool custom_components/nibe_local/translations/en.json >/dev/null
+          python -m compileall -q custom_components/nibe_local tests
+
+      - name: Run regression tests on current environment
+        run: |
+          python -m pip install --upgrade pip pytest
+          python -m pip install 'homeassistant==2024.12.0'
+          PYTHONPATH="$GITHUB_WORKSPACE" pytest -q
+
+      - name: Commit changes and remove one-time workflow
+        run: |
+          git config user.name 'AndiO91'
+          git config user.email '60509228+AndiO91@users.noreply.github.com'
+          rm -f .github/workflows/improve-individual-selection.yml
+          find custom_components tests -type d -name __pycache__ -prune -exec rm -rf {} +
+          git add custom_components/nibe_local/config_flow.py \
+                  custom_components/nibe_local/manifest.json \
+                  custom_components/nibe_local/translations/de.json \
+                  custom_components/nibe_local/translations/en.json \
+                  tests/test_logic.py README.md CHANGELOG.md \
+                  .github/workflows/improve-individual-selection.yml
+          git commit -m 'Improve individual entity selection UX'
+          git push
