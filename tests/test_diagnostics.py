@@ -24,8 +24,11 @@ def test_diagnostics_exclude_credentials_and_current_values() -> None:
                 }
             },
             "device": {
-                "model": "VVM S320",
-                "serialNumber": "SECRET-SERIAL",
+                "product": {
+                    "productName": "NIBE VVM S320 E EM 3x400V",
+                    "softwareVersion": "4.12.8",
+                    "serialNumber": "SECRET-SERIAL",
+                }
             },
             "notifications": {"alarms": [{"description": "private alarm text"}]},
         },
@@ -57,6 +60,9 @@ def test_diagnostics_exclude_credentials_and_current_values() -> None:
     assert "SECRET-SERIAL" not in rendered
     assert "private alarm text" not in rendered
     assert "222" not in rendered
-    assert diagnostics["device"] == {"model": "VVM S320"}
+    assert diagnostics["device"] == {
+        "model": "NIBE VVM S320 E EM 3x400V",
+        "software_version": "4.12.8",
+    }
     assert diagnostics["points"]["enabled_point_ids"] == [4]
     assert diagnostics["notifications"]["active_alarm_count"] == 1
