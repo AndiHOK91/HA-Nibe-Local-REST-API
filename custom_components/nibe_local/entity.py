@@ -21,6 +21,64 @@ def _clean(text: str | None) -> str:
     return (text or "").replace("\u00ad", "").strip()
 
 
+def _first_text(*values: Any) -> str | None:
+    """Return the first non-empty textual value."""
+    for value in values:
+        if value in (None, ""):
+            continue
+        cleaned = _clean(str(value))
+        if cleaned:
+            return cleaned
+    return None
+
+
+def device_product_details(device: Any) -> dict[str, str | None]:
+    """Normalize product information returned by different NIBE API versions."""
+    if not isinstance(device, dict):
+        device = {}
+
+    raw_product = device.get("product")
+    product = raw_product if isinstance(raw_product, dict) else {}
+    product_text = raw_product if isinstance(raw_product, str) else None
+
+    return {
+        "manufacturer": _first_text(
+            product.get("manufacturer"),
+            product.get("manufacturerName"),
+            device.get("manufacturer"),
+            device.get("manufacturerName"),
+        ),
+        "name": _first_text(
+            product.get("name"),
+            product.get("productName"),
+            product.get("modelName"),
+            product.get("model"),
+            product_text,
+            device.get("productName"),
+            device.get("modelName"),
+            device.get("model"),
+            device.get("name"),
+        ),
+        "software_version": _first_text(
+            product.get("firmwareId"),
+            product.get("firmwareVersion"),
+            product.get("softwareVersion"),
+            product.get("version"),
+            device.get("firmwareId"),
+            device.get("firmwareVersion"),
+            device.get("softwareVersion"),
+            device.get("version"),
+        ),
+        "serial_number": _first_text(
+            product.get("serialNumber"),
+            product.get("serial"),
+            product.get("serialNo"),
+            device.get("serialNumber"),
+            device.get("serial"),
+            device.get("serialNo"),
+        ),
+    }
+
 
 def local_api_point_name(point: dict[str, Any]) -> str | None:
     """Return the human-readable name supplied by the local REST API."""
@@ -101,15 +159,15 @@ def entity_unique_id(coordinator: NibeCoordinator, suffix: str | int) -> str:
 
 def coordinator_device_info(coordinator: NibeCoordinator) -> DeviceInfo:
     """Build the shared Home Assistant device info for coordinator entities."""
-    device = (coordinator.data or {}).get("device", {})
-    product = device.get("product") or {}
-    serial = product.get("serialNumber") or coordinator.api.device_id
+    details = device_product_details((coordinator.data or {}).get("device", {}))
+    serial = details["serial_number"] or str(coordinator.api.device_id)
+    name = details["name"] or "NIBE API"
     return DeviceInfo(
         identifiers={(DOMAIN, str(serial))},
-        manufacturer=product.get("manufacturer") or "NIBE",
-        name=product.get("name") or "NIBE API",
-        model=product.get("name"),
-        sw_version=product.get("firmwareId"),
+        manufacturer=details["manufacturer"] or "NIBE",
+        name=name,
+        model=details["name"],
+        sw_version=details["software_version"],
     )
 
 
