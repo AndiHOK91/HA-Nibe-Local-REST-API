@@ -158,6 +158,10 @@ def test_entity_unique_ids_are_scoped_per_config_entry() -> None:
     assert entity_unique_id(first, 4) != entity_unique_id(second, 4)
 
 
+def test_binary_sensor_platform_imports_unique_id_helper() -> None:
+    assert binary_sensor.entity_unique_id is entity_unique_id
+
+
 def test_entity_profiles_are_monotonic_for_curated_points() -> None:
     minimal = {p.point_id for p in POINTS if point_enabled(PROFILE_MINIMAL, p.point_id)}
     standard = {p.point_id for p in POINTS if point_enabled(PROFILE_STANDARD, p.point_id)}

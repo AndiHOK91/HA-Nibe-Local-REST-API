@@ -2,6 +2,11 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
+## 0.9.2
+
+- Binärsensor-Plattform repariert: `entity_unique_id` wird wieder korrekt importiert. Der fehlende Import in 0.9.1 verhinderte das Setup der gesamten `binary_sensor`-Plattform und ließ unter anderem **REST API erreichbar**, **Einzelpunkt-Fallback aktiv**, Kühl-/Abtauzustände, Pumpen- und weitere Binärsensoren als nicht verfügbar erscheinen.
+- Regressionstest ergänzt, der sicherstellt, dass der für Diagnose-Binärsensoren benötigte Unique-ID-Helper im Plattformmodul verfügbar ist.
+
 ## 0.9.1
 
 - **Individuell** verwendet jetzt eine direkt anklickbare Mehrfachliste im Home-Assistant-Listenmodus, sodass Variablen per Checkbox an- und abgewählt werden können.
