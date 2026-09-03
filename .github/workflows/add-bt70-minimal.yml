@@ -24,7 +24,6 @@ jobs:
           from pathlib import Path
           import json
 
-          # Add known read-only BT70 hot-water outlet temperature.
           p = Path('custom_components/nibe_local/const.py')
           text = p.read_text(encoding='utf-8')
           anchor = '    PointDef(12, "hot_water_charge_bt6", "hot_water"),\n'
@@ -35,7 +34,6 @@ jobs:
               text = text.replace(anchor, anchor + addition)
           p.write_text(text, encoding='utf-8')
 
-          # Minimal = core state/temps plus current compressor frequency.
           p = Path('custom_components/nibe_local/profiles.py')
           text = p.read_text(encoding='utf-8')
           text = text.replace(
@@ -48,7 +46,6 @@ jobs:
           )
           p.write_text(text, encoding='utf-8')
 
-          # Add translations.
           for lang, name in (
               ('de', 'Brauchwasseraustritt (BT70)'),
               ('en', 'Hot water outlet (BT70)'),
@@ -56,7 +53,6 @@ jobs:
               path = Path(f'custom_components/nibe_local/translations/{lang}.json')
               data = json.loads(path.read_text(encoding='utf-8'))
               sensors = data['entity']['sensor']
-              # Keep insertion close to the other hot-water temperature sensors.
               rebuilt = {}
               inserted = False
               for key, value in sensors.items():
@@ -69,7 +65,6 @@ jobs:
               data['entity']['sensor'] = rebuilt
               path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
-          # Update README Minimal description.
           p = Path('README.md')
           text = p.read_text(encoding='utf-8')
           old = '''- Brauchwassertemperaturen\n- Volumenstrom\n- Gradminuten\n- Betriebspriorität und Betriebsmodus\n- Heizungsumwälzpumpe\n- Verdichterstatus, -frequenz und -leistung\n- Heizung/Kühlung zulassen\n- Brauchwasserbedarf\n- Mehr Brauchwasser\n'''
@@ -78,7 +73,6 @@ jobs:
               text = text.replace(old, new)
           p.write_text(text, encoding='utf-8')
 
-          # Regression tests for the profile contract.
           p = Path('tests/test_logic.py')
           text = p.read_text(encoding='utf-8')
           marker = '\ndef test_minimal_profile_core_contract() -> None:\n'
@@ -88,12 +82,15 @@ jobs:
           PY
 
       - name: Validate
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          PYTHONDONTWRITEBYTECODE: '1'
         run: |
           python -m json.tool custom_components/nibe_local/translations/de.json >/dev/null
           python -m json.tool custom_components/nibe_local/translations/en.json >/dev/null
           python -m pip install --upgrade pip pytest
           python -m pip install homeassistant
-          PYTHONDONTWRITEBYTECODE=1 pytest -q
+          pytest -q
 
       - name: Commit changes and remove one-time workflow
         run: |
