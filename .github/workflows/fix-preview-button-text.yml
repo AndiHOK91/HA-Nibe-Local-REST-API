@@ -1,0 +1,50 @@
+name: Fix preview button text
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-preview-button-text.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Update translation wording
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          replacements = {
+              Path('custom_components/nibe_local/translations/de.json'): ('Erst mit „Senden“ werden die Einstellungen angewendet', 'Erst mit „OK“ werden die Einstellungen angewendet'),
+              Path('custom_components/nibe_local/translations/en.json'): ('only applied after you press Submit', 'only applied after you press OK'),
+          }
+          for path, (old, new) in replacements.items():
+              data = json.loads(path.read_text(encoding='utf-8'))
+              text = json.dumps(data, ensure_ascii=False, indent=2) + '\n'
+              if old not in text:
+                  raise SystemExit(f'Expected text not found in {path}: {old}')
+              text = text.replace(old, new)
+              path.write_text(text, encoding='utf-8')
+          PY
+      - name: Validate translations
+        run: |
+          python -m json.tool custom_components/nibe_local/translations/de.json >/dev/null
+          python -m json.tool custom_components/nibe_local/translations/en.json >/dev/null
+      - name: Commit changes
+        run: |
+          git config user.name 'AndiO91'
+          git config user.email '60509228+AndiO91@users.noreply.github.com'
+          rm -f .github/workflows/fix-preview-button-text.yml
+          git add custom_components/nibe_local/translations/de.json \
+                  custom_components/nibe_local/translations/en.json \
+                  .github/workflows/fix-preview-button-text.yml
+          git commit -m 'Match entity preview text to OK button'
+          git push
