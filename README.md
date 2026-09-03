@@ -434,6 +434,31 @@ Zusätzlich werden Diagnoseinformationen bereitgestellt, darunter:
 
 Der interne Zeitpunkt des letzten erfolgreichen Polls wird nicht fortlaufend als Recorder-relevantes Entity-Attribut veröffentlicht, um unnötige Zustandsänderungen zu vermeiden.
 
+### Diagnosedaten herunterladen
+
+Die Integration unterstützt die Home-Assistant-Funktion **Diagnosedaten herunterladen**. Diese Datei ist insbesondere für Support und Tests mit anderen NIBE-S-Series-Geräten hilfreich.
+
+Enthalten sind unter anderem:
+
+- gewähltes Entitätsprofil und Benennungsmodus
+- Polling- und TLS-Konfiguration ohne Netzwerkziel
+- Verbindungs- und Fallback-Status
+- Modell-/Firmwareinformationen, sofern die lokale API sie in geeigneten Feldern liefert
+- verfügbare und aktivierte Variable-IDs
+- ungefährliche Punkt-Metadaten wie Beschreibung, Einheit, Datentyp und Schreibbarkeitskennzeichen
+- Anzahl aktiver Alarme, jedoch nicht deren Texte
+
+Aus Datenschutz- und Sicherheitsgründen werden bewusst **nicht** exportiert:
+
+- Hostname oder IP-Adresse der NIBE
+- Benutzername und Passwort
+- Authorization-Header oder andere Zugangsdaten
+- Seriennummern
+- aktuelle Mess- und Einstellwerte der NIBE-Punkte
+- Alarmtexte
+
+Damit kann eine Diagnose beispielsweise bei unbekannten Punktbelegungen oder abweichenden Firmwareständen geteilt werden, ohne die komplette lokale API-Antwort offenzulegen.
+
 ---
 
 ## 🔐 Authentifizierung und TLS
@@ -687,6 +712,10 @@ Geprüft werden unter anderem:
 - individuelle Auswahl
 - Entitätsbenennung
 - Profilzählung anhand tatsächlich verfügbarer Punkte
+- Config-Entry-Versionssprünge nur mit Migrationshandler
+- Import-Smoke-Test aller deklarierten Plattformen
+- Diagnosedaten auf unbeabsichtigte Preisgabe sensibler Daten
+- Ruff-Prüfung auf undefinierte Python-Namen (`F821`) in der CI
 
 GitHub Actions prüft die Integration gegen die vorgesehene Mindestversion **Home Assistant 2024.12.0** und gegen eine aktuelle Home-Assistant-Version.
 
