@@ -2,6 +2,20 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
+## 0.9.4
+
+- Home-Assistant-Diagnosedaten ergänzt: Supportinformationen zu Profil, Polling, Verbindungs-/Fallback-Status, verfügbaren und aktivierten Variable-IDs sowie ungefährlichen Punkt- und Geräte-Metadaten können über **Diagnosedaten herunterladen** exportiert werden. Host/IP, Benutzername, Passwort, Authorization-Header, Seriennummern, aktuelle Mess-/Einstellwerte und Alarmtexte werden bewusst nicht ausgegeben.
+- CI-Härtung ergänzt: Ruff prüft auf undefinierte Python-Namen (`F821`), zusätzlich laufen weiterhin JSON-Prüfung, `compileall` und pytest gegen **Home Assistant 2024.12.0** und **latest**.
+- Migrationsschutz verbessert: Config-Entry-Versionssprünge werden per Regressionstest nur noch zugelassen, wenn ein `async_migrate_entry`-Handler vorhanden ist.
+- Plattform-Smoke-Test ergänzt, der alle deklarierten Home-Assistant-Plattformmodule importiert und damit Import-/Setup-Regressionen früher sichtbar macht.
+- Diagnosedaten werden per Regressionstest auf unbeabsichtigte Preisgabe sensibler Zugangsdaten und Netzwerkziele geprüft.
+- README um Installationsvoraussetzungen für die lokale NIBE REST API erweitert: mindestens Home Assistant 2024.12.0, NIBE S-Series mit lokaler REST API, Firmware 4.4.7 als technische Mindestbasis und Empfehlung einer aktuellen S-Series-Firmware.
+- Einrichtung der NIBE-Schnittstelle dokumentiert: Die lokale REST API muss an der Inneneinheit bzw. Steuerung unter **Menü 7 → Service → 7.5.15 – Lokale REST API** aktiviert und mit Zugangsdaten eingerichtet sein; standardmäßig wird HTTPS auf Port 8443 verwendet.
+- Einrichtungs- und Optionshinweise an den aktuellen Ablauf angepasst, einschließlich Mehrfachauswahl bei **Individuell**, abschließender Entitätsübersicht und Bestätigung über **OK**.
+- Erklärung der Entitätsbenennung **Home-Assistant-Standard / Lokale API / Technisch** mit verständlichen Beispielen verbessert.
+- Lokale Home-Assistant-Branding-Dateien für Icon und Logo überarbeitet und an den aktuellen Integrationsauftritt angepasst.
+- Versehentlich eingecheckte Python-Cache-Dateien entfernt und über `.gitignore` dauerhaft ausgeschlossen.
+
 ## 0.9.3
 
 - Neuer letzter Schritt **Entitätsübersicht** bei Ersteinrichtung und Optionen: Vor dem Anwenden werden aktive/ausgewählte, abgewählte/beibehaltene und zur Registry-Löschung vorgesehene Punkt-Entitäten mit Name, Variable-ID und Einheit angezeigt.
