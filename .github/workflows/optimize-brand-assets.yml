@@ -22,50 +22,122 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Pillow
-        run: python -m pip install --disable-pip-version-check pillow
+      - name: Install image tools
+        run: python -m pip install --disable-pip-version-check pillow numpy
 
-      - name: Crop and resize light and dark logos identically
+      - name: Build pixel-aligned light and dark logos
         run: |
           python - <<'PY'
+          from collections import deque
           from pathlib import Path
+
+          import numpy as np
           from PIL import Image
 
           brand = Path('custom_components/nibe_local/brand')
+          source_path = brand / 'logo.png'
+          source = Image.open(source_path).convert('RGB')
+
+          if source.size != (1536, 512):
+              raise RuntimeError(f'logo.png: expected 1536x512, got {source.size}')
+
           crop_box = (112, 30, 1396, 482)
+          cropped = source.crop(crop_box)
+          arr = np.asarray(cropped).copy()
+          h, w, _ = arr.shape
+
+          # Build the dark asset FROM THE SAME LIGHT GEOMETRY. This guarantees
+          # that every object, line and text block stays at the same x/y position.
+          work = arr.astype(np.int16)
+          vmax = work.max(axis=2)
+          vmin = work.min(axis=2)
+          chroma = vmax - vmin
+          lum = (work[:, :, 0] * 299 + work[:, :, 1] * 587 + work[:, :, 2] * 114) // 1000
+
+          # Detect the bright neutral canvas connected to the outer image edges.
+          candidate = (lum > 178) & (chroma < 52)
+          connected = np.zeros((h, w), dtype=bool)
+          queue = deque()
+
+          for x in range(w):
+              if candidate[0, x]:
+                  connected[0, x] = True
+                  queue.append((0, x))
+              if candidate[h - 1, x] and not connected[h - 1, x]:
+                  connected[h - 1, x] = True
+                  queue.append((h - 1, x))
+          for y in range(h):
+              if candidate[y, 0] and not connected[y, 0]:
+                  connected[y, 0] = True
+                  queue.append((y, 0))
+              if candidate[y, w - 1] and not connected[y, w - 1]:
+                  connected[y, w - 1] = True
+                  queue.append((y, w - 1))
+
+          while queue:
+              y, x = queue.popleft()
+              for ny, nx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1)):
+                  if 0 <= ny < h and 0 <= nx < w and candidate[ny, nx] and not connected[ny, nx]:
+                      connected[ny, nx] = True
+                      queue.append((ny, nx))
+
+          dark = arr.copy().astype(np.float32)
+
+          # Subtle dark blue-gray background gradient, applied only to the canvas.
+          yy, xx = np.mgrid[0:h, 0:w]
+          t = (0.55 * xx / max(w - 1, 1) + 0.45 * yy / max(h - 1, 1))
+          bg_r = 12 + 8 * t
+          bg_g = 22 + 12 * t
+          bg_b = 32 + 14 * t
+          dark[connected, 0] = bg_r[connected]
+          dark[connected, 1] = bg_g[connected]
+          dark[connected, 2] = bg_b[connected]
+
+          # The complete text block is transformed from the light asset itself:
+          # neutral dark text -> light text; neutral light holes/background -> dark.
+          text_x = 600
+          right = xx >= text_x
+          neutral = chroma < 58
+          neutral_right = right & neutral
+          inv = 18.0 + (255.0 - lum.astype(np.float32)) / 255.0 * 226.0
+          for c in range(3):
+              dark[:, :, c][neutral_right] = inv[neutral_right]
+
+          # REST API badge: use the same neutral inversion so its interior and text
+          # match the dark theme while retaining the exact original geometry.
+          badge = (xx >= 300) & (xx <= 485) & (yy >= 275) & (yy <= 445) & neutral
+          for c in range(3):
+              dark[:, :, c][badge] = inv[badge]
+
+          dark = np.clip(dark, 0, 255).astype(np.uint8)
+          dark_cropped = Image.fromarray(dark, 'RGB')
+
+          # Home Assistant brand specification: shortest side 256 px normal,
+          # exactly doubled for the hDPI files. Both themes use identical sizes.
           normal_size = (727, 256)
           hdpi_size = (1454, 512)
 
-          sources = {
-              'logo.png': 'logo@2x.png',
-              'dark_logo.png': 'dark_logo@2x.png',
-          }
+          light_normal = cropped.resize(normal_size, Image.Resampling.LANCZOS)
+          dark_normal = dark_cropped.resize(normal_size, Image.Resampling.LANCZOS)
+          light_hdpi = cropped.resize(hdpi_size, Image.Resampling.LANCZOS)
+          dark_hdpi = dark_cropped.resize(hdpi_size, Image.Resampling.LANCZOS)
 
-          for source_name, hdpi_name in sources.items():
-              source_path = brand / source_name
-              image = Image.open(source_path).convert('RGB')
+          light_normal.save(brand / 'logo.png', format='PNG', optimize=True)
+          dark_normal.save(brand / 'dark_logo.png', format='PNG', optimize=True)
+          light_hdpi.save(brand / 'logo@2x.png', format='PNG', optimize=True)
+          dark_hdpi.save(brand / 'dark_logo@2x.png', format='PNG', optimize=True)
 
-              if image.size != (1536, 512):
-                  raise RuntimeError(
-                      f'{source_name}: expected original size 1536x512, got {image.size}'
-                  )
-
-              cropped = image.crop(crop_box)
-              normal = cropped.resize(normal_size, Image.Resampling.LANCZOS)
-              hdpi = cropped.resize(hdpi_size, Image.Resampling.LANCZOS)
-
-              normal.save(source_path, format='PNG', optimize=True)
-              hdpi.save(brand / hdpi_name, format='PNG', optimize=True)
-
-              print(f'{source_name}: {image.size} -> crop {cropped.size} -> {normal.size}')
-              print(f'{hdpi_name}: {hdpi.size}')
+          print(f'original master: {source.size}')
+          print(f'identical crop: {cropped.size}, box={crop_box}')
+          print(f'logo.png / dark_logo.png: {normal_size}')
+          print(f'logo@2x.png / dark_logo@2x.png: {hdpi_size}')
           PY
 
       - name: Verify matching geometry
         run: |
           python - <<'PY'
-          from PIL import Image
           from pathlib import Path
+          from PIL import Image
 
           brand = Path('custom_components/nibe_local/brand')
           pairs = [
