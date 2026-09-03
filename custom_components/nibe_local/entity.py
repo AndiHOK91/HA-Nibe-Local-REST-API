@@ -7,12 +7,50 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, PointDef
+from .const import (
+    DOMAIN,
+    ENTITY_NAMING_HOME_ASSISTANT,
+    ENTITY_NAMING_LOCAL_API,
+    ENTITY_NAMING_TECHNICAL,
+    PointDef,
+)
 from .coordinator import NibeCoordinator
 
 
 def _clean(text: str | None) -> str:
     return (text or "").replace("\u00ad", "").strip()
+
+
+
+def local_api_point_name(point: dict[str, Any]) -> str | None:
+    """Return the human-readable name supplied by the local REST API."""
+    metadata = point.get("metadata") or {}
+    for value in (
+        point.get("description"),
+        point.get("name"),
+        metadata.get("description"),
+        metadata.get("name"),
+    ):
+        cleaned = _clean(str(value)) if value not in (None, "") else ""
+        if cleaned:
+            return cleaned
+    return None
+
+
+def configured_point_name(
+    mode: str, point: dict[str, Any], definition: PointDef
+) -> str | None:
+    """Return an explicit point name for non-HA naming modes."""
+    if mode == ENTITY_NAMING_HOME_ASSISTANT:
+        return None
+    api_name = local_api_point_name(point)
+    fallback = definition.key.replace("_", " ")
+    base = api_name or fallback
+    if mode == ENTITY_NAMING_TECHNICAL:
+        return f"{base} [ID {definition.point_id}]"
+    if mode == ENTITY_NAMING_LOCAL_API:
+        return base
+    return None
 
 
 def point_value(point: dict[str, Any]) -> dict[str, Any]:
@@ -84,7 +122,14 @@ class NibePointEntity(CoordinatorEntity[NibeCoordinator]):
         super().__init__(coordinator)
         self.definition = definition
         self._attr_unique_id = entity_unique_id(coordinator, definition.point_id)
-        self._attr_translation_key = definition.key
+        explicit_name = configured_point_name(
+            coordinator.entity_naming, coordinator.point(definition.point_id) or {}, definition
+        )
+        if explicit_name is None:
+            self._attr_translation_key = definition.key
+        else:
+            self._attr_translation_key = None
+            self._attr_name = explicit_name
         if definition.diagnostic:
             self._attr_entity_category = EntityCategory.DIAGNOSTIC
 

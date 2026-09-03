@@ -24,6 +24,7 @@ from .coordinator import NibeCoordinator
 from .entity import (
     NibePointEntity,
     coordinator_device_info,
+    local_api_point_name,
     entity_unique_id,
     raw_value,
     scaled_value,
@@ -127,17 +128,10 @@ class NibeDiscoveredSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
 
     @property
     def name(self) -> str:
-        point = self.point
-        metadata = point.get("metadata") or {}
-        description = (
-            point.get("description")
-            or point.get("name")
-            or metadata.get("description")
-            or metadata.get("name")
-        )
-        if description:
-            return str(description).replace("\u00ad", "").strip()
-        return f"NIBE Variable {self.point_id}"
+        base = local_api_point_name(self.point) or f"Local API variable {self.point_id}"
+        if self.coordinator.entity_naming == "technical":
+            return f"{base} [ID {self.point_id}]"
+        return base
 
     @property
     def native_value(self):

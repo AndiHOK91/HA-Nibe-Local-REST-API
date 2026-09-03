@@ -25,14 +25,17 @@ from .const import (
     CONF_AUTH_HEADER,
     CONF_AUTH_METHOD,
     CONF_COMMAND_POLL_DELAY_MS,
+    CONF_ENTITY_NAMING,
     CONF_ENTITY_PROFILE,
     CONF_SCAN_INTERVAL,
     CONF_SELECTED_POINT_IDS,
     CONF_VERIFY_SSL,
     DEFAULT_COMMAND_POLL_DELAY_MS,
+    DEFAULT_ENTITY_NAMING,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    ENTITY_NAMING_MODES,
     MIN_SCAN_INTERVAL,
     NIBE_DEVICE_ID,
 )
@@ -41,6 +44,7 @@ from .profiles import (
     ENTITY_PROFILES,
     PROFILE_INDIVIDUAL,
     normalize_selected_ids,
+    profile_counts,
 )
 
 _AUTH_KEYS = (CONF_AUTH_METHOD, CONF_USERNAME, CONF_PASSWORD, CONF_AUTH_HEADER)
@@ -115,6 +119,15 @@ def _entity_profile_selector() -> SelectSelector:
     )
 
 
+def _entity_naming_selector() -> SelectSelector:
+    return SelectSelector(
+        SelectSelectorConfig(
+            options=list(ENTITY_NAMING_MODES),
+            translation_key="entity_naming",
+        )
+    )
+
+
 def _connection_schema(
     defaults: dict,
     *,
@@ -166,6 +179,12 @@ def _options_schema(current: dict) -> vol.Schema:
             default=current.get(CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE),
         )
     ] = _entity_profile_selector()
+    fields[
+        vol.Required(
+            CONF_ENTITY_NAMING,
+            default=current.get(CONF_ENTITY_NAMING, DEFAULT_ENTITY_NAMING),
+        )
+    ] = _entity_naming_selector()
     return vol.Schema(fields)
 
 
@@ -315,10 +334,15 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             profile = str(user_input[CONF_ENTITY_PROFILE])
             self._pending_data[CONF_ENTITY_PROFILE] = profile
+            self._pending_data[CONF_ENTITY_NAMING] = str(
+                user_input.get(CONF_ENTITY_NAMING, DEFAULT_ENTITY_NAMING)
+            )
             if profile == PROFILE_INDIVIDUAL:
                 return await self.async_step_entity_selection()
             return self._create_pending_entry()
 
+        points = self._available_points or {}
+        counts = profile_counts(points.keys())
         return self.async_show_form(
             step_id="entity_profile",
             data_schema=vol.Schema(
@@ -326,9 +350,20 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(
                         CONF_ENTITY_PROFILE,
                         default=DEFAULT_ENTITY_PROFILE,
-                    ): _entity_profile_selector()
+                    ): _entity_profile_selector(),
+                    vol.Required(
+                        CONF_ENTITY_NAMING,
+                        default=DEFAULT_ENTITY_NAMING,
+                    ): _entity_naming_selector(),
                 }
             ),
+            description_placeholders={
+                "minimal": str(counts["minimal"]),
+                "standard": str(counts["standard"]),
+                "extended": str(counts["extended"]),
+                "complete": str(counts["complete"]),
+                "individual": str(counts["individual"]),
+            },
         )
 
     async def async_step_entity_selection(self, user_input=None):
@@ -419,6 +454,12 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
                 )
             )
             candidate[CONF_ENTITY_PROFILE] = profile
+            candidate[CONF_ENTITY_NAMING] = str(
+                user_input.get(
+                    CONF_ENTITY_NAMING,
+                    current.get(CONF_ENTITY_NAMING, DEFAULT_ENTITY_NAMING),
+                )
+            )
             try:
                 _device, points = await _validate_and_discover(self.hass, candidate)
             except NibeAuthError:

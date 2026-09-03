@@ -80,6 +80,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         instance_id: str | None = None,
         entity_profile: str = DEFAULT_ENTITY_PROFILE,
         selected_point_ids=None,
+        entity_naming: str = "home_assistant",
     ) -> None:
         super().__init__(
             hass,
@@ -93,6 +94,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.instance_id = instance_id or api.device_id
         self.entity_profile = entity_profile
         self.selected_point_ids = tuple(selected_point_ids or ())
+        self.entity_naming = entity_naming
         self._fallback_failure_streak = 0
         self._next_fallback_attempt = 0.0
         self._connection_failure_started_at: float | None = None

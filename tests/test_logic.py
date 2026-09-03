@@ -44,7 +44,13 @@ from custom_components.nibe_local.coordinator import (
     merge_point_updates,
     should_skip_fallback_scan,
 )
-from custom_components.nibe_local.entity import entity_unique_id, scaled_value, to_raw
+from custom_components.nibe_local.entity import (
+    configured_point_name,
+    entity_unique_id,
+    local_api_point_name,
+    scaled_value,
+    to_raw,
+)
 from custom_components.nibe_local.number import metadata_limits, value_is_representable
 from custom_components.nibe_local.profiles import (
     DEFAULT_ENTITY_PROFILE,
@@ -54,6 +60,7 @@ from custom_components.nibe_local.profiles import (
     PROFILE_MINIMAL,
     PROFILE_STANDARD,
     point_enabled,
+    profile_counts,
 )
 from custom_components.nibe_local.select import (
     NibePointSelect,
@@ -615,3 +622,22 @@ def test_runtime_translations_are_complete_in_de_and_en() -> None:
         assert _RUNTIME_EXCEPTION_KEYS <= set(payload["exceptions"])
         for key in _RUNTIME_EXCEPTION_KEYS:
             assert payload["exceptions"][key]["message"]
+
+
+def test_local_api_and_technical_entity_names() -> None:
+    from custom_components.nibe_local.const import PointDef
+
+    point = {"description": "Current outdoor temperature (BT1)", "metadata": {}}
+    definition = PointDef(4, "outdoor_temperature_bt1", "heating")
+    assert local_api_point_name(point) == "Current outdoor temperature (BT1)"
+    assert configured_point_name("home_assistant", point, definition) is None
+    assert configured_point_name("local_api", point, definition) == "Current outdoor temperature (BT1)"
+    assert configured_point_name("technical", point, definition) == "Current outdoor temperature (BT1) [ID 4]"
+
+
+def test_profile_counts_only_count_available_points() -> None:
+    counts = profile_counts([4, 8, 10, 3096, 999999])
+    assert counts["minimal"] == 4
+    assert counts["standard"] == 4
+    assert counts["complete"] == 5
+    assert counts["individual"] == 5

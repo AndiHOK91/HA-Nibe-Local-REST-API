@@ -73,3 +73,15 @@ def point_enabled(
         return point_id in STANDARD_POINT_IDS
     # Extended is also the compatibility fallback for pre-0.9 entries.
     return point_id in KNOWN_POINT_IDS
+
+
+def profile_counts(available_ids: Iterable[object]) -> dict[str, int]:
+    """Return how many discovered variables are active in each automatic profile."""
+    available = normalize_selected_ids(available_ids)
+    return {
+        PROFILE_MINIMAL: len(available & MINIMAL_POINT_IDS),
+        PROFILE_STANDARD: len(available & STANDARD_POINT_IDS),
+        PROFILE_EXTENDED: len(available & KNOWN_POINT_IDS),
+        PROFILE_COMPLETE: len(available),
+        PROFILE_INDIVIDUAL: len(available),
+    }

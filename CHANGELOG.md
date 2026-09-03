@@ -4,6 +4,8 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 
 ## 0.9.0
 
+- Bei der Einrichtung und in den Optionen kann die Entitätsbenennung zwischen **Home-Assistant-Standard**, **Lokale API** und **Technisch** gewählt werden. Home Assistant behält die Kontrolle über das endgültige Entity-ID-Format.
+- Die Profilauswahl zeigt die Anzahl der auf dem verbundenen Gerät tatsächlich verfügbaren Variablen für Minimal, Standard, Erweitert, Komplett und Individuell an.
 - Neue Entitätsprofile **Minimal**, **Standard**, **Erweitert**, **Komplett** und **Individuell** bei der Einrichtung.
 - Nach erfolgreicher Authentifizierung liest der Config Flow die aktuell verfügbaren NIBE-Variablen ein; bei **Individuell** können die gewünschten Variablen per Mehrfachauswahl festgelegt werden.
 - Die Profilwahl und individuelle Variable-IDs werden dauerhaft im Config Entry gespeichert und bleiben bei Neustarts, Reloads und Integrationsupdates erhalten.
