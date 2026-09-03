@@ -1,0 +1,70 @@
+name: Replace brand icons
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/replace-brand-icons.yml'
+permissions:
+  contents: write
+jobs:
+  replace:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Build matching icon variants
+        shell: python
+        run: |
+          from pathlib import Path
+          from PIL import Image
+          import base64
+
+          encoded = '''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'''
+          raw = base64.b64decode(encoded)
+          tmp = Path('/tmp/nibe_icon.png')
+          tmp.write_bytes(raw)
+          base = Image.open(tmp).convert('RGBA')
+          if base.size != (256, 256):
+              base = base.resize((256, 256), Image.Resampling.LANCZOS)
+          x2 = base.resize((512, 512), Image.Resampling.LANCZOS)
+          brand = Path('custom_components/nibe_local/brand')
+          for name in ('icon.png', 'dark_icon.png'):
+              base.save(brand / name, optimize=True)
+          for name in ('icon@2x.png', 'dark_icon@2x.png'):
+              x2.save(brand / name, optimize=True)
+      - name: Verify icons
+        shell: python
+        run: |
+          from pathlib import Path
+          from PIL import Image
+          brand = Path('custom_components/nibe_local/brand')
+          expected = {
+              'icon.png': (256, 256),
+              'dark_icon.png': (256, 256),
+              'icon@2x.png': (512, 512),
+              'dark_icon@2x.png': (512, 512),
+          }
+          for name, size in expected.items():
+              image = Image.open(brand / name)
+              assert image.size == size, (name, image.size)
+              assert image.mode in ('RGBA', 'P'), (name, image.mode)
+          assert (brand / 'icon.png').read_bytes() == (brand / 'dark_icon.png').read_bytes()
+          assert (brand / 'icon@2x.png').read_bytes() == (brand / 'dark_icon@2x.png').read_bytes()
+      - name: Commit icon replacement
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add custom_components/nibe_local/brand/icon.png custom_components/nibe_local/brand/icon@2x.png custom_components/nibe_local/brand/dark_icon.png custom_components/nibe_local/brand/dark_icon@2x.png
+          git commit -m 'Replace brand icons with unified transparent icon'
+          git push
+      - name: Remove temporary workflow
+        if: success()
+        run: |
+          git pull --rebase
+          git rm .github/workflows/replace-brand-icons.yml
+          git commit -m 'Remove one-time brand icon workflow'
+          git push
