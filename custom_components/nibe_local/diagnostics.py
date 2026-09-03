@@ -21,6 +21,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
 )
 from .coordinator import NibeCoordinator
+from .entity import device_product_details
 from .profiles import DEFAULT_ENTITY_PROFILE
 
 _POINT_METADATA_KEYS = (
@@ -34,16 +35,6 @@ _POINT_METADATA_KEYS = (
     "maxValue",
     "divisor",
     "step",
-)
-
-_DEVICE_METADATA_KEYS = (
-    "product",
-    "productName",
-    "model",
-    "modelName",
-    "softwareVersion",
-    "firmwareVersion",
-    "version",
 )
 
 
@@ -63,10 +54,16 @@ def _safe_point_metadata(point: Any) -> dict[str, Any]:
 
 
 def _safe_device_metadata(device: Any) -> dict[str, Any]:
-    """Return allowlisted device metadata and avoid serial/network identifiers."""
-    if not isinstance(device, dict):
-        return {}
-    return {key: device[key] for key in _DEVICE_METADATA_KEYS if key in device}
+    """Return normalized device metadata without serial/network identifiers."""
+    details = device_product_details(device)
+    result: dict[str, Any] = {}
+    if details["manufacturer"]:
+        result["manufacturer"] = details["manufacturer"]
+    if details["name"]:
+        result["model"] = details["name"]
+    if details["software_version"]:
+        result["software_version"] = details["software_version"]
+    return result
 
 
 def _alarm_count(notifications: Any) -> int:
