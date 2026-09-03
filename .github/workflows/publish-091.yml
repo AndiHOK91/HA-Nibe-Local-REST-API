@@ -1,0 +1,57 @@
+name: Publish v0.9.1
+
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-091.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate release state
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('custom_components/nibe_local/manifest.json').read_text(encoding='utf-8'))
+          assert manifest['version'] == '0.9.1', manifest['version']
+          assert '## 0.9.1' in Path('CHANGELOG.md').read_text(encoding='utf-8')
+          assert 'Aktuelle Integrationsversion: **0.9.1**' in Path('README.md').read_text(encoding='utf-8')
+          PY
+          if git ls-remote --tags origin refs/tags/v0.9.1 | grep -q .; then
+            echo 'Tag v0.9.1 already exists' >&2
+            exit 1
+          fi
+      - name: Remove publisher and create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'AndiO91'
+          git config user.email '60509228+AndiO91@users.noreply.github.com'
+          rm -f .github/workflows/publish-091.yml
+          git add .github/workflows/publish-091.yml
+          git commit -m 'Prepare v0.9.1 release'
+          git push
+          RELEASE_SHA=$(git rev-parse HEAD)
+          gh release create v0.9.1 \
+            --target "$RELEASE_SHA" \
+            --title 'v0.9.1' \
+            --notes-file - <<'EOF'
+          ## NIBE Local REST API 0.9.1
+
+          UX-Verbesserung für das Profil **Individuell**.
+
+          - Individuelle Variablen werden jetzt als direkt anklickbare Mehrfachliste im Home-Assistant-Listenmodus angezeigt.
+          - Die Auswahl ist für Mehrfachauswahl per Checkbox ausgelegt.
+          - Bekannte Punkte zeigen den lokalisierten Home-Assistant-Namen zusammen mit Variable-ID und Einheit.
+          - Bei unbekannten Punkten wird ein von der lokalen NIBE-API gelieferter Name verwendet, sofern vorhanden.
+          - Gespeichert werden weiterhin stabile numerische Variable-IDs; bestehende Auswahlwerte aus 0.9.0 bleiben kompatibel.
+          - Verifiziert mit Home Assistant 2024.12.0 und der aktuellen Home-Assistant-Version.
+          EOF
