@@ -4,7 +4,7 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 
 ## 0.8.0 (in Entwicklung)
 
-- Das lokale Branding verwendet jetzt eine kompakte quadratische Bildmarke, damit es in Home Assistant deutlich größer dargestellt wird. Die hellen Icon- und Logo-Varianten besitzen einen vollständig transparenten Hintergrund; alle Branding-Dateien liegen zusätzlich in passenden 1x-/2x-Auflösungen vor.
+- Die hellen Icon-Varianten besitzen jetzt einen vollständig transparenten Hintergrund.
 - Die NIBE-Geräte-ID ist jetzt fest auf `0` gesetzt und wird weder bei der Einrichtung noch in den Optionen angeboten.
 - Eine explizite Authentifizierungsmethode trennt **Benutzername + Passwort** und **Authorization-Header**. Beim Methodenwechsel werden Zugangsdaten der inaktiven Methode entfernt; bestehende Einträge ohne Methodenfeld werden kompatibel anhand des vorhandenen Headers eingeordnet.
 - Der Reauthentifizierungsdialog fragt nur noch die Zugangsdaten der aktiven Authentifizierungsmethode ab.
