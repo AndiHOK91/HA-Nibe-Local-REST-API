@@ -18,7 +18,9 @@ from custom_components.nibe_local.api import (
     NibeLocalApi,
 )
 from custom_components.nibe_local.config_flow import (
+    _basic_auth_schema,
     _connection_schema,
+    _header_auth_schema,
     _reauth_schema,
     auth_method_from_values,
     merge_auth_settings,
@@ -641,3 +643,22 @@ def test_profile_counts_only_count_available_points() -> None:
     assert counts["standard"] == 4
     assert counts["complete"] == 5
     assert counts["individual"] == 5
+
+
+def test_connection_form_contains_no_credentials() -> None:
+    schema = _connection_schema({}).schema
+    keys = {marker.schema for marker in schema}
+    assert CONF_USERNAME not in keys
+    assert CONF_PASSWORD not in keys
+    assert CONF_AUTH_HEADER not in keys
+    assert CONF_AUTH_METHOD in keys
+
+
+def test_basic_auth_form_only_contains_basic_credentials() -> None:
+    keys = {marker.schema for marker in _basic_auth_schema({}).schema}
+    assert keys == {CONF_USERNAME, CONF_PASSWORD}
+
+
+def test_header_auth_form_only_contains_header() -> None:
+    keys = {marker.schema for marker in _header_auth_schema().schema}
+    assert keys == {CONF_AUTH_HEADER}
