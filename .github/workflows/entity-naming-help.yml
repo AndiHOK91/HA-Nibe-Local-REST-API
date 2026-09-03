@@ -1,0 +1,52 @@
+name: Add entity naming help
+
+on:
+  push:
+    paths:
+      - '.github/workflows/entity-naming-help.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Add naming descriptions
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          texts = {
+              'de': 'Legt fest, welchen Anzeigenamen die Integration an Home Assistant übergibt:\n• Home-Assistant-Standard (empfohlen): übersetzte, gut lesbare Namen, z. B. „Außentemperatur (BT1)“.\n• Lokale API: Name/Beschreibung direkt aus der lokalen NIBE-API, z. B. „Current outdoor temperature (BT1)“.\n• Technisch: API-Name zusätzlich mit Variable-ID, z. B. „Current outdoor temperature (BT1) [ID 4]“.',
+              'en': 'Controls which display name the integration provides to Home Assistant:\n• Home Assistant standard (recommended): translated, easy-to-read names, e.g. “Outdoor temperature (BT1)”.\n• Local API: name/description directly from the local NIBE API, e.g. “Current outdoor temperature (BT1)”.\n• Technical: API name plus variable ID, e.g. “Current outdoor temperature (BT1) [ID 4]”.',
+          }
+
+          for lang, text in texts.items():
+              path = Path(f'custom_components/nibe_local/translations/{lang}.json')
+              data = json.loads(path.read_text(encoding='utf-8'))
+              cfg = data['config']['step']['entity_profile']
+              cfg.setdefault('data_description', {})['entity_naming'] = text
+              opts = data['options']['step']['init']
+              opts.setdefault('data_description', {})['entity_naming'] = text
+              path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+          PY
+      - name: Validate translations
+        run: |
+          python -m json.tool custom_components/nibe_local/translations/de.json >/dev/null
+          python -m json.tool custom_components/nibe_local/translations/en.json >/dev/null
+      - name: Commit changes
+        run: |
+          git config user.name 'AndiO91'
+          git config user.email '60509228+AndiO91@users.noreply.github.com'
+          rm -f .github/workflows/entity-naming-help.yml
+          git add custom_components/nibe_local/translations/de.json \
+                  custom_components/nibe_local/translations/en.json \
+                  .github/workflows/entity-naming-help.yml
+          git commit -m 'Explain entity naming modes with examples'
+          git push
