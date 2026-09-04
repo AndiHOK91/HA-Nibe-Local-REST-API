@@ -770,5 +770,5 @@ Dieser Hinweis ergänzt den Haftungs- und Gewährleistungsausschluss der **MIT-L
 
 ## 👥 Autoren
 
-- AndiO91
+- AndiHOK91
 - ChatGPT (OpenAI) – Unterstützung bei Entwicklung, REST-API-Auswertung, Tests und Home-Assistant-Integration
