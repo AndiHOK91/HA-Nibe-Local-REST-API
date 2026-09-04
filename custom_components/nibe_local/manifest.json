@@ -2,10 +2,10 @@
   "domain": "nibe_local",
   "name": "NIBE Local REST API",
   "version": "0.9.4.1",
-  "documentation": "https://github.com/AndiO91/HA-Nibe-Local-REST-API",
-  "issue_tracker": "https://github.com/AndiO91/HA-Nibe-Local-REST-API/issues",
+  "documentation": "https://github.com/AndiHOK91/HA-Nibe-Local-REST-API",
+  "issue_tracker": "https://github.com/AndiHOK91/HA-Nibe-Local-REST-API/issues",
   "codeowners": [
-    "@AndiO91"
+    "@AndiHOK91"
   ],
   "config_flow": true,
   "iot_class": "local_polling",
