@@ -124,6 +124,12 @@ HOT_WATER_CIRCULATION_POINT_IDS = frozenset(
     }
 )
 
+# 5200 and 7048 are REST variable IDs from menu 7.2.1
+# "Zubehör hinzufügen/entfernen":
+#   5200 = Energiezähler Impuls (BE6/BF2)
+#   7048 = Energiezähler Impuls (BE7/BF3)
+# Their value is the authoritative equipment-detection signal. Modbus metadata
+# embedded in REST point metadata is intentionally not used for detection.
 BE6_POINT_IDS = frozenset({829, 5200})
 BE7_POINT_IDS = frozenset({7048})
 
@@ -216,33 +222,14 @@ def _looks_like_ventilation_point(point: dict[str, Any] | None) -> bool:
     )
 
 
-def _modbus_input_register(point: dict[str, Any] | None, register_id: int) -> bool:
-    if not isinstance(point, dict):
-        return False
-    metadata = point.get("metadata") or {}
-    register_type = str(metadata.get("modbusRegisterType") or "").upper()
-    try:
-        current_id = int(metadata.get("modbusRegisterID"))
-    except (TypeError, ValueError):
-        return False
-    return current_id == register_id and "INPUT" in register_type
-
-
 def detect_equipment(points: dict[str, Any]) -> frozenset[str]:
-    """Detect installed optional equipment from the current NIBE configuration."""
+    """Detect installed optional equipment from REST point values only."""
     detected: set[str] = set()
 
-    # Explicit accessory switches have priority over measurement fallbacks.
-    if "5200" in points:
-        if _is_enabled_flag(points.get("5200")):
-            detected.add(EQUIPMENT_BE6)
-    elif "829" in points:
+    if _is_enabled_flag(points.get("5200")):
         detected.add(EQUIPMENT_BE6)
 
-    if "7048" in points:
-        if _is_enabled_flag(points.get("7048")):
-            detected.add(EQUIPMENT_BE7)
-    elif any(_modbus_input_register(point, 396) for point in points.values()):
+    if _is_enabled_flag(points.get("7048")):
         detected.add(EQUIPMENT_BE7)
 
     ers_accessory_seen = False
@@ -292,7 +279,7 @@ def point_allowed_by_equipment(
 
     if point_id in BE6_POINT_IDS or "be6" in text:
         return EQUIPMENT_BE6 in enabled
-    if point_id in BE7_POINT_IDS or "be7" in text or _modbus_input_register(point, 396):
+    if point_id in BE7_POINT_IDS or "be7" in text:
         return EQUIPMENT_BE7 in enabled
     if point_id in HOT_WATER_CIRCULATION_POINT_IDS:
         return EQUIPMENT_HOT_WATER_CIRCULATION in enabled
