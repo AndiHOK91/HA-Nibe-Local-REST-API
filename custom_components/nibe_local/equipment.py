@@ -179,8 +179,7 @@ def _point_text(point: dict[str, Any] | None) -> str:
 
 
 def _is_enabled_flag(point: dict[str, Any] | None) -> bool:
-    value = _numeric_value(point)
-    return value == 1
+    return _numeric_value(point) == 1
 
 
 def _is_ers_accessory(point_id: int, point: dict[str, Any] | None) -> bool:
@@ -233,30 +232,47 @@ def detect_equipment(points: dict[str, Any]) -> frozenset[str]:
     """Detect installed optional equipment from the current NIBE configuration."""
     detected: set[str] = set()
 
-    if _is_enabled_flag(points.get("5200")) or "829" in points:
+    # Explicit accessory switches have priority over measurement fallbacks.
+    if "5200" in points:
+        if _is_enabled_flag(points.get("5200")):
+            detected.add(EQUIPMENT_BE6)
+    elif "829" in points:
         detected.add(EQUIPMENT_BE6)
 
-    if _is_enabled_flag(points.get("7048")) or any(
-        _modbus_input_register(point, 396) for point in points.values()
-    ):
+    if "7048" in points:
+        if _is_enabled_flag(points.get("7048")):
+            detected.add(EQUIPMENT_BE7)
+    elif any(_modbus_input_register(point, 396) for point in points.values()):
         detected.add(EQUIPMENT_BE7)
 
+    ers_accessory_seen = False
     for point_id, point in points.items():
         try:
             numeric_id = int(point_id)
         except (TypeError, ValueError):
             continue
-        if _is_ers_accessory(numeric_id, point) and _is_enabled_flag(point):
+        if not _is_ers_accessory(numeric_id, point):
+            continue
+        ers_accessory_seen = True
+        if _is_enabled_flag(point):
             detected.add(EQUIPMENT_VENTILATION)
             break
-    else:
-        if any(str(point_id) in points for point_id in ERS_RUNTIME_HINT_POINT_IDS):
-            detected.add(EQUIPMENT_VENTILATION)
+
+    if (
+        EQUIPMENT_VENTILATION not in detected
+        and not ers_accessory_seen
+        and any(str(point_id) in points for point_id in ERS_RUNTIME_HINT_POINT_IDS)
+    ):
+        detected.add(EQUIPMENT_VENTILATION)
 
     x27 = points.get("3959")
     x27_value = _raw_value(x27)
     x27_text = str(x27_value or "").lower()
-    if _numeric_value(x27) == 3 or "bw-zirk" in x27_text or "hot water circulation" in x27_text:
+    if (
+        _numeric_value(x27) == 3
+        or "bw-zirk" in x27_text
+        or "hot water circulation" in x27_text
+    ):
         detected.add(EQUIPMENT_HOT_WATER_CIRCULATION)
 
     return frozenset(detected)

@@ -51,6 +51,14 @@ def test_detects_dump_equipment_without_menu_requests() -> None:
     )
 
 
+def test_explicit_be6_accessory_off_wins_over_measurement_fallback() -> None:
+    points = {
+        "5200": _point(0, name="Energiezähler Impuls (BE6/BF2)"),
+        "829": _point(123, name="Energiezähler Impuls (BE6)"),
+    }
+    assert EQUIPMENT_BE6 not in detect_equipment(points)
+
+
 def test_detects_other_ers_models_by_accessory_name() -> None:
     points = {
         "99991": _point(1, name="ERS S10 1"),
@@ -58,7 +66,15 @@ def test_detects_other_ers_models_by_accessory_name() -> None:
     assert EQUIPMENT_VENTILATION in detect_equipment(points)
 
 
-def test_detects_be7_by_modbus_input_register_when_available() -> None:
+def test_explicit_ers_accessory_off_wins_over_runtime_fallback() -> None:
+    points = {
+        "99991": _point(0, name="ERS S10 1"),
+        "7934": _point(278, name="Abluft (AZ30-BT20)"),
+    }
+    assert EQUIPMENT_VENTILATION not in detect_equipment(points)
+
+
+def test_detects_be7_by_modbus_input_register_when_config_flag_is_absent() -> None:
     points = {
         "99992": _point(
             1234,
@@ -68,6 +84,19 @@ def test_detects_be7_by_modbus_input_register_when_available() -> None:
         )
     }
     assert EQUIPMENT_BE7 in detect_equipment(points)
+
+
+def test_explicit_be7_accessory_off_wins_over_register_fallback() -> None:
+    points = {
+        "7048": _point(0, name="Energiezähler Impuls (BE7/BF3)"),
+        "99992": _point(
+            1234,
+            name="Energy meter BE7",
+            register_type="MODBUS_INPUT_REGISTER",
+            register_id=396,
+        ),
+    }
+    assert EQUIPMENT_BE7 not in detect_equipment(points)
 
 
 def test_forced_control_menu_is_always_excluded() -> None:
