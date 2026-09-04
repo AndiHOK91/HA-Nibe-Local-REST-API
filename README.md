@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-Anlage über die **lokale REST API** d
 
 Die Integration wurde für eine Anlage mit **VVM S320, S2125 und ERS S40-400** entwickelt und wird dort im realen Betrieb getestet. Andere Geräte oder Anlagenkonfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.9.3**
+Aktuelle Integrationsversion: **0.9.4.1**
 
 ---
 
