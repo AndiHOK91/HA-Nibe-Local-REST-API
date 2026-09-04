@@ -151,7 +151,8 @@ def _entity_naming_selector() -> SelectSelector:
 
 
 def _is_german(hass) -> bool:
-    return str(getattr(hass.config, "language", "")).lower().startswith("de")
+    config = getattr(hass, "config", None)
+    return str(getattr(config, "language", "")).lower().startswith("de")
 
 
 def _equipment_form_key(hass) -> str:
@@ -244,7 +245,7 @@ def _header_auth_schema(*, auth_header_default: str = "") -> vol.Schema:
     )
 
 
-def _options_schema(current: dict, hass) -> vol.Schema:
+def _options_schema(current: dict, hass=None) -> vol.Schema:
     fields = dict(_connection_schema(current).schema)
     fields[
         vol.Required(
@@ -271,8 +272,6 @@ def _options_schema(current: dict, hass) -> vol.Schema:
 
 async def _async_create_cleanup_backup(hass) -> None:
     """Create and await the safest available Home Assistant backup before cleanup."""
-    # Home Assistant OS / Supervised (including 2024.12) exposes a full
-    # Supervisor backup service. With blocking=True this waits for the call.
     if hass.services.has_service("hassio", "backup_full"):
         await hass.services.async_call(
             "hassio",
@@ -282,15 +281,10 @@ async def _async_create_cleanup_backup(hass) -> None:
         )
         return
 
-    # Core / Container exposes backup.create. In 2024.12 the service handler
-    # directly awaits BackupManager.async_create_backup().
     if hass.services.has_service("backup", "create"):
         await hass.services.async_call("backup", "create", {}, blocking=True)
         return
 
-    # Newer Home Assistant releases have a public backup manager API that can
-    # await an automatic backup to completion. Import lazily for compatibility
-    # with 2024.12 where this helper did not exist.
     try:
         from homeassistant.components.backup import async_get_backup_manager
     except ImportError:
@@ -392,7 +386,7 @@ async def _validate_and_discover(hass, values: dict) -> tuple[dict, dict[str, An
 
 
 def _known_point_fallback_name(point_id: str) -> str | None:
-    'Return a readable fallback name for a curated point.'
+    """Return a readable fallback name for a curated point."""
     if not str(point_id).isdigit():
         return None
     numeric_id = int(point_id)
@@ -405,7 +399,7 @@ def _known_point_fallback_name(point_id: str) -> str | None:
 
 
 async def _async_translated_point_names(hass) -> dict[int, str]:
-    'Load localized Home Assistant names for curated NIBE points.'
+    """Load localized Home Assistant names for curated NIBE points."""
     resources = await async_get_translations(
         hass,
         hass.config.language,
@@ -428,7 +422,7 @@ def _point_label(
     point: dict[str, Any],
     point_names: dict[int, str] | None = None,
 ) -> str:
-    'Build a human-readable selection label with name, ID and unit.'
+    """Build a human-readable selection label with name, ID and unit."""
     metadata = point.get("metadata") or {}
     numeric_id = int(point_id) if str(point_id).isdigit() else None
     translated_name = (
@@ -480,7 +474,7 @@ def _selected_options(points: dict[str, Any], selected_ids) -> list[str]:
 
 
 def _parse_selected_options(values) -> list[int]:
-    'Parse new ID values and legacy labels from earlier 0.9.0 forms.'
+    """Parse new ID values and legacy labels from earlier 0.9.0 forms."""
     point_ids: set[int] = set()
     for value in values or ():
         text = str(value).strip()
@@ -707,8 +701,6 @@ async def _async_entity_preview_placeholders(
 
 
 class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    # Keep the config-entry schema version at 1. The additional fields are
-    # optional and existing entries retain their former entity behavior.
     VERSION = 1
 
     _reauth_entry: ConfigEntry | None = None
