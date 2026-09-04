@@ -15,6 +15,12 @@ from homeassistant.util import dt as dt_util
 
 from .api import NibeApiError, NibeAuthError, NibeLocalApi, async_resolve_host_ip
 from .const import DOMAIN, POINTS
+from .equipment import (
+    ALL_EQUIPMENT,
+    filter_points_for_equipment,
+    normalize_equipment,
+    point_allowed_by_equipment,
+)
 from .profiles import DEFAULT_ENTITY_PROFILE, point_enabled
 
 _LOGGER = logging.getLogger(__name__)
@@ -81,6 +87,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         entity_profile: str = DEFAULT_ENTITY_PROFILE,
         selected_point_ids=None,
         entity_naming: str = "home_assistant",
+        equipment=None,
     ) -> None:
         super().__init__(
             hass,
@@ -95,6 +102,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.entity_profile = entity_profile
         self.selected_point_ids = tuple(selected_point_ids or ())
         self.entity_naming = entity_naming
+        self.equipment = tuple(normalize_equipment(equipment))
         self._fallback_failure_streak = 0
         self._next_fallback_attempt = 0.0
         self._connection_failure_started_at: float | None = None
@@ -194,6 +202,9 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _async_update_data(self) -> dict[str, Any]:
         try:
             points = await self.api.get_points()
+            # Service/forced-control variables from menu 7.5.3 are never part
+            # of the integration, even when the API reports them.
+            points = filter_points_for_equipment(points, ALL_EQUIPMENT)
             if points:
                 self.bulk_fallback_active = False
                 if self._fallback_failure_streak:
@@ -283,6 +294,10 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Return whether this point should be exposed as an entity."""
         return point_enabled(
             self.entity_profile, point_id, self.selected_point_ids
+        ) and point_allowed_by_equipment(
+            point_id,
+            self.equipment,
+            self.point(point_id),
         )
 
     @property

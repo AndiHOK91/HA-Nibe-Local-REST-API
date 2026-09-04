@@ -25,6 +25,7 @@ from .const import (
     DOMAIN,
 )
 from .coordinator import NibeCoordinator
+from .equipment import CONF_EQUIPMENT
 from .profiles import DEFAULT_ENTITY_PROFILE
 
 
@@ -80,6 +81,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         entity_profile=data.get(CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE),
         selected_point_ids=data.get(CONF_SELECTED_POINT_IDS, ()),
         entity_naming=data.get(CONF_ENTITY_NAMING, DEFAULT_ENTITY_NAMING),
+        equipment=data.get(CONF_EQUIPMENT),
     )
     await coordinator.async_config_entry_first_refresh()
     await _async_migrate_entity_unique_ids(hass, entry)
