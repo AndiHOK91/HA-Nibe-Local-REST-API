@@ -45,6 +45,18 @@ from .const import (
     POINTS,
     POINT_VENTILATION_MODE,
 )
+from .equipment import (
+    CONF_EQUIPMENT,
+    EQUIPMENT_BE6,
+    EQUIPMENT_BE7,
+    EQUIPMENT_HOT_WATER_CIRCULATION,
+    EQUIPMENT_OPTIONS,
+    EQUIPMENT_VENTILATION,
+    detect_equipment,
+    filter_points_for_equipment,
+    normalize_equipment,
+    point_allowed_by_equipment,
+)
 from .profiles import (
     DEFAULT_ENTITY_PROFILE,
     ENTITY_PROFILES,
@@ -138,6 +150,53 @@ def _entity_naming_selector() -> SelectSelector:
     )
 
 
+def _is_german(hass) -> bool:
+    return str(getattr(hass.config, "language", "")).lower().startswith("de")
+
+
+def _equipment_form_key(hass) -> str:
+    """Use a readable transient form key without adding persisted translation keys."""
+    return "Ausstattung" if _is_german(hass) else "Equipment"
+
+
+def _ordered_equipment(values) -> list[str]:
+    enabled = normalize_equipment(values, legacy_default=False)
+    return [value for value in EQUIPMENT_OPTIONS if value in enabled]
+
+
+def _equipment_selector(hass, *, detected=()) -> SelectSelector:
+    german = _is_german(hass)
+    detected_values = normalize_equipment(detected, legacy_default=False)
+    labels_de = {
+        EQUIPMENT_BE6: "Energiezähler BE6",
+        EQUIPMENT_BE7: "Energiezähler BE7",
+        EQUIPMENT_VENTILATION: "Lüftungsanlage / ERS",
+        EQUIPMENT_HOT_WATER_CIRCULATION: "Brauchwasserzirkulation",
+    }
+    labels_en = {
+        EQUIPMENT_BE6: "Energy meter BE6",
+        EQUIPMENT_BE7: "Energy meter BE7",
+        EQUIPMENT_VENTILATION: "Ventilation / ERS",
+        EQUIPMENT_HOT_WATER_CIRCULATION: "Hot-water circulation",
+    }
+    labels = labels_de if german else labels_en
+    suffix = " (erkannt)" if german else " (detected)"
+    options = [
+        {
+            "value": value,
+            "label": labels[value] + (suffix if value in detected_values else ""),
+        }
+        for value in EQUIPMENT_OPTIONS
+    ]
+    return SelectSelector(
+        SelectSelectorConfig(
+            options=options,
+            multiple=True,
+            mode=SelectSelectorMode.LIST,
+        )
+    )
+
+
 def _connection_schema(defaults: dict) -> vol.Schema:
     """Connection settings shown before method-specific credentials."""
     return vol.Schema(
@@ -185,7 +244,7 @@ def _header_auth_schema(*, auth_header_default: str = "") -> vol.Schema:
     )
 
 
-def _options_schema(current: dict) -> vol.Schema:
+def _options_schema(current: dict, hass) -> vol.Schema:
     fields = dict(_connection_schema(current).schema)
     fields[
         vol.Required(
@@ -199,6 +258,12 @@ def _options_schema(current: dict) -> vol.Schema:
             default=current.get(CONF_ENTITY_NAMING, DEFAULT_ENTITY_NAMING),
         )
     ] = _entity_naming_selector()
+    fields[
+        vol.Required(
+            _equipment_form_key(hass),
+            default=_ordered_equipment(current.get(CONF_EQUIPMENT, EQUIPMENT_OPTIONS)),
+        )
+    ] = _equipment_selector(hass)
     fields[vol.Optional(CONF_REMOVE_INACTIVE_ENTITIES, default=False)] = bool
     fields[vol.Optional(CONF_BACKUP_BEFORE_CLEANUP, default=True)] = bool
     return vol.Schema(fields)
@@ -246,8 +311,27 @@ async def _async_create_cleanup_backup(hass) -> None:
     raise HomeAssistantError("No Home Assistant backup action is available")
 
 
+def _point_is_enabled(
+    points: dict[str, Any],
+    profile: str,
+    point_id: int,
+    selected_ids,
+    equipment,
+) -> bool:
+    return point_enabled(profile, point_id, selected_ids) and point_allowed_by_equipment(
+        point_id,
+        equipment,
+        points.get(str(point_id)),
+    )
+
+
 async def _async_remove_inactive_point_entities(
-    hass, entry: ConfigEntry, profile: str, selected_ids
+    hass,
+    entry: ConfigEntry,
+    profile: str,
+    selected_ids,
+    equipment,
+    points: dict[str, Any],
 ) -> int:
     """Remove only deselected point-backed entities when explicitly requested."""
     registry = er.async_get(hass)
@@ -260,7 +344,8 @@ async def _async_remove_inactive_point_entities(
         suffix = unique_id[len(prefix):]
         if not suffix.isdigit():
             continue
-        if point_enabled(profile, int(suffix), selected_ids):
+        point_id = int(suffix)
+        if _point_is_enabled(points, profile, point_id, selected_ids, equipment):
             continue
         registry.async_remove(registry_entry.entity_id)
         removed += 1
@@ -450,6 +535,7 @@ def _preview_point_groups(
     points: dict[str, Any],
     profile: str,
     selected_ids,
+    equipment=None,
     *,
     registered_ids=(),
     cleanup: bool = False,
@@ -460,12 +546,12 @@ def _preview_point_groups(
     active = frozenset(
         point_id
         for point_id in available
-        if point_enabled(profile, point_id, selected_ids)
+        if _point_is_enabled(points, profile, point_id, selected_ids, equipment)
     )
     disabled_registered = frozenset(
         point_id
         for point_id in registered
-        if not point_enabled(profile, point_id, selected_ids)
+        if not _point_is_enabled(points, profile, point_id, selected_ids, equipment)
     )
     delete = disabled_registered if cleanup else frozenset()
     inactive = frozenset(((available - active) | disabled_registered) - delete)
@@ -503,8 +589,13 @@ def _format_preview_ids(
 
 
 def _preview_special_entities(
-    points: dict[str, Any], profile: str, selected_ids, device: dict[str, Any] | None,
-    *, german: bool,
+    points: dict[str, Any],
+    profile: str,
+    selected_ids,
+    equipment,
+    device: dict[str, Any] | None,
+    *,
+    german: bool,
 ) -> list[str]:
     """Return non-point helper entities that the integration will provide."""
     if german:
@@ -529,7 +620,13 @@ def _preview_special_entities(
     ventilation_metadata = ventilation.get("metadata") or {}
     if (
         ventilation
-        and point_enabled(profile, POINT_VENTILATION_MODE, selected_ids)
+        and _point_is_enabled(
+            points,
+            profile,
+            POINT_VENTILATION_MODE,
+            selected_ids,
+            equipment,
+        )
         and bool(ventilation_metadata.get("isWritable"))
     ):
         result.append("Lüftung+" if german else "Ventilation+")
@@ -560,31 +657,34 @@ async def _async_entity_preview_placeholders(
     points: dict[str, Any],
     profile: str,
     selected_ids,
+    equipment,
     device: dict[str, Any] | None,
     entry: ConfigEntry | None = None,
     cleanup: bool = False,
     backup: bool = False,
 ) -> dict[str, str]:
     """Build localized placeholders for the final entity overview."""
-    german = str(getattr(hass.config, "language", "")).lower().startswith("de")
+    german = _is_german(hass)
     point_names = await _async_translated_point_names(hass)
     registered = _registered_point_ids(hass, entry)
     groups = _preview_point_groups(
         points,
         profile,
         selected_ids,
+        equipment,
         registered_ids=registered,
         cleanup=cleanup,
     )
     special = _preview_special_entities(
-        points, profile, selected_ids, device, german=german
+        points, profile, selected_ids, equipment, device, german=german
     )
     yes = "Ja" if german else "Yes"
     no = "Nein" if german else "No"
     backup_value = yes if cleanup and backup else (no if cleanup else "–")
+    allowed_points = filter_points_for_equipment(points, equipment)
     return {
         "profile": _profile_preview_label(profile, german=german),
-        "discovered": str(len(normalize_selected_ids(points.keys()))),
+        "discovered": str(len(normalize_selected_ids(allowed_points.keys()))),
         "active_count": str(len(groups["active"])),
         "active_existing": str(len(groups["active_existing"])),
         "active_new": str(len(groups["active_new"])),
@@ -607,8 +707,8 @@ async def _async_entity_preview_placeholders(
 
 
 class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    # Keep the config-entry schema version at 1. The 0.9.0 additions are optional
-    # fields with defaults and therefore require no Home Assistant data migration.
+    # Keep the config-entry schema version at 1. The additional fields are
+    # optional and existing entries retain their former entity behavior.
     VERSION = 1
 
     _reauth_entry: ConfigEntry | None = None
@@ -688,18 +788,24 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_entity_profile(self, user_input=None):
         if self._pending_data is None:
             return self.async_abort(reason="setup_state_missing")
+        equipment_key = _equipment_form_key(self.hass)
         if user_input is not None:
             profile = str(user_input[CONF_ENTITY_PROFILE])
             self._pending_data[CONF_ENTITY_PROFILE] = profile
             self._pending_data[CONF_ENTITY_NAMING] = str(
                 user_input.get(CONF_ENTITY_NAMING, DEFAULT_ENTITY_NAMING)
             )
+            self._pending_data[CONF_EQUIPMENT] = _ordered_equipment(
+                user_input.get(equipment_key, ())
+            )
             if profile == PROFILE_INDIVIDUAL:
                 return await self.async_step_entity_selection()
             return await self.async_step_entity_preview()
 
         points = self._available_points or {}
-        counts = profile_counts(points.keys())
+        detected = detect_equipment(points)
+        filtered_points = filter_points_for_equipment(points, detected)
+        counts = profile_counts(filtered_points.keys())
         return self.async_show_form(
             step_id="entity_profile",
             data_schema=vol.Schema(
@@ -712,6 +818,10 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_ENTITY_NAMING,
                         default=DEFAULT_ENTITY_NAMING,
                     ): _entity_naming_selector(),
+                    vol.Required(
+                        equipment_key,
+                        default=_ordered_equipment(detected),
+                    ): _equipment_selector(self.hass, detected=detected),
                 }
             ),
             description_placeholders={
@@ -726,7 +836,8 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_entity_selection(self, user_input=None):
         if self._pending_data is None:
             return self.async_abort(reason="setup_state_missing")
-        points = self._available_points or {}
+        equipment = self._pending_data.get(CONF_EQUIPMENT, ())
+        points = filter_points_for_equipment(self._available_points or {}, equipment)
         point_names = await _async_translated_point_names(self.hass)
         if user_input is not None:
             self._pending_data[CONF_SELECTED_POINT_IDS] = _parse_selected_options(
@@ -750,11 +861,13 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._pending_data.get(CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE)
         )
         points = self._available_points or {}
+        equipment = self._pending_data.get(CONF_EQUIPMENT, ())
         placeholders = await _async_entity_preview_placeholders(
             self.hass,
             points=points,
             profile=profile,
             selected_ids=self._pending_data.get(CONF_SELECTED_POINT_IDS, ()),
+            equipment=equipment,
             device=self._pending_device,
         )
         return self.async_show_form(
@@ -835,6 +948,9 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             self._backup_before_cleanup = bool(
                 submitted.pop(CONF_BACKUP_BEFORE_CLEANUP, True)
             )
+            equipment_value = submitted.pop(_equipment_form_key(self.hass), None)
+            if equipment_value is not None:
+                submitted[CONF_EQUIPMENT] = _ordered_equipment(equipment_value)
             self._pending_options = merge_auth_settings(submitted, current)
             if auth_method_from_values(self._pending_options) == AUTH_METHOD_HEADER:
                 return await self.async_step_auth_header()
@@ -842,7 +958,7 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=_options_schema(current),
+            data_schema=_options_schema(current, self.hass),
         )
 
     async def _async_finish_auth(self, user_input: dict, step_id: str):
@@ -896,7 +1012,8 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
     async def async_step_entity_selection(self, user_input=None):
         if self._pending_options is None:
             return self.async_abort(reason="setup_state_missing")
-        points = self._available_points or {}
+        equipment = self._pending_options.get(CONF_EQUIPMENT)
+        points = filter_points_for_equipment(self._available_points or {}, equipment)
         point_names = await _async_translated_point_names(self.hass)
         if user_input is not None:
             self._pending_options[CONF_SELECTED_POINT_IDS] = _parse_selected_options(
@@ -922,11 +1039,13 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             self._pending_options.get(CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE)
         )
         points = self._available_points or {}
+        equipment = self._pending_options.get(CONF_EQUIPMENT)
         placeholders = await _async_entity_preview_placeholders(
             self.hass,
             points=points,
             profile=profile,
             selected_ids=self._pending_options.get(CONF_SELECTED_POINT_IDS, ()),
+            equipment=equipment,
             device=self._pending_device,
             entry=self.config_entry,
             cleanup=self._cleanup_inactive,
@@ -950,6 +1069,8 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
                     self.config_entry,
                     profile,
                     self._pending_options.get(CONF_SELECTED_POINT_IDS, ()),
+                    equipment,
+                    points,
                 )
             return self.async_create_entry(title="", data=self._pending_options)
 
@@ -958,4 +1079,3 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             data_schema=vol.Schema({}),
             description_placeholders=placeholders,
         )
-
