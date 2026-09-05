@@ -58,10 +58,12 @@
       "operating_mode_status": {"name": "Operating mode", "state": {"auto": "Auto", "manual": "Manual", "auxiliary_heat_only": "Auxiliary heat only"}},
       "alarm_number": {"name": "Alarm number"},
       "outdoor_temperature_bt1": {"name": "Outdoor temperature (BT1)"},
+      "room_sensor_1_1_bt50": {"name": "Room sensor 1-1 (BT50)"},
       "mean_outdoor_temperature_bt1": {"name": "Mean outdoor temperature (BT1)"},
       "supply_temperature_bt2": {"name": "Supply temperature (BT2)"},
       "return_temperature_bt3": {"name": "Return temperature (BT3)"},
       "flow_bf1": {"name": "Flow rate (BF1)"},
+      "additional_heat_bt63": {"name": "Additional heat (BT63)"},
       "room_average_temperature_bt50": {"name": "Room temperature (BT50)"},
       "calculated_supply_heating": {"name": "Calculated heating supply temperature"},
       "cooling_degree_minutes": {"name": "Cooling degree minutes"},
@@ -69,6 +71,7 @@
       "hot_water_top_bt7": {"name": "Hot water temperature top (BT7)"},
       "hot_water_charge_bt6": {"name": "Hot water charging temperature (BT6)"},
       "hot_water_outlet_bt70": {"name": "Hot water outlet (BT70)"},
+      "hot_water_start_bt5": {"name": "Hot water start temperature (BT5)"},
       "aux_heat_hot_water_total_time": {"name": "Auxiliary heat operating time for hot water"},
       "periodic_hot_water_date": {"name": "Next periodic hot water increase"},
       "more_hot_water_minutes": {"name": "More hot water – remaining time"},
@@ -189,7 +192,15 @@
       "fan_reset_time_2": {"name": "Fan reset time level 2"},
       "fan_reset_time_1": {"name": "Fan reset time level 1"}
     },
-    "time": {"periodic_hot_water_start_time": {"name": "Periodic hot water increase start time"}}
+    "time": {
+      "periodic_hot_water_start_time": {"name": "Periodic hot water increase start time"},
+      "hot_water_circulation_period_1_start": {"name": "Hot water circulation period 1 start time"},
+      "hot_water_circulation_period_2_start": {"name": "Hot water circulation period 2 start time"},
+      "hot_water_circulation_period_3_start": {"name": "Hot water circulation period 3 start time"},
+      "hot_water_circulation_period_1_stop": {"name": "Hot water circulation period 1 stop time"},
+      "hot_water_circulation_period_2_stop": {"name": "Hot water circulation period 2 stop time"},
+      "hot_water_circulation_period_3_stop": {"name": "Hot water circulation period 3 stop time"}
+    }
   },
   "exceptions": {
     "operating_mode_unavailable": {"message": "The current NIBE operating mode could not be verified. The change was not sent as a precaution."},

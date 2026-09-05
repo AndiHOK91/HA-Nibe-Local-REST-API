@@ -12,7 +12,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     DOMAIN,
     POINTS,
-    POINT_AUX_HEAT_ALLOWED_HEATING,
     POINT_COOLING_ALLOWED,
     POINT_HEATING_ALLOWED,
     POINT_MORE_HOT_WATER,
@@ -26,7 +25,6 @@ from .entity import NibePointEntity, entity_unique_id, raw_value
 PARALLEL_UPDATES = 1
 
 MODE_DEPENDENT_SWITCHES = {
-    POINT_AUX_HEAT_ALLOWED_HEATING,
     POINT_HEATING_ALLOWED,
     POINT_COOLING_ALLOWED,
 }
