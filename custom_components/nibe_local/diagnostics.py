@@ -1,11 +1,16 @@
 """Diagnostics support for NIBE Local REST API."""
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from typing import Any
 
+from homeassistant.components.recorder import history
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PORT
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.recorder import get_instance
+from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_AUTH_METHOD,
@@ -21,7 +26,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
 )
 from .coordinator import NibeCoordinator
-from .entity import device_product_details
+from .entity import device_product_details, point_value, raw_value, scaled_value
 from .profiles import DEFAULT_ENTITY_PROFILE
 
 _POINT_METADATA_KEYS = (
@@ -30,12 +35,16 @@ _POINT_METADATA_KEYS = (
     "name",
     "unit",
     "dataType",
+    "variableType",
+    "variableSize",
     "isWritable",
     "minValue",
     "maxValue",
     "divisor",
+    "decimal",
     "step",
 )
+_HISTORY_DAYS = 5
 
 
 def _isoformat(value: Any) -> str | None:
@@ -44,13 +53,29 @@ def _isoformat(value: Any) -> str | None:
 
 
 def _safe_point_metadata(point: Any) -> dict[str, Any]:
-    """Return non-secret point metadata without exposing the current value."""
+    """Return non-secret point metadata."""
     if not isinstance(point, dict):
         return {}
     metadata = point.get("metadata")
     if not isinstance(metadata, dict):
         return {}
     return {key: metadata[key] for key in _POINT_METADATA_KEYS if key in metadata}
+
+
+def _diagnostic_point_value(point: Any) -> dict[str, Any]:
+    """Return the current point value in raw and integration-scaled form."""
+    if not isinstance(point, dict):
+        return {}
+    value = point_value(point)
+    result: dict[str, Any] = {
+        "raw_value": raw_value(point),
+        "scaled_value": scaled_value(point),
+        "is_ok": bool(value.get("isOk", True)),
+    }
+    title = point.get("title")
+    if title not in (None, ""):
+        result["title"] = str(title).replace("\u00ad", "").strip()
+    return result
 
 
 def _safe_device_metadata(device: Any) -> dict[str, Any]:
@@ -74,11 +99,167 @@ def _alarm_count(notifications: Any) -> int:
     return len(alarms) if isinstance(alarms, list) else 0
 
 
+def _point_entity_ids(
+    hass: HomeAssistant, entry: ConfigEntry, enabled_ids: set[int]
+) -> dict[int, str]:
+    """Map enabled NIBE point IDs to Home Assistant entity IDs."""
+    registry = er.async_get(hass)
+    result: dict[int, str] = {}
+    for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        suffix = str(registry_entry.unique_id).rsplit("_", 1)[-1]
+        try:
+            point_id = int(suffix)
+        except ValueError:
+            continue
+        if point_id in enabled_ids:
+            result[point_id] = registry_entry.entity_id
+    return result
+
+
+def _history_state_value(state: Any) -> float | None:
+    """Return a recorder state as a finite numeric value when possible."""
+    value = state.get("state") if isinstance(state, dict) else getattr(state, "state", None)
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    if numeric != numeric or numeric in (float("inf"), float("-inf")):
+        return None
+    return numeric
+
+
+def _history_state_time(state: Any) -> datetime | None:
+    """Return the timestamp of a recorder state."""
+    if isinstance(state, dict):
+        value = state.get("last_updated") or state.get("last_changed")
+        if isinstance(value, (int, float)):
+            return dt_util.utc_from_timestamp(value)
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, str):
+            return dt_util.parse_datetime(value)
+        return None
+    return getattr(state, "last_updated", None) or getattr(state, "last_changed", None)
+
+
+def _minute_buckets(states: list[Any]) -> list[dict[str, Any]]:
+    """Aggregate recorder states into one compact row per minute."""
+    buckets: dict[datetime, list[float]] = {}
+    for state in states:
+        value = _history_state_value(state)
+        timestamp = _history_state_time(state)
+        if value is None or timestamp is None:
+            continue
+        minute = timestamp.replace(second=0, microsecond=0)
+        buckets.setdefault(minute, []).append(value)
+
+    result: list[dict[str, Any]] = []
+    for minute, values in sorted(buckets.items()):
+        result.append(
+            {
+                "minute": minute.isoformat(),
+                "min": min(values),
+                "max": max(values),
+                "mean": round(sum(values) / len(values), 6),
+                "last": values[-1],
+                "samples": len(values),
+            }
+        )
+    return result
+
+
+def _history_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize minute buckets while preserving extrema timestamps."""
+    result: dict[str, Any] = {"minute_count": len(rows)}
+    if not rows:
+        return result
+
+    minimum_row = min(rows, key=lambda row: row["min"])
+    maximum_row = max(rows, key=lambda row: row["max"])
+    sample_count = sum(int(row.get("samples", 0)) for row in rows)
+
+    result.update(
+        {
+            "sample_count": sample_count,
+            "min": minimum_row["min"],
+            "min_at": minimum_row["minute"],
+            "max": maximum_row["max"],
+            "max_at": maximum_row["minute"],
+            "first": rows[0]["last"],
+            "last": rows[-1]["last"],
+        }
+    )
+    if sample_count:
+        result["mean"] = round(
+            sum(row["mean"] * row["samples"] for row in rows) / sample_count,
+            6,
+        )
+    return result
+
+
+async def _async_get_5d_history(
+    hass: HomeAssistant | None,
+    entry: ConfigEntry,
+    enabled_ids: set[int],
+) -> dict[str, Any]:
+    """Return five days of recorder history aggregated into minute buckets."""
+    if hass is None or not hasattr(entry, "entry_id"):
+        return {"available": False, "reason": "recorder_context_unavailable", "points": {}}
+
+    point_entities = _point_entity_ids(hass, entry, enabled_ids)
+    if not point_entities:
+        return {"available": True, "days": _HISTORY_DAYS, "period": "minute", "points": {}}
+
+    end = dt_util.utcnow()
+    start = end - timedelta(days=_HISTORY_DAYS)
+    entity_ids = list(point_entities.values())
+
+    try:
+        recorded_states = await get_instance(hass).async_add_executor_job(
+            history.get_significant_states,
+            hass,
+            start,
+            end,
+            entity_ids,
+            None,
+            False,
+            False,
+            False,
+            True,
+        )
+    except Exception as err:  # Diagnostics must still work if recorder is unavailable.
+        return {
+            "available": False,
+            "reason": "recorder_query_failed",
+            "error_type": type(err).__name__,
+            "days": _HISTORY_DAYS,
+            "period": "minute",
+            "points": {},
+        }
+
+    history_points: dict[str, Any] = {}
+    for point_id, entity_id in sorted(point_entities.items()):
+        rows = _minute_buckets(recorded_states.get(entity_id) or [])
+        history_points[str(point_id)] = {
+            "history_available": bool(rows),
+            "summary": _history_summary(rows),
+            "minutes": rows,
+        }
+
+    return {
+        "available": True,
+        "days": _HISTORY_DAYS,
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "period": "minute",
+        "points": history_points,
+    }
+
+
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> dict[str, Any]:
     """Return privacy-conscious diagnostics for a config entry."""
-    del hass
     coordinator: NibeCoordinator = entry.runtime_data
     configured = {**entry.data, **entry.options}
     coordinator_data = coordinator.data or {}
@@ -91,6 +272,13 @@ async def async_get_config_entry_diagnostics(
 
     selected_ids = configured.get(CONF_SELECTED_POINT_IDS, ()) or ()
     enabled_ids = sorted(coordinator.enabled_point_ids)
+    enabled_id_set = set(enabled_ids)
+    current_values = {
+        str(point_id): _diagnostic_point_value(points.get(str(point_id)) or points.get(point_id))
+        for point_id in enabled_ids
+        if points.get(str(point_id)) is not None or points.get(point_id) is not None
+    }
+    five_day_history = await _async_get_5d_history(hass, entry, enabled_id_set)
 
     return {
         "configuration": {
@@ -121,6 +309,8 @@ async def async_get_config_entry_diagnostics(
             "enabled_count": len(enabled_ids),
             "enabled_point_ids": enabled_ids,
             "metadata": point_metadata,
+            "current_values": current_values,
+            "history_5d": five_day_history,
         },
         "notifications": {
             "active_alarm_count": _alarm_count(coordinator_data.get("notifications")),
