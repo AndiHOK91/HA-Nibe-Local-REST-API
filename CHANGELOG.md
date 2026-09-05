@@ -2,6 +2,16 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
+## 0.9.8
+
+- Abtau-Sonderwerte bereinigt: Punkt **840 – Zeit bis Enteisung** zeigt `65535` nicht mehr als Minutenwert und setzt diesen Sonderzustand auch nicht künstlich auf `0 min`; die Entity bleibt erreichbar und der numerische Zustand bleibt in diesem Fall unbekannt.
+- Die frühere Heuristik `>720 min → 0` für Punkt 840 wurde vollständig entfernt. Normale REST-Werte werden unverändert als Minuten übernommen.
+- Punkt **2022 – Current status** wird als Diagnoseentity behandelt, da der `u32`-Wert als kodierter Status und nicht als gewöhnlicher Messwert einzuordnen ist.
+- Punkt **22268 – Letzte Enteisung** kann Enum-Bezeichnungen aus der von der lokalen REST API gelieferten Punktbeschreibung übernehmen; unbekannte Bedeutungen werden nicht geraten oder fest verdrahtet.
+- Diagnosedaten enthalten zusätzlich die von der lokalen REST API gelieferten Punktbeschreibungen, damit Sonderzustände und Enum-Bedeutungen nachvollziehbar verifiziert werden können.
+- Regressionstests für Abtau-Sonderzustände und REST-basierte Enum-Auswertung ergänzt.
+- README und Manifest auf 0.9.8 aktualisiert.
+
 ## 0.9.4
 
 - Home-Assistant-Diagnosedaten ergänzt: Supportinformationen zu Profil, Polling, Verbindungs-/Fallback-Status, verfügbaren und aktivierten Variable-IDs sowie ungefährlichen Punkt- und Geräte-Metadaten können über **Diagnosedaten herunterladen** exportiert werden. Host/IP, Benutzername, Passwort, Authorization-Header, Seriennummern, aktuelle Mess-/Einstellwerte und Alarmtexte werden bewusst nicht ausgegeben.
@@ -56,7 +66,7 @@ Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionswei
 
 - Sicherheits-Härtung der REST-Antwortverarbeitung: JSON-Antworten sind auf 4 MiB begrenzt und übergroße Antworten werden kontrolliert als API-Fehler behandelt.
 - Die Normalisierung von `/points` arbeitet iterativ mit maximaler Verschachtelungstiefe und kann dadurch nicht mehr durch extrem tief verschachtelte Antworten einen `RecursionError` auslösen.
-- Entity-Unique-IDs und Persistent-Notification-IDs sind jetzt pro Config Entry getrennt, sodass mehrere NIBE-Anlagen keine Kollisionen mehr verursachen. Bestehende Entity-IDs bleiben durch eine Registry-Migration erhalten.
+- Entity-Unique-IDs und Persistent-Notification-IDs sind jetzt pro Config Entry getrennt, sodass mehrere NIBE-Anlagen keine Kollisionen verursachen. Bestehende Entity-IDs bleiben durch eine Registry-Migration erhalten.
 - Regressionstests für Verschachtelungslimits, zyklische Strukturen, Response-Limit und Multi-Instance-Unique-IDs ergänzt.
 
 ## 0.8.0
