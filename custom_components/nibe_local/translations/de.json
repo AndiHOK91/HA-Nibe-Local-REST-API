@@ -123,7 +123,7 @@
       },
       "auth_header": {
         "title": "Authorization-Header",
-        "description": "Einen neuen Authorization-Header eintragen. Ein leeres Feld behält den bisherigen Wert.",
+        "description": "Einen neuen Authorization-Header eintragen. Ein leeres Feld behält den gespeicherten Wert.",
         "data": {
           "auth_header": "Neuer Authorization-Header (leer = unverändert)"
         }
@@ -173,10 +173,12 @@
       "operating_mode_status": {"name": "Betriebsmodus", "state": {"auto": "Auto", "manual": "Manuell", "auxiliary_heat_only": "Nur Zusatzheizung"}},
       "alarm_number": {"name": "Alarmnummer"},
       "outdoor_temperature_bt1": {"name": "Außentemperatur (BT1)"},
+      "room_sensor_1_1_bt50": {"name": "Raumsensor 1-1 (BT50)"},
       "mean_outdoor_temperature_bt1": {"name": "Mittlere Außentemperatur (BT1)"},
       "supply_temperature_bt2": {"name": "Vorlauftemperatur (BT2)"},
       "return_temperature_bt3": {"name": "Rücklauftemperatur (BT3)"},
       "flow_bf1": {"name": "Volumenstrom (BF1)"},
+      "additional_heat_bt63": {"name": "Zusatzheizung (BT63)"},
       "room_average_temperature_bt50": {"name": "Raumtemperatur (BT50)"},
       "calculated_supply_heating": {"name": "Berechnete Vorlauftemperatur Heizung"},
       "cooling_degree_minutes": {"name": "Kühlgradminuten"},
@@ -184,6 +186,7 @@
       "hot_water_top_bt7": {"name": "Brauchwassertemperatur oben (BT7)"},
       "hot_water_charge_bt6": {"name": "Brauchwassertemperatur Ladung (BT6)"},
       "hot_water_outlet_bt70": {"name": "Brauchwasseraustritt (BT70)"},
+      "hot_water_start_bt5": {"name": "Brauchwasser Starttemperatur (BT5)"},
       "aux_heat_hot_water_total_time": {"name": "Betriebszeit Zusatzheizung Brauchwasser"},
       "periodic_hot_water_date": {"name": "Nächste periodische Brauchwassererhöhung"},
       "more_hot_water_minutes": {"name": "Mehr Brauchwasser – Restzeit"},
@@ -305,7 +308,13 @@
       "fan_reset_time_1": {"name": "Rückstellzeit Ventilator Stufe 1"}
     },
     "time": {
-      "periodic_hot_water_start_time": {"name": "Startzeit periodische Brauchwassererhöhung"}
+      "periodic_hot_water_start_time": {"name": "Startzeit periodische Brauchwassererhöhung"},
+      "hot_water_circulation_period_1_start": {"name": "Brauchwasserzirkulation Periode 1 Startzeit"},
+      "hot_water_circulation_period_2_start": {"name": "Brauchwasserzirkulation Periode 2 Startzeit"},
+      "hot_water_circulation_period_3_start": {"name": "Brauchwasserzirkulation Periode 3 Startzeit"},
+      "hot_water_circulation_period_1_stop": {"name": "Brauchwasserzirkulation Periode 1 Stoppzeit"},
+      "hot_water_circulation_period_2_stop": {"name": "Brauchwasserzirkulation Periode 2 Stoppzeit"},
+      "hot_water_circulation_period_3_stop": {"name": "Brauchwasserzirkulation Periode 3 Stoppzeit"}
     }
   },
   "exceptions": {
