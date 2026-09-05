@@ -12,6 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     DOMAIN,
     POINTS,
+    POINT_AUX_HEAT_ALLOWED_HEATING,
     POINT_COOLING_ALLOWED,
     POINT_HEATING_ALLOWED,
     POINT_MORE_HOT_WATER,
@@ -23,6 +24,12 @@ from .coordinator import NibeCoordinator
 from .entity import NibePointEntity, entity_unique_id, raw_value
 
 PARALLEL_UPDATES = 1
+
+MODE_DEPENDENT_SWITCHES = {
+    POINT_AUX_HEAT_ALLOWED_HEATING,
+    POINT_HEATING_ALLOWED,
+    POINT_COOLING_ALLOWED,
+}
 
 MORE_HOT_WATER_DEFINITION = next(
     definition for definition in POINTS if definition.point_id == POINT_MORE_HOT_WATER
@@ -68,7 +75,7 @@ async def async_setup_entry(
 
 def write_allowed_for_mode(point_id: int, mode: int | None) -> bool:
     """Return whether a mode-dependent heating/cooling point may be written."""
-    if point_id not in {POINT_HEATING_ALLOWED, POINT_COOLING_ALLOWED}:
+    if point_id not in MODE_DEPENDENT_SWITCHES:
         return True
     if mode == 1:
         return True
@@ -102,14 +109,14 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
     @property
     def extra_state_attributes(self):
         attrs = dict(super().extra_state_attributes or {})
-        if self.definition.point_id in {POINT_HEATING_ALLOWED, POINT_COOLING_ALLOWED}:
+        if self.definition.point_id in MODE_DEPENDENT_SWITCHES:
             mode = self._operating_mode()
             attrs["operating_mode_raw"] = mode
             attrs["write_allowed"] = self._write_allowed()
         return attrs
 
     async def _ensure_write_allowed(self) -> None:
-        if self.definition.point_id not in {POINT_HEATING_ALLOWED, POINT_COOLING_ALLOWED}:
+        if self.definition.point_id not in MODE_DEPENDENT_SWITCHES:
             return
 
         refreshed = await self.coordinator.async_refresh_point(
