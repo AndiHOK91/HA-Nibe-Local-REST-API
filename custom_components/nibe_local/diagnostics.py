@@ -68,6 +68,11 @@ def _safe_point_metadata(point: Any) -> dict[str, Any]:
     return {key: metadata[key] for key in _POINT_METADATA_KEYS if key in metadata}
 
 
+def _clean_point_text(value: Any) -> str:
+    """Return soft-hyphen-free REST text for diagnostics."""
+    return str(value or "").replace("\u00ad", "").strip()
+
+
 def _diagnostic_point_value(point: Any) -> dict[str, Any]:
     """Return the current point value in raw and integration-scaled form."""
     if not isinstance(point, dict):
@@ -82,9 +87,12 @@ def _diagnostic_point_value(point: Any) -> dict[str, Any]:
         "raw_value_is_sentinel": sentinel,
         "value_valid": api_ok and not sentinel,
     }
-    title = point.get("title")
-    if title not in (None, ""):
-        result["title"] = str(title).replace("\u00ad", "").strip()
+    title = _clean_point_text(point.get("title"))
+    if title:
+        result["title"] = title
+    description = _clean_point_text(point.get("description"))
+    if description:
+        result["description"] = description
     return result
 
 
