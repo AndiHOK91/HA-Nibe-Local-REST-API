@@ -2,11 +2,11 @@
 
 from custom_components.nibe_local.const import POINTS
 from custom_components.nibe_local.equipment import HOT_WATER_CIRCULATION_POINT_IDS
-from custom_components.nibe_local.profiles import STANDARD_POINT_IDS
+from custom_components.nibe_local.profiles import STANDARD_PROFILE_POINT_IDS
 
 
 def test_standard_profile_matches_verified_default_rest_set() -> None:
-    assert STANDARD_POINT_IDS == {
+    assert STANDARD_PROFILE_POINT_IDS == {
         4,
         8,
         10,
