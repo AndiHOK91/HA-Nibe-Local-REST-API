@@ -27,6 +27,7 @@ def test_diagnostics_exclude_credentials_but_include_current_values() -> None:
                         "variableId": 4,
                         "description": "Current outdoor temperature (BT1)",
                         "unit": "°C",
+                        "variableSize": "s16",
                         "isWritable": False,
                         "divisor": 10,
                         "decimal": 1,
@@ -78,9 +79,11 @@ def test_diagnostics_exclude_credentials_but_include_current_values() -> None:
         "raw_value": 222,
         "scaled_value": 22.2,
         "is_ok": True,
+        "raw_value_is_sentinel": False,
+        "value_valid": True,
         "title": "Current outdoor temperature (BT1)",
     }
-    assert diagnostics["points"]["history_5d"] == {
+    assert diagnostics["points"]["history_24h"] == {
         "available": False,
         "reason": "recorder_context_unavailable",
         "points": {},

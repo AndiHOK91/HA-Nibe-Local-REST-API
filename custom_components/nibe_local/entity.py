@@ -16,6 +16,15 @@ from .const import (
 )
 from .coordinator import NibeCoordinator
 
+_INTEGER_RAW_LIMITS: dict[str, tuple[int, int]] = {
+    "s8": (-128, 127),
+    "u8": (0, 255),
+    "s16": (-32768, 32767),
+    "u16": (0, 65535),
+    "s32": (-2147483648, 2147483647),
+    "u32": (0, 4294967295),
+}
+
 
 def _clean(text: str | None) -> str:
     return (text or "").replace("\u00ad", "").strip()
@@ -128,8 +137,36 @@ def raw_value(point: dict[str, Any]) -> int | str | None:
     return dv.get("integerValue")
 
 
+def raw_value_is_sentinel(point: dict[str, Any]) -> bool:
+    """Return whether an integer value is a NIBE-style invalid limit sentinel.
+
+    NIBE may expose an unavailable integer value as the numeric limit of the
+    underlying storage type, for example -32768 for s16 or 65535 for u16,
+    while still reporting isOk=true. Preserve a limit value when the REST
+    metadata explicitly declares that exact limit as valid.
+    """
+    raw = raw_value(point)
+    if not isinstance(raw, int) or isinstance(raw, bool):
+        return False
+
+    metadata = point.get("metadata") or {}
+    variable_size = metadata.get("variableSize")
+    limits = _INTEGER_RAW_LIMITS.get(str(variable_size))
+    if limits is None:
+        return False
+
+    minimum, maximum = limits
+    if str(variable_size).startswith("s") and raw == minimum:
+        return metadata.get("minValue") != raw
+    if str(variable_size).startswith("u") and raw == maximum:
+        return metadata.get("maxValue") != raw
+    return False
+
+
 def scaled_value(point: dict[str, Any]) -> int | float | str | None:
     raw = raw_value(point)
+    if raw_value_is_sentinel(point):
+        return None
     if not isinstance(raw, (int, float)):
         return raw
     md = point.get("metadata") or {}
@@ -200,6 +237,8 @@ class NibePointEntity(CoordinatorEntity[NibeCoordinator]):
         point = self.point
         if not self.coordinator.last_update_success or not point:
             return False
+        if raw_value_is_sentinel(point):
+            return False
         return bool(point_value(point).get("isOk", True))
 
     @property
@@ -220,6 +259,7 @@ class NibePointEntity(CoordinatorEntity[NibeCoordinator]):
             "modbus_register_type": md.get("modbusRegisterType"),
             "modbus_register_id": md.get("modbusRegisterID"),
             "raw_value": raw_value(point),
+            "raw_value_is_sentinel": raw_value_is_sentinel(point),
             "divisor": md.get("divisor"),
             "decimal": md.get("decimal"),
             "min_value_raw": md.get("minValue"),

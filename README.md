@@ -34,7 +34,7 @@ Unterstützt werden unter anderem:
 - 🚨 Alarm- und Meldungsinformationen
 - 🎛️ ausdrücklich freigegebene Schreibfunktionen über `switch`, `select`, `number` und `time`
 - 🩺 Diagnoseinformationen für API-Erreichbarkeit, Fallback und Verbindungsfehler
-- 📊 erweiterte Diagnosedatei mit aktuellen Roh-/Skalierwerten und 5 Tagen Minutenhistorie
+- 📊 erweiterte Diagnosedatei mit aktuellen Roh-/Skalierwerten und 24 Stunden Minutenhistorie
 
 ---
 
@@ -242,8 +242,10 @@ Für jeden aktivierten NIBE-Punkt werden – soweit vorhanden – ausgegeben:
 - aktueller **Rohwert**
 - aktuell von der Integration berechneter **skalierter Wert**
 - `isOk`-Status der REST-Antwort
+- Kennzeichnung erkannter Integer-Grenzwerte als möglicher ungültiger Sentinel
+- daraus abgeleitete Gültigkeit des aktuellen Werts
 
-Zusätzlich wird eine **5-Tage-Historie in 1-Minuten-Buckets** aus dem Home-Assistant-Recorder erzeugt. Pro Minute werden kompakt gespeichert:
+Zusätzlich wird eine **24-Stunden-Historie in 1-Minuten-Buckets** aus dem Home-Assistant-Recorder erzeugt. Pro Minute werden kompakt gespeichert:
 
 - Minimum
 - Maximum
@@ -252,6 +254,8 @@ Zusätzlich wird eine **5-Tage-Historie in 1-Minuten-Buckets** aus dem Home-Assi
 - Anzahl der berücksichtigten Samples
 
 Damit lassen sich kurze Ausreißer und typische Skalierungs-/Signed-Integer-Probleme wesentlich besser erkennen als mit einer reinen Momentaufnahme.
+
+Integer-Grenzwerte wie der kleinste Wert eines vorzeichenbehafteten Datentyps oder der größte Wert eines vorzeichenlosen Datentyps werden als ungültig behandelt, wenn die REST-Metadaten diesen Grenzwert nicht ausdrücklich als erlaubten Min-/Max-Wert ausweisen. Der Rohwert bleibt in den Diagnosedaten sichtbar, wird aber nicht als regulärer Sensorwert veröffentlicht.
 
 Die Historie ist nur verfügbar, wenn die jeweilige Entity im Home-Assistant-Recorder vorhanden ist.
 
@@ -401,7 +405,7 @@ Die Regressionstests decken unter anderem ab:
 - Entitätsprofile
 - Geräte-/Equipment-Erkennung
 - Diagnose-Datenschutz
-- aktuelle Diagnosewerte und 5-Tage-Minutenhistorie
+- aktuelle Diagnosewerte, Sentinel-Erkennung und 24-Stunden-Minutenhistorie
 - Import-Smoke-Test aller Plattformen
 - Ruff `F821`
 

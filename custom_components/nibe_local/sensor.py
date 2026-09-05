@@ -27,6 +27,7 @@ from .entity import (
     local_api_point_name,
     entity_unique_id,
     raw_value,
+    raw_value_is_sentinel,
     scaled_value,
 )
 
@@ -150,6 +151,8 @@ class NibeDiscoveredSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
     def available(self) -> bool:
         if not self.coordinator.last_update_success or not self.point:
             return False
+        if raw_value_is_sentinel(self.point):
+            return False
         return bool((self.point.get("value") or self.point.get("datavalue") or {}).get("isOk", True))
 
     @property
@@ -171,35 +174,39 @@ class NibeDiscoveredSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
 class NibeSensor(NibePointEntity, SensorEntity):
     @property
     def native_value(self):
+        point = self.point or {}
+        if raw_value_is_sentinel(point):
+            return None
+
         if self.definition.point_id == POINT_OPERATING_PRIORITY:
-            value = raw_value(self.point or {})
+            value = raw_value(point)
             return OPERATING_PRIORITY_MAP.get(value, value)
 
         if self.definition.point_id == POINT_OPERATING_MODE_STATUS:
-            value = raw_value(self.point or {})
+            value = raw_value(point)
             try:
                 return OPERATING_MODE_STATE_MAP.get(int(value), value)
             except (TypeError, ValueError):
                 return value
 
         if self.definition.point_id == 1760:
-            value = raw_value(self.point or {})
+            value = raw_value(point)
             try:
                 return AUX_HEAT_MODE_MAP.get(int(value), value)
             except (TypeError, ValueError):
                 return value
 
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
-            return periodic_hot_water_date(raw_value(self.point or {}))
+            return periodic_hot_water_date(raw_value(point))
 
         if self.definition.point_id == POINT_DEFROST_REQUESTED:
-            value = raw_value(self.point or {})
+            value = raw_value(point)
             try:
                 return DEFROST_REQUESTED_MAP.get(int(value), "unknown")
             except (TypeError, ValueError):
                 return "unknown"
 
-        value = scaled_value(self.point or {})
+        value = scaled_value(point)
 
         if self.definition.point_id == POINT_TIME_TO_DEFROST:
             try:
