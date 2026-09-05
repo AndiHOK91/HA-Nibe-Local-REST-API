@@ -26,7 +26,13 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
 )
 from .coordinator import NibeCoordinator
-from .entity import device_product_details, point_value, raw_value, scaled_value
+from .entity import (
+    device_product_details,
+    point_value,
+    raw_value,
+    raw_value_is_sentinel,
+    scaled_value,
+)
 from .profiles import DEFAULT_ENTITY_PROFILE
 
 _POINT_METADATA_KEYS = (
@@ -44,7 +50,7 @@ _POINT_METADATA_KEYS = (
     "decimal",
     "step",
 )
-_HISTORY_DAYS = 5
+_HISTORY_HOURS = 24
 
 
 def _isoformat(value: Any) -> str | None:
@@ -67,10 +73,14 @@ def _diagnostic_point_value(point: Any) -> dict[str, Any]:
     if not isinstance(point, dict):
         return {}
     value = point_value(point)
+    sentinel = raw_value_is_sentinel(point)
+    api_ok = bool(value.get("isOk", True))
     result: dict[str, Any] = {
         "raw_value": raw_value(point),
         "scaled_value": scaled_value(point),
-        "is_ok": bool(value.get("isOk", True)),
+        "is_ok": api_ok,
+        "raw_value_is_sentinel": sentinel,
+        "value_valid": api_ok and not sentinel,
     }
     title = point.get("title")
     if title not in (None, ""):
@@ -197,21 +207,26 @@ def _history_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return result
 
 
-async def _async_get_5d_history(
+async def _async_get_24h_history(
     hass: HomeAssistant | None,
     entry: ConfigEntry,
     enabled_ids: set[int],
 ) -> dict[str, Any]:
-    """Return five days of recorder history aggregated into minute buckets."""
+    """Return 24 hours of recorder history aggregated into minute buckets."""
     if hass is None or not hasattr(entry, "entry_id"):
         return {"available": False, "reason": "recorder_context_unavailable", "points": {}}
 
     point_entities = _point_entity_ids(hass, entry, enabled_ids)
     if not point_entities:
-        return {"available": True, "days": _HISTORY_DAYS, "period": "minute", "points": {}}
+        return {
+            "available": True,
+            "hours": _HISTORY_HOURS,
+            "period": "minute",
+            "points": {},
+        }
 
     end = dt_util.utcnow()
-    start = end - timedelta(days=_HISTORY_DAYS)
+    start = end - timedelta(hours=_HISTORY_HOURS)
     entity_ids = list(point_entities.values())
 
     try:
@@ -232,7 +247,7 @@ async def _async_get_5d_history(
             "available": False,
             "reason": "recorder_query_failed",
             "error_type": type(err).__name__,
-            "days": _HISTORY_DAYS,
+            "hours": _HISTORY_HOURS,
             "period": "minute",
             "points": {},
         }
@@ -248,7 +263,7 @@ async def _async_get_5d_history(
 
     return {
         "available": True,
-        "days": _HISTORY_DAYS,
+        "hours": _HISTORY_HOURS,
         "start": start.isoformat(),
         "end": end.isoformat(),
         "period": "minute",
@@ -278,7 +293,7 @@ async def async_get_config_entry_diagnostics(
         for point_id in enabled_ids
         if points.get(str(point_id)) is not None or points.get(point_id) is not None
     }
-    five_day_history = await _async_get_5d_history(hass, entry, enabled_id_set)
+    history_24h = await _async_get_24h_history(hass, entry, enabled_id_set)
 
     return {
         "configuration": {
@@ -310,7 +325,7 @@ async def async_get_config_entry_diagnostics(
             "enabled_point_ids": enabled_ids,
             "metadata": point_metadata,
             "current_values": current_values,
-            "history_5d": five_day_history,
+            "history_24h": history_24h,
         },
         "notifications": {
             "active_alarm_count": _alarm_count(coordinator_data.get("notifications")),
