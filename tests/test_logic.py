@@ -68,8 +68,8 @@ from custom_components.nibe_local.profiles import (
     PROFILE_COMPLETE,
     PROFILE_EXTENDED,
     PROFILE_INDIVIDUAL,
-    PROFILE_MINIMAL,
     PROFILE_STANDARD,
+    STANDARD_POINT_IDS,
     point_enabled,
     profile_counts,
 )
@@ -167,10 +167,9 @@ def test_binary_sensor_platform_imports_unique_id_helper() -> None:
 
 
 def test_entity_profiles_are_monotonic_for_curated_points() -> None:
-    minimal = {p.point_id for p in POINTS if point_enabled(PROFILE_MINIMAL, p.point_id)}
     standard = {p.point_id for p in POINTS if point_enabled(PROFILE_STANDARD, p.point_id)}
     extended = {p.point_id for p in POINTS if point_enabled(PROFILE_EXTENDED, p.point_id)}
-    assert minimal < standard < extended
+    assert standard < extended
     assert DEFAULT_ENTITY_PROFILE == PROFILE_EXTENDED
 
 
@@ -191,7 +190,7 @@ def test_entity_preview_groups_match_cleanup_scope() -> None:
     points = {"4": {}, "8": {}, "1755": {}, "999999": {}}
     preview = _preview_point_groups(
         points,
-        PROFILE_MINIMAL,
+        PROFILE_STANDARD,
         (),
         registered_ids={4, 1755, 999999},
         cleanup=True,
@@ -207,7 +206,7 @@ def test_entity_preview_retains_deselected_registry_entries_without_cleanup() ->
     points = {"4": {}, "8": {}, "1755": {}, "999999": {}}
     preview = _preview_point_groups(
         points,
-        PROFILE_MINIMAL,
+        PROFILE_STANDARD,
         (),
         registered_ids={4, 1755, 999999},
         cleanup=False,
@@ -701,7 +700,6 @@ def test_local_api_and_technical_entity_names() -> None:
 
 def test_profile_counts_only_count_available_points() -> None:
     counts = profile_counts([4, 8, 10, 3096, 999999])
-    assert counts["minimal"] == 4
     assert counts["standard"] == 4
     assert counts["complete"] == 5
     assert counts["individual"] == 5
@@ -846,11 +844,13 @@ def test_cleanup_backup_uses_core_backup_when_supervisor_unavailable() -> None:
     asyncio.run(run_test())
 
 
-def test_minimal_profile_core_contract() -> None:
-    from custom_components.nibe_local.profiles import MINIMAL_POINT_IDS
-
-    expected = {4, 8, 10, 11, 12, 116, 158, 1758, 2500, 3096, 4064}
-    assert MINIMAL_POINT_IDS == expected
+def test_standard_profile_matches_curated_default_point_set() -> None:
+    expected = {
+        4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760, 1975,
+        2491, 2494, 2495, 2496, 2497, 2766, 2767, 2792, 3095, 3096, 3097,
+        3170, 3375, 7934, 7935, 7936, 7937, 7939,
+    }
+    assert STANDARD_POINT_IDS == expected
 
 
 def test_bt70_is_known_read_only_sensor() -> None:
