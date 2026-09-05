@@ -5,8 +5,8 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 
 from custom_components.nibe_local.diagnostics import (
-    _format_hourly_statistic,
     _history_summary,
+    _minute_buckets,
     async_get_config_entry_diagnostics,
 )
 
@@ -80,7 +80,7 @@ def test_diagnostics_exclude_credentials_but_include_current_values() -> None:
         "is_ok": True,
         "title": "Current outdoor temperature (BT1)",
     }
-    assert diagnostics["points"]["history_7d"] == {
+    assert diagnostics["points"]["history_5d"] == {
         "available": False,
         "reason": "recorder_context_unavailable",
         "points": {},
@@ -88,35 +88,38 @@ def test_diagnostics_exclude_credentials_but_include_current_values() -> None:
     assert diagnostics["notifications"]["active_alarm_count"] == 1
 
 
-def test_history_summary_preserves_extrema_and_hourly_values() -> None:
-    """Seven-day diagnostics retain the values needed to diagnose spikes."""
-    rows = [
-        {
-            "start": 1_700_000_000.0,
-            "end": 1_700_003_600.0,
-            "min": -3276.8,
-            "max": 21.5,
-            "mean": -100.0,
-            "state": 20.0,
-        },
-        {
-            "start": 1_700_003_600.0,
-            "end": 1_700_007_200.0,
-            "min": 19.0,
-            "max": 22.0,
-            "mean": 20.5,
-            "state": 21.0,
-        },
+def test_minute_buckets_preserve_short_negative_spikes() -> None:
+    """Minute aggregation must retain short-lived extrema."""
+    states = [
+        SimpleNamespace(
+            state="20.0",
+            last_updated=datetime(2026, 9, 5, 10, 0, 5, tzinfo=UTC),
+        ),
+        SimpleNamespace(
+            state="-3276.8",
+            last_updated=datetime(2026, 9, 5, 10, 0, 20, tzinfo=UTC),
+        ),
+        SimpleNamespace(
+            state="21.5",
+            last_updated=datetime(2026, 9, 5, 10, 0, 50, tzinfo=UTC),
+        ),
+        SimpleNamespace(
+            state="22.0",
+            last_updated=datetime(2026, 9, 5, 10, 1, 10, tzinfo=UTC),
+        ),
     ]
 
-    formatted = _format_hourly_statistic(rows[0])
+    rows = _minute_buckets(states)
     summary = _history_summary(rows)
 
-    assert formatted["min"] == -3276.8
-    assert formatted["max"] == 21.5
-    assert formatted["start"].endswith("+00:00")
-    assert summary["hour_count"] == 2
+    assert len(rows) == 2
+    assert rows[0]["min"] == -3276.8
+    assert rows[0]["max"] == 21.5
+    assert rows[0]["last"] == 21.5
+    assert rows[0]["samples"] == 3
+    assert summary["minute_count"] == 2
+    assert summary["sample_count"] == 4
     assert summary["min"] == -3276.8
     assert summary["max"] == 22.0
-    assert summary["first_state"] == 20.0
-    assert summary["last_state"] == 21.0
+    assert summary["first"] == 21.5
+    assert summary["last"] == 22.0
