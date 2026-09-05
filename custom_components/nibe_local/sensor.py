@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
+import re
 from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
@@ -26,6 +27,7 @@ from .entity import (
     coordinator_device_info,
     local_api_point_name,
     entity_unique_id,
+    point_value,
     raw_value,
     raw_value_is_sentinel,
     scaled_value,
@@ -59,6 +61,7 @@ UNIT_NORMALIZATIONS = {
     "%RH": "%",
     "l/min": "L/min",
 }
+_DESCRIPTION_ENUM_RE = re.compile(r"^\s*(-?\d+)\s*(?:=|:)\s*(.+?)\s*$")
 
 
 def normalize_unit(unit: str | None) -> str | None:
@@ -72,6 +75,21 @@ def is_relative_humidity(point: dict[str, Any]) -> bool:
     """Return whether NIBE explicitly identifies the value as relative humidity."""
     metadata = point.get("metadata") or {}
     return "%RH" in {metadata.get("unit"), metadata.get("shortUnit")}
+
+
+def description_enum_map(point: dict[str, Any]) -> dict[int, str]:
+    """Parse numeric enum labels supplied by the local REST point description."""
+    description = str(point.get("description") or "").replace("\u00ad", "").strip()
+    if not description:
+        return {}
+
+    result: dict[int, str] = {}
+    for part in description.split(","):
+        match = _DESCRIPTION_ENUM_RE.match(part)
+        if not match:
+            continue
+        result[int(match.group(1))] = match.group(2).strip()
+    return result
 
 
 def periodic_hot_water_date(raw: int | str | None) -> str | None:
@@ -173,8 +191,28 @@ class NibeDiscoveredSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
 
 class NibeSensor(NibePointEntity, SensorEntity):
     @property
+    def available(self) -> bool:
+        point = self.point
+        if not self.coordinator.last_update_success or not point:
+            return False
+
+        # Point 840 is a duration value whose u16 maximum is a device-provided
+        # special state. Keep the entity reachable instead of reporting a
+        # communication failure; native_value remains unknown for that state.
+        if self.definition.point_id == POINT_TIME_TO_DEFROST and raw_value(point) == 65535:
+            return bool(point_value(point).get("isOk", True))
+
+        return super().available
+
+    @property
     def native_value(self):
         point = self.point or {}
+
+        # Do this before the generic sentinel check. For this REST point the
+        # u16 maximum is a special state, not a duration in minutes.
+        if self.definition.point_id == POINT_TIME_TO_DEFROST and raw_value(point) == 65535:
+            return None
+
         if raw_value_is_sentinel(point):
             return None
 
@@ -206,16 +244,15 @@ class NibeSensor(NibePointEntity, SensorEntity):
             except (TypeError, ValueError):
                 return "unknown"
 
-        value = scaled_value(point)
-
-        if self.definition.point_id == POINT_TIME_TO_DEFROST:
+        if self.definition.point_id == 22268:
+            value = raw_value(point)
             try:
-                if value is not None and float(value) > 720:
-                    return 0
+                numeric_value = int(value)
             except (TypeError, ValueError):
-                pass
+                return value
+            return description_enum_map(point).get(numeric_value, value)
 
-        return value
+        return scaled_value(point)
 
     @property
     def native_unit_of_measurement(self) -> str | None:
@@ -281,6 +318,21 @@ class NibeSensor(NibePointEntity, SensorEntity):
         }:
             return SensorStateClass.MEASUREMENT
         return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        attributes = dict(super().extra_state_attributes)
+        point = self.point or {}
+
+        if self.definition.point_id == POINT_TIME_TO_DEFROST:
+            raw = raw_value(point)
+            if raw == 65535:
+                attributes["nibe_special_value"] = raw
+                label = description_enum_map(point).get(65535)
+                if label:
+                    attributes["nibe_special_state"] = label
+
+        return attributes
 
 
 class NibeNotificationSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
