@@ -629,14 +629,12 @@ def _preview_special_entities(
 
 def _profile_preview_label(profile: str, *, german: bool) -> str:
     labels_de = {
-        "minimal": "Minimal",
         "standard": "Standard",
         "extended": "Erweitert",
         "complete": "Komplett",
         "individual": "Individuell",
     }
     labels_en = {
-        "minimal": "Minimal",
         "standard": "Standard",
         "extended": "Extended",
         "complete": "Complete",
@@ -817,7 +815,6 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ),
             description_placeholders={
-                "minimal": str(counts["minimal"]),
                 "standard": str(counts["standard"]),
                 "extended": str(counts["extended"]),
                 "complete": str(counts["complete"]),
