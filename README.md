@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-S-Series-Anlage über die **lokale RES
 
 Die Integration wurde im realen Betrieb mit **VVM S320, S2125 und ERS S40-400** entwickelt und getestet. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.9.6**
+Aktuelle Integrationsversion: **0.9.7**
 
 ---
 
@@ -405,7 +405,8 @@ Die Regressionstests decken unter anderem ab:
 - Entitätsprofile
 - Geräte-/Equipment-Erkennung
 - Diagnose-Datenschutz
-- aktuelle Diagnosewerte, Sentinel-Erkennung und 24-Stunden-Minutenhistorie
+- aktuelle Diagnosewerte und 24-Stunden-Minutenhistorie
+- Erkennung ungültiger Integer-Sentinelwerte
 - Import-Smoke-Test aller Plattformen
 - Ruff `F821`
 
