@@ -117,8 +117,8 @@ def test_ventilation_points_require_ventilation_selection() -> None:
     )
 
 
-def test_complete_hot_water_circulation_schedule_is_filtered_as_one_group() -> None:
-    circulation_ids = (1829, 3710, 3711, 7849, 7852, 12394, 21904, 21938)
+def test_verified_hot_water_circulation_points_are_filtered_as_one_group() -> None:
+    circulation_ids = (1829, 3710, 3711, 7849, 7850, 7851, 7852, 7853, 7854)
     for point_id in circulation_ids:
         assert not point_allowed_by_equipment(point_id, [], _point(1))
         assert point_allowed_by_equipment(
@@ -126,6 +126,11 @@ def test_complete_hot_water_circulation_schedule_is_filtered_as_one_group() -> N
             [EQUIPMENT_HOT_WATER_CIRCULATION],
             _point(1),
         )
+
+
+def test_non_hwc_schedule_points_are_not_filtered_as_circulation() -> None:
+    for point_id in (12394, 21904, 21938):
+        assert point_allowed_by_equipment(point_id, [], _point(1))
 
 
 def test_x27_configuration_remains_read_only_visible_information() -> None:
