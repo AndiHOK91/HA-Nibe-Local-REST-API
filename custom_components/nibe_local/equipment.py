@@ -58,7 +58,7 @@ ERS_ACCESSORY_POINT_IDS = frozenset(
 # without querying /menu or /menuchain during Home Assistant setup.
 ERS_RUNTIME_HINT_POINT_IDS = frozenset({7934, 7935, 7936, 7937, 7939, 7969, 7970})
 
-# Known ERS/ventilation variables from the live dump plus the curated points.
+# Known ERS/ventilation variables from the curated REST point set.
 VENTILATION_POINT_IDS = frozenset(
     {
         248,
@@ -97,8 +97,8 @@ VENTILATION_POINT_IDS = frozenset(
     }
 )
 
-# Complete hot-water-circulation schedule: status, cycle times, external block,
-# five periods, start/stop times, and weekday enable flags.
+# Hot-water circulation points directly exposed by the local REST API:
+# current GP11 state, cycle times, and the three available schedule periods.
 HOT_WATER_CIRCULATION_POINT_IDS = frozenset(
     {
         1829,
@@ -110,17 +110,6 @@ HOT_WATER_CIRCULATION_POINT_IDS = frozenset(
         7852,
         7853,
         7854,
-        7855,
-        7856,
-        7857,
-        8125,
-        12394,
-        12395,
-        12401,
-        12402,
-        12403,
-        12404,
-        *range(21904, 21939),
     }
 )
 
@@ -152,6 +141,7 @@ def normalize_equipment(
 
 
 def _raw_value(point: dict[str, Any] | None) -> int | float | str | None:
+    value: Any
     if not isinstance(point, dict):
         return None
     value = point.get("value") or point.get("datavalue") or {}
