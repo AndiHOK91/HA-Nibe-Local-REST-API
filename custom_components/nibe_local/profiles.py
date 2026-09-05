@@ -5,9 +5,6 @@ from collections.abc import Iterable
 
 from .const import POINTS
 
-# Kept only for backwards compatibility with existing config entries. Minimal is
-# no longer offered as a selectable profile.
-PROFILE_MINIMAL = "minimal"
 PROFILE_STANDARD = "standard"
 PROFILE_EXTENDED = "extended"
 PROFILE_COMPLETE = "complete"
@@ -19,18 +16,6 @@ ENTITY_PROFILES = (
     PROFILE_INDIVIDUAL,
 )
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
-
-# Legacy Minimal remains readable for pre-existing entries but is intentionally
-# not exposed in the setup/options UI anymore.
-MINIMAL_POINT_IDS = frozenset(
-    {
-        4,   # Outdoor temperature BT1
-        8,   # Supply temperature BT2
-        10,  # Return temperature BT3
-        11,  # Hot-water top BT7
-        12,  # Hot-water charge BT6
-    }
-)
 
 # Standard follows the curated REST points corresponding to NIBE's default
 # point selection. Only points already verified and curated for the local REST
@@ -96,11 +81,9 @@ def point_enabled(
         return True
     if profile == PROFILE_INDIVIDUAL:
         return point_id in normalize_selected_ids(selected_ids)
-    if profile == PROFILE_MINIMAL:
-        return point_id in MINIMAL_POINT_IDS
     if profile == PROFILE_STANDARD:
         return point_id in STANDARD_POINT_IDS
-    # Extended is also the compatibility fallback for pre-0.9 entries.
+    # Extended is also the compatibility fallback for entries without a profile.
     return point_id in KNOWN_POINT_IDS
 
 
@@ -108,8 +91,6 @@ def profile_counts(available_ids: Iterable[object]) -> dict[str, int]:
     """Return how many discovered variables are active in each automatic profile."""
     available = normalize_selected_ids(available_ids)
     return {
-        # Legacy key retained until old translations/config entries have aged out.
-        PROFILE_MINIMAL: len(available & MINIMAL_POINT_IDS),
         PROFILE_STANDARD: len(available & STANDARD_POINT_IDS),
         PROFILE_EXTENDED: len(available & KNOWN_POINT_IDS),
         PROFILE_COMPLETE: len(available),
