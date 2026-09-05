@@ -4,641 +4,202 @@
       "user": {
         "title": "Set up NIBE Local REST API",
         "description": "Choose the connection and authentication method. Credentials are requested in the next step for the selected method only.",
-        "data": {
-          "host": "Host / IP address",
-          "port": "Port",
-          "auth_method": "Authentication",
-          "username": "Username",
-          "password": "Password",
-          "auth_header": "Authorization header",
-          "verify_ssl": "Verify TLS certificate",
-          "scan_interval": "Polling interval in seconds",
-          "command_poll_delay_ms": "Command polling delay (ms)"
-        },
-        "data_description": {
-          "password": "The password is shown as a masked value.",
-          "auth_header": "Complete HTTP Authorization header, for example “Basic dXNlcjpwYXNzd29ydA==”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
-        }
+        "data": {"host": "Host / IP address", "port": "Port", "auth_method": "Authentication", "username": "Username", "password": "Password", "auth_header": "Authorization header", "verify_ssl": "Verify TLS certificate", "scan_interval": "Polling interval in seconds", "command_poll_delay_ms": "Command polling delay (ms)"},
+        "data_description": {"password": "The password is shown as a masked value.", "auth_header": "Complete HTTP Authorization header, for example “Basic dXNlcjpwYXNzd29ydA==”. The value after “Basic” must be Base64 encoded and is shown as a masked value."}
       },
       "reauth_confirm": {
         "title": "NIBE Local REST API – update credentials",
         "description": "{device_name} – Host: {host} – IP: {ip_address} rejected the stored credentials. Enter the current credentials. Leave the secret field empty to keep the stored value.",
-        "data": {
-          "username": "Username",
-          "password": "New password (empty = unchanged)",
-          "auth_header": "New Authorization header (empty = unchanged)"
-        },
-        "data_description": {
-          "auth_header": "Complete HTTP Authorization header, for example “Basic dXNlcjpwYXNzd29ydA==”. The value after “Basic” must be Base64 encoded and is shown as a masked value."
-        }
+        "data": {"username": "Username", "password": "New password (empty = unchanged)", "auth_header": "New Authorization header (empty = unchanged)"},
+        "data_description": {"auth_header": "Complete HTTP Authorization header, for example “Basic dXNlcjpwYXNzd29ydA==”. The value after “Basic” must be Base64 encoded and is shown as a masked value."}
       },
       "entity_profile": {
         "title": "Choose entity scope",
-        "description": "Choose the entity scope and naming. Available on this device: Minimal {minimal}, Standard {standard}, Extended {extended}, Complete {complete}; Individual offers {individual} variables. Home Assistant continues to determine the final entity ID format.",
-        "data": {
-          "entity_profile": "Entity profile",
-          "entity_naming": "Entity naming"
-        },
-        "data_description": {
-          "entity_naming": "Controls which display name the integration provides to Home Assistant:\n• Home Assistant standard (recommended): translated, easy-to-read names, e.g. “Outdoor temperature (BT1)”.\n• Local API: name/description directly from the local NIBE API, e.g. “Current outdoor temperature (BT1)”.\n• Technical: API name plus variable ID, e.g. “Current outdoor temperature (BT1) [ID 4]”."
-        }
+        "description": "Choose the entity scope and naming. Available on this device: Standard {standard}, Extended {extended}, Complete {complete}; Individual offers {individual} variables. Home Assistant continues to determine the final entity ID format.",
+        "data": {"entity_profile": "Entity profile", "entity_naming": "Entity naming"},
+        "data_description": {"entity_naming": "Controls which display name the integration provides to Home Assistant:\n• Home Assistant standard (recommended): translated, easy-to-read names, e.g. “Outdoor temperature (BT1)”.\n• Local API: name/description directly from the local NIBE API, e.g. “Current outdoor temperature (BT1)”.\n• Technical: API name plus variable ID, e.g. “Current outdoor temperature (BT1) [ID 4]”."}
       },
-      "entity_selection": {
-        "title": "Choose entities individually",
-        "description": "{count} variables were discovered on the NIBE. Tick or untick the entities you want. Known points are shown with name, variable ID and unit.",
-        "data": {
-          "selected_point_ids": "NIBE variables"
-        }
-      },
-      "auth_basic": {
-        "title": "Username + password",
-        "description": "Enter the credentials for the local REST API.",
-        "data": {
-          "username": "Username",
-          "password": "Password"
-        }
-      },
-      "auth_header": {
-        "title": "Authorization header",
-        "description": "Enter the complete HTTP Authorization header for the local REST API.",
-        "data": {
-          "auth_header": "Authorization header"
-        }
-      },
-      "entity_preview": {
-        "title": "Review entity overview",
-        "description": "Review the selection before applying it. **Profile:** {profile} · **discovered variables:** {discovered}. **Active/selected:** {active_count} (already in the registry: {active_existing}, new: {active_new}).\n\n**Active / selected**\n{active_list}\n\n**Not selected / deselected ({inactive_count})**\n{inactive_list}\n\n**Scheduled for registry deletion ({delete_count})**\n{delete_list}\n\n**Additional integration entities ({special_count})**\n{special_list}\n\nRegistry cleanup: **{cleanup}** · Backup beforehand: **{backup}**. For large lists, at most 50 entries per section are shown; the counters remain complete. Settings, backup and any registry deletion are only applied after you press OK."
-      }
+      "entity_selection": {"title": "Choose entities individually", "description": "{count} variables were discovered on the NIBE. Tick or untick the entities you want. Known points are shown with name, variable ID and unit.", "data": {"selected_point_ids": "NIBE variables"}},
+      "auth_basic": {"title": "Username + password", "description": "Enter the credentials for the local REST API.", "data": {"username": "Username", "password": "Password"}},
+      "auth_header": {"title": "Authorization header", "description": "Enter the complete HTTP Authorization header for the local REST API.", "data": {"auth_header": "Authorization header"}},
+      "entity_preview": {"title": "Review entity overview", "description": "Review the selection before applying it. **Profile:** {profile} · **discovered variables:** {discovered}. **Active/selected:** {active_count} (already in the registry: {active_existing}, new: {active_new}).\n\n**Active / selected**\n{active_list}\n\n**Not selected / deselected ({inactive_count})**\n{inactive_list}\n\n**Scheduled for registry deletion ({delete_count})**\n{delete_list}\n\n**Additional integration entities ({special_count})**\n{special_list}\n\nRegistry cleanup: **{cleanup}** · Backup beforehand: **{backup}**. For large lists, at most 50 entries per section are shown; the counters remain complete. Settings, backup and any registry deletion are only applied after you press OK."}
     },
-    "error": {
-      "cannot_connect": "Could not connect to the NIBE local API.",
-      "invalid_auth": "Username, password, or Authorization header is invalid."
-    },
-    "abort": {
-      "already_configured": "This NIBE device is already configured.",
-      "reauth_successful": "Credentials updated successfully.",
-      "reauth_entry_missing": "The NIBE configuration to update could not be found.",
-      "setup_state_missing": "Setup state expired. Please start setup again."
-    }
+    "error": {"cannot_connect": "Could not connect to the NIBE local API.", "invalid_auth": "Username, password, or Authorization header is invalid."},
+    "abort": {"already_configured": "This NIBE device is already configured.", "reauth_successful": "Credentials updated successfully.", "reauth_entry_missing": "The NIBE configuration to update could not be found.", "setup_state_missing": "Setup state expired. Please start setup again."}
   },
   "options": {
     "step": {
       "init": {
         "title": "Configure NIBE Local REST API",
         "description": "Change connection, polling, entity profile, naming, and authentication method. Credentials are requested in the next step for the selected method only. Registry cleanup is optional. When cleanup is enabled, creating a backup first is enabled by default and must be explicitly disabled to delete without a backup.",
-        "data": {
-          "host": "Host / IP address",
-          "port": "Port",
-          "auth_method": "Authentication",
-          "username": "Username",
-          "password": "New password (empty = unchanged)",
-          "auth_header": "New Authorization header (empty = unchanged)",
-          "verify_ssl": "Verify TLS certificate",
-          "scan_interval": "Polling interval in seconds",
-          "command_poll_delay_ms": "Command polling delay (ms)",
-          "entity_profile": "Entity profile",
-          "entity_naming": "Entity naming",
-          "remove_inactive_entities": "Remove no-longer-used point entities from the registry",
-          "backup_before_cleanup": "Create a Home Assistant backup before registry cleanup"
-        },
-        "data_description": {
-          "auth_header": "Complete HTTP Authorization header, for example “Basic dXNlcjpwYXNzd29ydA==”. The value after “Basic” must be Base64 encoded and is shown as a masked value.",
-          "entity_naming": "Controls which display name the integration provides to Home Assistant:\n• Home Assistant standard (recommended): translated, easy-to-read names, e.g. “Outdoor temperature (BT1)”.\n• Local API: name/description directly from the local NIBE API, e.g. “Current outdoor temperature (BT1)”.\n• Technical: API name plus variable ID, e.g. “Current outdoor temperature (BT1) [ID 4]”."
-        }
+        "data": {"host": "Host / IP address", "port": "Port", "auth_method": "Authentication", "username": "Username", "password": "New password (empty = unchanged)", "auth_header": "New Authorization header (empty = unchanged)", "verify_ssl": "Verify TLS certificate", "scan_interval": "Polling interval in seconds", "command_poll_delay_ms": "Command polling delay (ms)", "entity_profile": "Entity profile", "entity_naming": "Entity naming", "remove_inactive_entities": "Remove no-longer-used point entities from the registry", "backup_before_cleanup": "Create a Home Assistant backup before registry cleanup"},
+        "data_description": {"auth_header": "Complete HTTP Authorization header, for example “Basic dXNlcjpwYXNzd29ydA==”. The value after “Basic” must be Base64 encoded and is shown as a masked value.", "entity_naming": "Controls which display name the integration provides to Home Assistant:\n• Home Assistant standard (recommended): translated, easy-to-read names, e.g. “Outdoor temperature (BT1)”.\n• Local API: name/description directly from the local NIBE API, e.g. “Current outdoor temperature (BT1)”.\n• Technical: API name plus variable ID, e.g. “Current outdoor temperature (BT1) [ID 4]”."}
       },
-      "entity_selection": {
-        "title": "Choose entities individually",
-        "description": "{count} variables were discovered on the NIBE. Tick or untick the entities you want. Known points are shown with name, variable ID and unit.",
-        "data": {
-          "selected_point_ids": "NIBE variables"
-        }
-      },
-      "auth_basic": {
-        "title": "Username + password",
-        "description": "Change the username or enter a new password. Leaving the password empty keeps the stored value.",
-        "data": {
-          "username": "Username",
-          "password": "New password (empty = unchanged)"
-        }
-      },
-      "auth_header": {
-        "title": "Authorization header",
-        "description": "Enter a new Authorization header. Leaving it empty keeps the stored value.",
-        "data": {
-          "auth_header": "New Authorization header (empty = unchanged)"
-        }
-      },
-      "entity_preview": {
-        "title": "Review entity overview",
-        "description": "Review the selection before applying it. **Profile:** {profile} · **discovered variables:** {discovered}. **Active/selected:** {active_count} (already in the registry: {active_existing}, new: {active_new}).\n\n**Active / selected**\n{active_list}\n\n**Not selected / deselected ({inactive_count})**\n{inactive_list}\n\n**Scheduled for registry deletion ({delete_count})**\n{delete_list}\n\n**Additional integration entities ({special_count})**\n{special_list}\n\nRegistry cleanup: **{cleanup}** · Backup beforehand: **{backup}**. For large lists, at most 50 entries per section are shown; the counters remain complete. Settings, backup and any registry deletion are only applied after you press OK."
-      }
+      "entity_selection": {"title": "Choose entities individually", "description": "{count} variables were discovered on the NIBE. Tick or untick the entities you want. Known points are shown with name, variable ID and unit.", "data": {"selected_point_ids": "NIBE variables"}},
+      "auth_basic": {"title": "Username + password", "description": "Change the username or enter a new password. Leaving the password empty keeps the stored value.", "data": {"username": "Username", "password": "New password (empty = unchanged)"}},
+      "auth_header": {"title": "Authorization header", "description": "Enter a new Authorization header. Leaving it empty keeps the stored value.", "data": {"auth_header": "New Authorization header (empty = unchanged)"}},
+      "entity_preview": {"title": "Review entity overview", "description": "Review the selection before applying it. **Profile:** {profile} · **discovered variables:** {discovered}. **Active/selected:** {active_count} (already in the registry: {active_existing}, new: {active_new}).\n\n**Active / selected**\n{active_list}\n\n**Not selected / deselected ({inactive_count})**\n{inactive_list}\n\n**Scheduled for registry deletion ({delete_count})**\n{delete_list}\n\n**Additional integration entities ({special_count})**\n{special_list}\n\nRegistry cleanup: **{cleanup}** · Backup beforehand: **{backup}**. For large lists, at most 50 entries per section are shown; the counters remain complete. Settings, backup and any registry deletion are only applied after you press OK."}
     },
-    "error": {
-      "cannot_connect": "Could not connect using the new settings.",
-      "invalid_auth": "Username, password, or Authorization header is invalid.",
-      "backup_failed": "The Home Assistant backup could not be created successfully. No registry entities were removed."
-    }
+    "error": {"cannot_connect": "Could not connect using the new settings.", "invalid_auth": "Username, password, or Authorization header is invalid.", "backup_failed": "The Home Assistant backup could not be created successfully. No registry entities were removed."}
   },
   "selector": {
-    "auth_method": {
-      "options": {
-        "basic": "Username + password",
-        "header": "Authorization header"
-      }
-    },
-    "entity_profile": {
-      "options": {
-        "minimal": "Minimal",
-        "standard": "Standard",
-        "extended": "Extended",
-        "complete": "Complete",
-        "individual": "Individual"
-      }
-    },
-    "entity_naming": {
-      "options": {
-        "home_assistant": "Home Assistant standard (recommended)",
-        "local_api": "Local API",
-        "technical": "Technical"
-      }
-    }
+    "auth_method": {"options": {"basic": "Username + password", "header": "Authorization header"}},
+    "entity_profile": {"options": {"standard": "Standard", "extended": "Extended", "complete": "Complete", "individual": "Individual"}},
+    "entity_naming": {"options": {"home_assistant": "Home Assistant standard (recommended)", "local_api": "Local API", "technical": "Technical"}}
   },
   "entity": {
     "sensor": {
-      "degree_minutes": {
-        "name": "Degree minutes"
-      },
-      "aux_heat_total_time": {
-        "name": "Auxiliary heat total operating time"
-      },
-      "aux_heat_power": {
-        "name": "Internal auxiliary heat power"
-      },
-      "operating_priority": {
-        "name": "Operating priority",
-        "state": {
-          "off": "Off",
-          "hot_water": "Hot water",
-          "heating": "Heating",
-          "pool": "Pool",
-          "cooling": "Cooling"
-        }
-      },
-      "aux_heat_mode": {
-        "name": "Internal auxiliary heat operating mode"
-      },
-      "current_status": {
-        "name": "Current system status"
-      },
-      "operating_mode_status": {
-        "name": "Operating mode",
-        "state": {
-          "auto": "Auto",
-          "manual": "Manual",
-          "auxiliary_heat_only": "Auxiliary heat only"
-        }
-      },
-      "alarm_number": {
-        "name": "Alarm number"
-      },
-      "outdoor_temperature_bt1": {
-        "name": "Outdoor temperature (BT1)"
-      },
-      "mean_outdoor_temperature_bt1": {
-        "name": "Mean outdoor temperature (BT1)"
-      },
-      "supply_temperature_bt2": {
-        "name": "Supply temperature (BT2)"
-      },
-      "return_temperature_bt3": {
-        "name": "Return temperature (BT3)"
-      },
-      "flow_bf1": {
-        "name": "Flow rate (BF1)"
-      },
-      "room_average_temperature_bt50": {
-        "name": "Room temperature (BT50)"
-      },
-      "calculated_supply_heating": {
-        "name": "Calculated heating supply temperature"
-      },
-      "cooling_degree_minutes": {
-        "name": "Cooling degree minutes"
-      },
-      "calculated_supply_cooling": {
-        "name": "Calculated cooling supply temperature"
-      },
-      "hot_water_top_bt7": {
-        "name": "Hot water temperature top (BT7)"
-      },
-      "hot_water_charge_bt6": {
-        "name": "Hot water charging temperature (BT6)"
-      },
-      "hot_water_outlet_bt70": {
-        "name": "Hot water outlet (BT70)"
-      },
-      "aux_heat_hot_water_total_time": {
-        "name": "Auxiliary heat operating time for hot water"
-      },
-      "periodic_hot_water_date": {
-        "name": "Next periodic hot water increase"
-      },
-      "more_hot_water_minutes": {
-        "name": "More hot water – remaining time"
-      },
-      "energy_meter_pulse_be6": {
-        "name": "Energy meter (BE6)"
-      },
-      "energy_log_current_power_consumption": {
-        "name": "Current energy consumption"
-      },
-      "energy_log_current_power_components": {
-        "name": "Current energy consumption components"
-      },
-      "heating_circulation_pump_gp1": {
-        "name": "Heating circulation pump speed (GP1)"
-      },
-      "heating_circulation_pump_gp1_2792": {
-        "name": "Heating circulation pump speed (GP1), alternative"
-      },
-      "outdoor_unit_alarm": {
-        "name": "Outdoor unit alarm number (EB101)"
-      },
-      "outdoor_unit_fan_speed": {
-        "name": "Outdoor unit fan speed (EB101)"
-      },
-      "generated_heat_power": {
-        "name": "Generated heat power (EB101)"
-      },
-      "compressor_total_time_cooling": {
-        "name": "Compressor total cooling operating time (EB101-EP14)"
-      },
-      "s2125_return_bt3": {
-        "name": "Heat pump return temperature (EB101-BT3)"
-      },
-      "s2125_condenser_supply_bt12": {
-        "name": "Condenser supply temperature (EB101-BT12)"
-      },
-      "s2125_hot_gas_bt14": {
-        "name": "Hot gas temperature (EB101-BT14)"
-      },
-      "s2125_liquid_line_bt15": {
-        "name": "Liquid line temperature (EB101-BT15)"
-      },
-      "s2125_suction_gas_bt17": {
-        "name": "Suction gas temperature (EB101-BT17)"
-      },
-      "compressor_status": {
-        "name": "Compressor status (EB101)"
-      },
-      "compressor_time_to_start": {
-        "name": "Compressor time to start (EB101-EP14)"
-      },
-      "compressor_starts": {
-        "name": "Compressor starts (EB101-EP14)"
-      },
-      "compressor_total_time": {
-        "name": "Compressor total operating time (EB101-EP14)"
-      },
-      "compressor_hot_water_time": {
-        "name": "Compressor hot water operating time (EB101-EP14)"
-      },
-      "compressor_alarm": {
-        "name": "Compressor alarm number (EB101-EP14)"
-      },
-      "s2125_outdoor_bt28": {
-        "name": "Heat pump outdoor temperature (EB101-BT28)"
-      },
-      "s2125_evaporator_bt16": {
-        "name": "Evaporator temperature (EB101-BT16)"
-      },
-      "s2125_low_pressure_bp8": {
-        "name": "Low pressure (EB101-BP8)"
-      },
-      "compressor_frequency": {
-        "name": "Compressor frequency (EB101)"
-      },
-      "compressor_power": {
-        "name": "Compressor power (EB101-EP14)"
-      },
-      "compressor_requested_frequency": {
-        "name": "Requested compressor frequency (EB101)"
-      },
-      "compressor_current": {
-        "name": "Compressor current (EB101-EP14)"
-      },
-      "inverter_temperature": {
-        "name": "Inverter temperature (EB101-EP14)"
-      },
-      "compressor_fan_speed": {
-        "name": "Compressor fan speed (EB101-EP14)"
-      },
-      "time_to_defrost": {
-        "name": "Time to defrost (EB101)"
-      },
-      "defrost_index": {
-        "name": "Defrost index (EB101)"
-      },
-      "eev_superheat_reference": {
-        "name": "EEV superheat reference (EB101)"
-      },
-      "eev_superheat": {
-        "name": "EEV superheat (EB101)"
-      },
-      "eev_ssh_error": {
-        "name": "EEV SSH error (EB101)"
-      },
-      "eev_superheat_temperature_reference": {
-        "name": "EEV superheat temperature reference (EB101)"
-      },
-      "eev_setpoint": {
-        "name": "EEV setpoint (EB101)"
-      },
-      "eev_process_value": {
-        "name": "EEV process value (EB101)"
-      },
-      "eev_te_error_average_open": {
-        "name": "EEV TE error average opening (EB101)"
-      },
-      "eev_opening_degree": {
-        "name": "EEV opening degree (EB101)"
-      },
-      "evi_ssh_error": {
-        "name": "EVI SSH error (EB101)"
-      },
-      "evi_te_error_average_open": {
-        "name": "EVI TE error average opening (EB101)"
-      },
-      "low_pressure_dew": {
-        "name": "Low pressure dew point (EB101-BP8)"
-      },
-      "high_pressure_dew": {
-        "name": "High pressure dew point (EB101-BP9)"
-      },
-      "injection_temperature_bt81": {
-        "name": "Injection temperature (EB101-BT81)"
-      },
-      "injection_pressure_bp11": {
-        "name": "Injection pressure (EB101-BP11)"
-      },
-      "evi_pressure_dew": {
-        "name": "EVI pressure dew point (EB101-EP14-BP11)"
-      },
-      "evaporator_bt84": {
-        "name": "Evaporator temperature (EB101-BT84)"
-      },
-      "fan_status_ep14": {
-        "name": "Fan status (EB101-EP14)"
-      },
-      "fan_rpm_ep14": {
-        "name": "Fan speed (EB101-EP14)"
-      },
-      "start_defrost_fan": {
-        "name": "Defrost fan start (EB101)"
-      },
-      "defrost_requested": {
-        "name": "Defrost requested (EB101)",
-        "state": {
-          "off": "Off",
-          "active": "Active",
-          "passive": "Passive",
-          "unknown": "Unknown"
-        }
-      },
-      "last_defrost_heat_pump_1": {
-        "name": "Last defrost heat pump 1"
-      },
-      "ventilation_exhaust_fan_speed": {
-        "name": "Exhaust fan speed (AZ30-GQ2)"
-      },
-      "ventilation_supply_fan_speed": {
-        "name": "Supply fan speed (AZ30-GQ3)"
-      },
-      "ventilation_exhaust_bt20": {
-        "name": "Exhaust air temperature (AZ30-BT20)"
-      },
-      "ventilation_extract_bt21": {
-        "name": "Extract air temperature (AZ30-BT21)"
-      },
-      "ventilation_supply_bt22": {
-        "name": "Supply air temperature (AZ30-BT22)"
-      },
-      "ventilation_outdoor_bt23": {
-        "name": "Ventilation outdoor temperature (AZ30-BT23)"
-      },
-      "ventilation_humidity_bm20": {
-        "name": "Humidity (AZ30-BM20)"
-      },
-      "notifications": {
-        "name": "Active notifications"
-      },
-      "last_connection_error": {
-        "name": "Last connection error"
-      }
+      "degree_minutes": {"name": "Degree minutes"},
+      "aux_heat_total_time": {"name": "Auxiliary heat total operating time"},
+      "aux_heat_power": {"name": "Internal auxiliary heat power"},
+      "operating_priority": {"name": "Operating priority", "state": {"off": "Off", "hot_water": "Hot water", "heating": "Heating", "pool": "Pool", "cooling": "Cooling"}},
+      "aux_heat_mode": {"name": "Internal auxiliary heat operating mode"},
+      "current_status": {"name": "Current system status"},
+      "operating_mode_status": {"name": "Operating mode", "state": {"auto": "Auto", "manual": "Manual", "auxiliary_heat_only": "Auxiliary heat only"}},
+      "alarm_number": {"name": "Alarm number"},
+      "outdoor_temperature_bt1": {"name": "Outdoor temperature (BT1)"},
+      "mean_outdoor_temperature_bt1": {"name": "Mean outdoor temperature (BT1)"},
+      "supply_temperature_bt2": {"name": "Supply temperature (BT2)"},
+      "return_temperature_bt3": {"name": "Return temperature (BT3)"},
+      "flow_bf1": {"name": "Flow rate (BF1)"},
+      "room_average_temperature_bt50": {"name": "Room temperature (BT50)"},
+      "calculated_supply_heating": {"name": "Calculated heating supply temperature"},
+      "cooling_degree_minutes": {"name": "Cooling degree minutes"},
+      "calculated_supply_cooling": {"name": "Calculated cooling supply temperature"},
+      "hot_water_top_bt7": {"name": "Hot water temperature top (BT7)"},
+      "hot_water_charge_bt6": {"name": "Hot water charging temperature (BT6)"},
+      "hot_water_outlet_bt70": {"name": "Hot water outlet (BT70)"},
+      "aux_heat_hot_water_total_time": {"name": "Auxiliary heat operating time for hot water"},
+      "periodic_hot_water_date": {"name": "Next periodic hot water increase"},
+      "more_hot_water_minutes": {"name": "More hot water – remaining time"},
+      "energy_meter_pulse_be6": {"name": "Energy meter (BE6)"},
+      "energy_log_current_power_consumption": {"name": "Current energy consumption"},
+      "energy_log_current_power_components": {"name": "Current energy consumption components"},
+      "heating_circulation_pump_gp1": {"name": "Heating circulation pump speed (GP1)"},
+      "heating_circulation_pump_gp1_2792": {"name": "Heating circulation pump speed (GP1), alternative"},
+      "outdoor_unit_alarm": {"name": "Outdoor unit alarm number (EB101)"},
+      "outdoor_unit_fan_speed": {"name": "Outdoor unit fan speed (EB101)"},
+      "generated_heat_power": {"name": "Generated heat power (EB101)"},
+      "compressor_total_time_cooling": {"name": "Compressor total cooling operating time (EB101-EP14)"},
+      "s2125_return_bt3": {"name": "Heat pump return temperature (EB101-BT3)"},
+      "s2125_condenser_supply_bt12": {"name": "Condenser supply temperature (EB101-BT12)"},
+      "s2125_hot_gas_bt14": {"name": "Hot gas temperature (EB101-BT14)"},
+      "s2125_liquid_line_bt15": {"name": "Liquid line temperature (EB101-BT15)"},
+      "s2125_suction_gas_bt17": {"name": "Suction gas temperature (EB101-BT17)"},
+      "compressor_status": {"name": "Compressor status (EB101)"},
+      "compressor_time_to_start": {"name": "Compressor time to start (EB101-EP14)"},
+      "compressor_starts": {"name": "Compressor starts (EB101-EP14)"},
+      "compressor_total_time": {"name": "Compressor total operating time (EB101-EP14)"},
+      "compressor_hot_water_time": {"name": "Compressor hot water operating time (EB101-EP14)"},
+      "compressor_alarm": {"name": "Compressor alarm number (EB101-EP14)"},
+      "s2125_outdoor_bt28": {"name": "Heat pump outdoor temperature (EB101-BT28)"},
+      "s2125_evaporator_bt16": {"name": "Evaporator temperature (EB101-BT16)"},
+      "s2125_low_pressure_bp8": {"name": "Low pressure (EB101-BP8)"},
+      "compressor_frequency": {"name": "Compressor frequency (EB101)"},
+      "compressor_power": {"name": "Compressor power (EB101-EP14)"},
+      "compressor_requested_frequency": {"name": "Requested compressor frequency (EB101)"},
+      "compressor_current": {"name": "Compressor current (EB101-EP14)"},
+      "inverter_temperature": {"name": "Inverter temperature (EB101-EP14)"},
+      "compressor_fan_speed": {"name": "Compressor fan speed (EB101-EP14)"},
+      "time_to_defrost": {"name": "Time to defrost (EB101)"},
+      "defrost_index": {"name": "Defrost index (EB101)"},
+      "eev_superheat_reference": {"name": "EEV superheat reference (EB101)"},
+      "eev_superheat": {"name": "EEV superheat (EB101)"},
+      "eev_ssh_error": {"name": "EEV SSH error (EB101)"},
+      "eev_superheat_temperature_reference": {"name": "EEV superheat temperature reference (EB101)"},
+      "eev_setpoint": {"name": "EEV setpoint (EB101)"},
+      "eev_process_value": {"name": "EEV process value (EB101)"},
+      "eev_te_error_average_open": {"name": "EEV TE error average opening (EB101)"},
+      "eev_opening_degree": {"name": "EEV opening degree (EB101)"},
+      "evi_ssh_error": {"name": "EVI SSH error (EB101)"},
+      "evi_te_error_average_open": {"name": "EVI TE error average opening (EB101)"},
+      "low_pressure_dew": {"name": "Low pressure dew point (EB101-BP8)"},
+      "high_pressure_dew": {"name": "High pressure dew point (EB101-BP9)"},
+      "injection_temperature_bt81": {"name": "Injection temperature (EB101-BT81)"},
+      "injection_pressure_bp11": {"name": "Injection pressure (EB101-BP11)"},
+      "evi_pressure_dew": {"name": "EVI pressure dew point (EB101-EP14-BP11)"},
+      "evaporator_bt84": {"name": "Evaporator temperature (EB101-BT84)"},
+      "fan_status_ep14": {"name": "Fan status (EB101-EP14)"},
+      "fan_rpm_ep14": {"name": "Fan speed (EB101-EP14)"},
+      "start_defrost_fan": {"name": "Defrost fan start (EB101)"},
+      "defrost_requested": {"name": "Defrost requested (EB101)", "state": {"off": "Off", "active": "Active", "passive": "Passive", "unknown": "Unknown"}},
+      "last_defrost_heat_pump_1": {"name": "Last defrost heat pump 1"},
+      "ventilation_exhaust_fan_speed": {"name": "Exhaust fan speed (AZ30-GQ2)"},
+      "ventilation_supply_fan_speed": {"name": "Supply fan speed (AZ30-GQ3)"},
+      "ventilation_exhaust_bt20": {"name": "Exhaust air temperature (AZ30-BT20)"},
+      "ventilation_extract_bt21": {"name": "Extract air temperature (AZ30-BT21)"},
+      "ventilation_supply_bt22": {"name": "Supply air temperature (AZ30-BT22)"},
+      "ventilation_outdoor_bt23": {"name": "Ventilation outdoor temperature (AZ30-BT23)"},
+      "ventilation_humidity_bm20": {"name": "Humidity (AZ30-BM20)"},
+      "notifications": {"name": "Active notifications"},
+      "last_connection_error": {"name": "Last connection error"}
     },
     "binary_sensor": {
-      "prioritized_aux_heat_allowed": {
-        "name": "Prioritized auxiliary heat allowed"
-      },
-      "external_blocking": {
-        "name": "External blocking"
-      },
-      "step_controlled_aux_heat_blocking": {
-        "name": "Step-controlled auxiliary heat blocking"
-      },
-      "cooling_status": {
-        "name": "Cooling active"
-      },
-      "cooling_blocked": {
-        "name": "Cooling blocked"
-      },
-      "compressor_for_cooling": {
-        "name": "Compressor for cooling active"
-      },
-      "hot_water_circulation_gp11": {
-        "name": "Hot water circulation (GP11)"
-      },
-      "more_hot_water_status": {
-        "name": "More hot water active"
-      },
-      "hot_water_diverter_qn10": {
-        "name": "Hot water diverter valve (QN10)"
-      },
-      "internal_charge_pump_gp12": {
-        "name": "Internal charge pump (GP12)"
-      },
-      "compressor_requested": {
-        "name": "Compressor requested (EB101-EP14)"
-      },
-      "protection_mode": {
-        "name": "Protection mode (EB101)"
-      },
-      "defrost": {
-        "name": "Defrost active (EB101)"
-      },
-      "api_reachable": {
-        "name": "REST API reachable"
-      },
-      "fallback_active": {
-        "name": "Individual-point fallback active"
-      }
+      "prioritized_aux_heat_allowed": {"name": "Prioritized auxiliary heat allowed"},
+      "external_blocking": {"name": "External blocking"},
+      "step_controlled_aux_heat_blocking": {"name": "Step-controlled auxiliary heat blocking"},
+      "cooling_status": {"name": "Cooling active"},
+      "cooling_blocked": {"name": "Cooling blocked"},
+      "compressor_for_cooling": {"name": "Compressor for cooling active"},
+      "hot_water_circulation_gp11": {"name": "Hot water circulation (GP11)"},
+      "more_hot_water_status": {"name": "More hot water active"},
+      "hot_water_diverter_qn10": {"name": "Hot water diverter valve (QN10)"},
+      "internal_charge_pump_gp12": {"name": "Internal charge pump (GP12)"},
+      "compressor_requested": {"name": "Compressor requested (EB101-EP14)"},
+      "protection_mode": {"name": "Protection mode (EB101)"},
+      "defrost": {"name": "Defrost active (EB101)"},
+      "api_reachable": {"name": "REST API reachable"},
+      "fallback_active": {"name": "Individual-point fallback active"}
     },
     "select": {
-      "operating_mode_setting": {
-        "name": "Operating mode",
-        "state": {
-          "auto": "Auto",
-          "manual": "Manual",
-          "auxiliary_heat_only": "Auxiliary heat only"
-        }
-      },
-      "hot_water_position": {
-        "name": "Hot water demand",
-        "state": {
-          "low": "Low",
-          "medium": "Medium",
-          "high": "High"
-        }
-      },
-      "ventilation_mode": {
-        "name": "Ventilation mode",
-        "state": {
-          "normal": "Normal",
-          "off": "Off",
-          "reduced": "Reduced",
-          "increased": "Increased",
-          "maximum": "Maximum"
-        }
-      },
-      "smart_mode": {
-        "name": "Smart Mode",
-        "state": {
-          "normal": "Normal",
-          "away": "Away"
-        }
-      }
+      "operating_mode_setting": {"name": "Operating mode", "state": {"auto": "Auto", "manual": "Manual", "auxiliary_heat_only": "Auxiliary heat only"}},
+      "hot_water_position": {"name": "Hot water demand", "state": {"low": "Low", "medium": "Medium", "high": "High"}},
+      "ventilation_mode": {"name": "Ventilation mode", "state": {"normal": "Normal", "off": "Off", "reduced": "Reduced", "increased": "Increased", "maximum": "Maximum"}},
+      "smart_mode": {"name": "Smart Mode", "state": {"normal": "Normal", "away": "Away"}}
     },
     "switch": {
-      "aux_heat_allowed_heating": {
-        "name": "Allow auxiliary heat for heating"
-      },
-      "heating_allowed": {
-        "name": "Allow heating"
-      },
-      "cooling_allowed": {
-        "name": "Allow cooling"
-      },
-      "periodic_hot_water": {
-        "name": "Periodic hot water increase"
-      },
-      "more_hot_water": {
-        "name": "More hot water"
-      },
-      "night_reduction": {
-        "name": "Night reduction"
-      },
-      "ventilation_plus": {
-        "name": "Ventilation +"
-      }
+      "aux_heat_allowed_heating": {"name": "Allow auxiliary heat for heating"},
+      "heating_allowed": {"name": "Allow heating"},
+      "cooling_allowed": {"name": "Allow cooling"},
+      "periodic_hot_water": {"name": "Periodic hot water increase"},
+      "more_hot_water": {"name": "More hot water"},
+      "night_reduction": {"name": "Night reduction"},
+      "ventilation_plus": {"name": "Ventilation +"}
     },
     "number": {
-      "heating_curve": {
-        "name": "Heating curve climate system 1"
-      },
-      "heating_curve_offset": {
-        "name": "Heating curve offset climate system 1"
-      },
-      "cooling_curve": {
-        "name": "Cooling curve climate system 1"
-      },
-      "cooling_curve_offset": {
-        "name": "Cooling curve offset climate system 1"
-      },
-      "hot_water_start_high": {
-        "name": "Hot water start temperature high"
-      },
-      "hot_water_start_normal": {
-        "name": "Hot water start temperature normal"
-      },
-      "hot_water_start_low": {
-        "name": "Hot water start temperature low"
-      },
-      "hot_water_stop_periodic_increase": {
-        "name": "Hot water stop temperature periodic increase"
-      },
-      "hot_water_stop_high": {
-        "name": "Hot water stop temperature high"
-      },
-      "hot_water_stop_normal": {
-        "name": "Hot water stop temperature normal"
-      },
-      "hot_water_stop_low": {
-        "name": "Hot water stop temperature low"
-      },
-      "periodic_hot_water_interval": {
-        "name": "Periodic hot water increase interval"
-      },
-      "hot_water_operating_time": {
-        "name": "Hot water operating time"
-      },
-      "hot_water_standstill_time": {
-        "name": "Hot water standstill time"
-      },
-      "hot_water_period_time": {
-        "name": "Hot water period time"
-      },
-      "heating_period_time": {
-        "name": "Heating period time"
-      },
-      "night_reduction_start_temperature": {
-        "name": "Night reduction start temperature"
-      },
-      "fan_reset_time_4": {
-        "name": "Fan reset time level 4"
-      },
-      "fan_reset_time_3": {
-        "name": "Fan reset time level 3"
-      },
-      "fan_reset_time_2": {
-        "name": "Fan reset time level 2"
-      },
-      "fan_reset_time_1": {
-        "name": "Fan reset time level 1"
-      }
+      "heating_curve": {"name": "Heating curve climate system 1"},
+      "heating_curve_offset": {"name": "Heating curve offset climate system 1"},
+      "cooling_curve": {"name": "Cooling curve climate system 1"},
+      "cooling_curve_offset": {"name": "Cooling curve offset climate system 1"},
+      "hot_water_start_high": {"name": "Hot water start temperature high"},
+      "hot_water_start_normal": {"name": "Hot water start temperature normal"},
+      "hot_water_start_low": {"name": "Hot water start temperature low"},
+      "hot_water_stop_periodic_increase": {"name": "Hot water stop temperature periodic increase"},
+      "hot_water_stop_high": {"name": "Hot water stop temperature high"},
+      "hot_water_stop_normal": {"name": "Hot water stop temperature normal"},
+      "hot_water_stop_low": {"name": "Hot water stop temperature low"},
+      "periodic_hot_water_interval": {"name": "Periodic hot water increase interval"},
+      "hot_water_operating_time": {"name": "Hot water operating time"},
+      "hot_water_standstill_time": {"name": "Hot water standstill time"},
+      "hot_water_period_time": {"name": "Hot water period time"},
+      "heating_period_time": {"name": "Heating period time"},
+      "night_reduction_start_temperature": {"name": "Night reduction start temperature"},
+      "fan_reset_time_4": {"name": "Fan reset time level 4"},
+      "fan_reset_time_3": {"name": "Fan reset time level 3"},
+      "fan_reset_time_2": {"name": "Fan reset time level 2"},
+      "fan_reset_time_1": {"name": "Fan reset time level 1"}
     },
-    "time": {
-      "periodic_hot_water_start_time": {
-        "name": "Periodic hot water increase start time"
-      }
-    }
+    "time": {"periodic_hot_water_start_time": {"name": "Periodic hot water increase start time"}}
   },
   "exceptions": {
-    "operating_mode_unavailable": {
-      "message": "The current NIBE operating mode could not be verified. The change was not sent as a precaution."
-    },
-    "write_not_allowed_in_current_mode": {
-      "message": "This setting is read-only in the current NIBE operating mode."
-    },
-    "number_limits_unavailable": {
-      "message": "NIBE does not provide reliable minimum/maximum limits for this value; the write was blocked for safety."
-    },
-    "number_out_of_range": {
-      "message": "Value {value} is outside the allowed range {minimum} to {maximum}."
-    },
-    "number_invalid_step": {
-      "message": "Value {value} does not match the NIBE-defined step size {step}."
-    },
-    "select_invalid_option": {
-      "message": "The option “{option}” is invalid for this NIBE setting."
-    },
-    "auth_rejected": {
-      "message": "The NIBE REST API rejected the configured credentials."
-    },
-    "auth_rejected_notification": {
-      "message": "{label}: The stored credentials were rejected by the REST API. Please update the integration credentials."
-    },
-    "connection_unreachable_notification": {
-      "message": "{label}: The local REST API has been unreachable for at least 2 minutes. Please check the network, NIBE device, and REST API."
-    }
+    "operating_mode_unavailable": {"message": "The current NIBE operating mode could not be verified. The change was not sent as a precaution."},
+    "write_not_allowed_in_current_mode": {"message": "This setting is read-only in the current NIBE operating mode."},
+    "number_limits_unavailable": {"message": "NIBE does not provide reliable minimum/maximum limits for this value; the write was blocked for safety."},
+    "number_out_of_range": {"message": "Value {value} is outside the allowed range {minimum} to {maximum}."},
+    "number_invalid_step": {"message": "Value {value} does not match the NIBE-defined step size {step}."},
+    "select_invalid_option": {"message": "The option “{option}” is invalid for this NIBE setting."},
+    "auth_rejected": {"message": "The NIBE REST API rejected the configured credentials."},
+    "auth_rejected_notification": {"message": "{label}: The stored credentials were rejected by the REST API. Please update the integration credentials."},
+    "connection_unreachable_notification": {"message": "{label}: The local REST API has been unreachable for at least 2 minutes. Please check the network, NIBE device, and REST API."}
   }
 }
