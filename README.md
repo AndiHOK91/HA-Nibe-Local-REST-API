@@ -159,17 +159,6 @@ Aktuelle Schutzlogik:
 | Nur Zusatzheizung | schreiben erlaubt | blockiert |
 | unbekannt / nicht sicher lesbar | blockiert | blockiert |
 
-### Zusatzheizung AUX
-
-Der AUX-Schalter `aux_heat_allowed_heating` ist **nicht** an diese Betriebsmodus-Schutzmatrix gekoppelt. Er wird unabhängig vom Betriebsmodus behandelt.
-
-Der read-only Status `aux_heat_mode` wird als binärer Zustand dargestellt:
-
-- `0` → Aus
-- `1` → Ein
-
-Unbekannte Werte bleiben als Rohwert sichtbar.
-
 ---
 
 ## 💧 Brauchwasser und Brauchwasserzirkulation
