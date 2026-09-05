@@ -18,42 +18,45 @@ ENTITY_PROFILES = (
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
 # Standard follows the curated REST points corresponding to NIBE's default
-# point selection. Only points already verified and curated for the local REST
-# API are included here; unresolved candidates are intentionally excluded.
+# point selection. Only points directly verified through the local REST API
+# are included here.
 STANDARD_POINT_IDS = frozenset(
     {
-        4,     # Outdoor temperature BT1
-        8,     # Supply temperature BT2
-        10,    # Return temperature BT3
-        11,    # Hot-water top BT7
-        12,    # Hot-water charge BT6
-        54,    # Mean outdoor temperature BT1
-        58,    # Flow BF1
-        781,   # Degree minutes
-        994,   # Injection temperature BT81
-        997,   # Evaporator BT84
-        1708,  # Calculated supply climate system 1
-        1756,  # Internal auxiliary heat power
-        1760,  # Internal auxiliary heat operating mode
-        1975,  # Heating circulation pump GP1
-        2491,  # Heat-pump return BT3
-        2494,  # Condenser supply BT12
-        2495,  # Hot gas BT14
-        2496,  # Liquid line BT15
-        2497,  # Suction gas BT17
-        2766,  # Heat-pump outdoor temperature BT28
-        2767,  # Evaporator BT16
-        2792,  # Heating circulation pump GP1 alternative
-        3095,  # Low pressure BP8
-        3096,  # Compressor frequency
-        3097,  # Protection mode
-        3170,  # Requested compressor frequency
-        3375,  # Alarm number
-        7934,  # Ventilation exhaust BT20
-        7935,  # Ventilation extract BT21
-        7936,  # Ventilation supply BT22
-        7937,  # Ventilation outdoor BT23
-        7939,  # Ventilation humidity BM20
+        4,      # Outdoor temperature BT1
+        8,      # Supply temperature BT2
+        10,     # Return temperature BT3
+        11,     # Hot-water top BT7
+        12,     # Hot-water charge BT6
+        29,     # Room sensor climate system 1 BT50
+        54,     # Mean outdoor temperature BT1
+        58,     # Flow BF1
+        91,     # Additional heat BT63
+        781,    # Degree minutes
+        994,    # Injection temperature BT81
+        997,    # Evaporator BT84
+        1708,   # Calculated supply climate system 1
+        1756,   # Internal auxiliary heat power
+        1760,   # Internal auxiliary heat operating mode
+        1975,   # Heating circulation pump GP1
+        2491,   # Heat-pump return BT3
+        2494,   # Condenser supply BT12
+        2495,   # Hot gas BT14
+        2496,   # Liquid line BT15
+        2497,   # Suction gas BT17
+        2766,   # Heat-pump outdoor temperature BT28
+        2767,   # Evaporator BT16
+        2792,   # Heating circulation pump GP1 alternative
+        3095,   # Low pressure BP8
+        3096,   # Compressor frequency
+        3097,   # Protection mode
+        3170,   # Requested compressor frequency
+        3375,   # Alarm number
+        7934,   # Ventilation exhaust BT20
+        7935,   # Ventilation extract BT21
+        7936,   # Ventilation supply BT22
+        7937,   # Ventilation outdoor BT23
+        7939,   # Ventilation humidity BM20
+        10894,  # Hot-water start BT5
     }
 )
 
