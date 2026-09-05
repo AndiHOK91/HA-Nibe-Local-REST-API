@@ -44,6 +44,10 @@ OPERATING_MODE_STATE_MAP = {
     1: "manual",
     2: "auxiliary_heat_only",
 }
+AUX_HEAT_MODE_MAP = {
+    0: "off",
+    1: "on",
+}
 DEFROST_REQUESTED_MAP = {
     0: "off",
     1: "active",
@@ -175,6 +179,13 @@ class NibeSensor(NibePointEntity, SensorEntity):
             value = raw_value(self.point or {})
             try:
                 return OPERATING_MODE_STATE_MAP.get(int(value), value)
+            except (TypeError, ValueError):
+                return value
+
+        if self.definition.point_id == 1760:
+            value = raw_value(self.point or {})
+            try:
+                return AUX_HEAT_MODE_MAP.get(int(value), value)
             except (TypeError, ValueError):
                 return value
 
