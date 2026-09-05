@@ -28,18 +28,12 @@ def _point(value=0, *, name=None, register_type=None, register_id=None):
     }
 
 
-def test_legacy_entries_keep_all_equipment_enabled() -> None:
-    assert normalize_equipment(None) == ALL_EQUIPMENT
-    assert normalize_equipment([], legacy_default=False) == frozenset()
-
-
-def test_detects_dump_equipment_without_menu_requests() -> None:
+def test_detects_equipment_from_rest_points_without_menu_requests() -> None:
     points = {
         "5200": _point(1, name="Energiezähler Impuls (BE6/BF2)"),
         "7048": _point(0, name="Energiezähler Impuls (BE7/BF3)"),
         "3959": _point(3, name="AUX-Relais (X27)"),
-        # ERS accessory 7933 is menu-only on the captured firmware; a live
-        # ERS temperature point provides the safe /points fallback.
+        # A live ERS temperature point provides the safe /points fallback.
         "7934": _point(278, name="Abluft (AZ30-BT20)"),
     }
     assert detect_equipment(points) == frozenset(
@@ -49,6 +43,11 @@ def test_detects_dump_equipment_without_menu_requests() -> None:
             EQUIPMENT_HOT_WATER_CIRCULATION,
         }
     )
+
+
+def test_legacy_entries_keep_all_equipment_enabled() -> None:
+    assert normalize_equipment(None) == ALL_EQUIPMENT
+    assert normalize_equipment([], legacy_default=False) == frozenset()
 
 
 def test_be6_detection_uses_rest_accessory_flag_5200() -> None:
@@ -117,8 +116,8 @@ def test_ventilation_points_require_ventilation_selection() -> None:
     )
 
 
-def test_complete_hot_water_circulation_schedule_is_filtered_as_one_group() -> None:
-    circulation_ids = (1829, 3710, 3711, 7849, 7852, 12394, 21904, 21938)
+def test_verified_hot_water_circulation_points_are_filtered_as_one_group() -> None:
+    circulation_ids = (1829, 3710, 3711, 7849, 7850, 7851, 7852, 7853, 7854)
     for point_id in circulation_ids:
         assert not point_allowed_by_equipment(point_id, [], _point(1))
         assert point_allowed_by_equipment(
@@ -126,6 +125,11 @@ def test_complete_hot_water_circulation_schedule_is_filtered_as_one_group() -> N
             [EQUIPMENT_HOT_WATER_CIRCULATION],
             _point(1),
         )
+
+
+def test_non_hwc_schedule_points_are_not_filtered_as_circulation() -> None:
+    for point_id in (12394, 21904, 21938):
+        assert point_allowed_by_equipment(point_id, [], _point(1))
 
 
 def test_x27_configuration_remains_read_only_visible_information() -> None:
