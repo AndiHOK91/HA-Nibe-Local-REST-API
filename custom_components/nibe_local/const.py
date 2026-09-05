@@ -69,7 +69,7 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(1760, "aux_heat_mode", "system"),
     PointDef(1820, "external_blocking", "system", "binary_sensor"),
     PointDef(1827, "step_controlled_aux_heat_blocking", "system", "binary_sensor"),
-    PointDef(2022, "current_status", "system"),
+    PointDef(2022, "current_status", "system", diagnostic=True),
     PointDef(3751, "operating_mode_setting", "system", "select"),
     PointDef(3919, "aux_heat_allowed_heating", "heating", "switch"),
     PointDef(4064, "operating_mode_status", "system"),
