@@ -5,13 +5,14 @@ from collections.abc import Iterable
 
 from .const import POINTS
 
+# Kept only for backwards compatibility with existing config entries. Minimal is
+# no longer offered as a selectable profile.
 PROFILE_MINIMAL = "minimal"
 PROFILE_STANDARD = "standard"
 PROFILE_EXTENDED = "extended"
 PROFILE_COMPLETE = "complete"
 PROFILE_INDIVIDUAL = "individual"
 ENTITY_PROFILES = (
-    PROFILE_MINIMAL,
     PROFILE_STANDARD,
     PROFILE_EXTENDED,
     PROFILE_COMPLETE,
@@ -19,42 +20,55 @@ ENTITY_PROFILES = (
 )
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
-# Minimal intentionally contains only the current core operating state and
-# the most important temperatures. Controls, comfort functions, hydraulic
-# values and detailed compressor data start with Standard.
+# Legacy Minimal remains readable for pre-existing entries but is intentionally
+# not exposed in the setup/options UI anymore.
 MINIMAL_POINT_IDS = frozenset(
+    {
+        4,   # Outdoor temperature BT1
+        8,   # Supply temperature BT2
+        10,  # Return temperature BT3
+        11,  # Hot-water top BT7
+        12,  # Hot-water charge BT6
+    }
+)
+
+# Standard follows the curated REST points corresponding to NIBE's default
+# point selection. Only points already verified and curated for the local REST
+# API are included here; unresolved candidates are intentionally excluded.
+STANDARD_POINT_IDS = frozenset(
     {
         4,     # Outdoor temperature BT1
         8,     # Supply temperature BT2
         10,    # Return temperature BT3
         11,    # Hot-water top BT7
         12,    # Hot-water charge BT6
-        116,   # Hot-water outlet BT70
-        158,   # Room temperature BT50
-        1758,  # Operating priority
-        2500,  # Compressor status
+        54,    # Mean outdoor temperature BT1
+        58,    # Flow BF1
+        781,   # Degree minutes
+        994,   # Injection temperature BT81
+        997,   # Evaporator BT84
+        1708,  # Calculated supply climate system 1
+        1756,  # Internal auxiliary heat power
+        1760,  # Internal auxiliary heat operating mode
+        1975,  # Heating circulation pump GP1
+        2491,  # Heat-pump return BT3
+        2494,  # Condenser supply BT12
+        2495,  # Hot gas BT14
+        2496,  # Liquid line BT15
+        2497,  # Suction gas BT17
+        2766,  # Heat-pump outdoor temperature BT28
+        2767,  # Evaporator BT16
+        2792,  # Heating circulation pump GP1 alternative
+        3095,  # Low pressure BP8
         3096,  # Compressor frequency
-        4064,  # Operating mode status
-    }
-)
-
-# Normal Home Assistant use: Minimal plus the controls, calculated values,
-# hydraulic/energy data, useful compressor operating values, hot-water
-# functions, heating/cooling settings and common ventilation. More technical
-# pressure/electrical, auxiliary-heat and detailed defrost/service values stay
-# Extended-only.
-STANDARD_POINT_IDS = MINIMAL_POINT_IDS | frozenset(
-    {
-        54, 58, 781,
-        834, 839,
-        1708, 1716, 1829, 1942, 1975, 2002, 2022,
-        2491, 2494, 2501, 2505, 2506, 2507,
-        25165, 25166,
-        2657, 2683, 2685, 2691, 2695, 2729, 2766, 2767,
-        3096, 3097, 3098, 3101, 3138, 3170, 3375,
-        3667, 3671, 3697,
-        3699, 3700, 3701, 3703, 3704, 3705, 3706, 3707, 3708,
-        3751, 3830, 3920, 3921, 4030, 4040, 4564, 5025, 5033,
+        3097,  # Protection mode
+        3170,  # Requested compressor frequency
+        3375,  # Alarm number
+        7934,  # Ventilation exhaust BT20
+        7935,  # Ventilation extract BT21
+        7936,  # Ventilation supply BT22
+        7937,  # Ventilation outdoor BT23
+        7939,  # Ventilation humidity BM20
     }
 )
 
@@ -94,6 +108,7 @@ def profile_counts(available_ids: Iterable[object]) -> dict[str, int]:
     """Return how many discovered variables are active in each automatic profile."""
     available = normalize_selected_ids(available_ids)
     return {
+        # Legacy key retained until old translations/config entries have aged out.
         PROFILE_MINIMAL: len(available & MINIMAL_POINT_IDS),
         PROFILE_STANDARD: len(available & STANDARD_POINT_IDS),
         PROFILE_EXTENDED: len(available & KNOWN_POINT_IDS),
