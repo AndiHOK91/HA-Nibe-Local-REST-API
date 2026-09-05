@@ -1,15 +1,15 @@
 """Diagnostics support for NIBE Local REST API."""
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
-from homeassistant.components.recorder import get_instance
-from homeassistant.components.recorder.statistics import statistics_during_period
+from homeassistant.components.recorder import history
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.recorder import get_instance
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -44,20 +44,12 @@ _POINT_METADATA_KEYS = (
     "decimal",
     "step",
 )
-_HISTORY_DAYS = 7
-_HISTORY_TYPES = {"min", "max", "mean", "state"}
+_HISTORY_DAYS = 5
 
 
 def _isoformat(value: Any) -> str | None:
     """Return a stable ISO timestamp for diagnostics."""
     return value.isoformat() if value is not None and hasattr(value, "isoformat") else None
-
-
-def _timestamp_isoformat(value: Any) -> str | None:
-    """Return a recorder timestamp as ISO text."""
-    if isinstance(value, (int, float)):
-        return dt_util.utc_from_timestamp(value).isoformat()
-    return _isoformat(value)
 
 
 def _safe_point_metadata(point: Any) -> dict[str, Any]:
@@ -124,72 +116,116 @@ def _point_entity_ids(
     return result
 
 
-def _format_hourly_statistic(row: dict[str, Any]) -> dict[str, Any]:
-    """Return one compact hourly recorder row."""
-    result: dict[str, Any] = {}
-    if "start" in row:
-        result["start"] = _timestamp_isoformat(row.get("start"))
-    if "end" in row:
-        result["end"] = _timestamp_isoformat(row.get("end"))
-    for key in ("min", "max", "mean", "state"):
-        if key in row and row[key] is not None:
-            result[key] = row[key]
+def _history_state_value(state: Any) -> float | None:
+    """Return a recorder state as a finite numeric value when possible."""
+    value = state.get("state") if isinstance(state, dict) else getattr(state, "state", None)
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    if numeric != numeric or numeric in (float("inf"), float("-inf")):
+        return None
+    return numeric
+
+
+def _history_state_time(state: Any) -> datetime | None:
+    """Return the timestamp of a recorder state."""
+    if isinstance(state, dict):
+        value = state.get("last_updated") or state.get("last_changed")
+        if isinstance(value, (int, float)):
+            return dt_util.utc_from_timestamp(value)
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, str):
+            return dt_util.parse_datetime(value)
+        return None
+    return getattr(state, "last_updated", None) or getattr(state, "last_changed", None)
+
+
+def _minute_buckets(states: list[Any]) -> list[dict[str, Any]]:
+    """Aggregate recorder states into one compact row per minute."""
+    buckets: dict[datetime, list[float]] = {}
+    for state in states:
+        value = _history_state_value(state)
+        timestamp = _history_state_time(state)
+        if value is None or timestamp is None:
+            continue
+        minute = timestamp.replace(second=0, microsecond=0)
+        buckets.setdefault(minute, []).append(value)
+
+    result: list[dict[str, Any]] = []
+    for minute, values in sorted(buckets.items()):
+        result.append(
+            {
+                "minute": minute.isoformat(),
+                "min": min(values),
+                "max": max(values),
+                "mean": round(sum(values) / len(values), 6),
+                "last": values[-1],
+                "samples": len(values),
+            }
+        )
     return result
 
 
 def _history_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Summarize hourly recorder rows while preserving extrema timestamps."""
-    result: dict[str, Any] = {"hour_count": len(rows)}
+    """Summarize minute buckets while preserving extrema timestamps."""
+    result: dict[str, Any] = {"minute_count": len(rows)}
+    if not rows:
+        return result
 
-    mins = [(row["min"], row) for row in rows if isinstance(row.get("min"), (int, float))]
-    maxes = [(row["max"], row) for row in rows if isinstance(row.get("max"), (int, float))]
-    means = [row["mean"] for row in rows if isinstance(row.get("mean"), (int, float))]
-    states = [row["state"] for row in rows if isinstance(row.get("state"), (int, float))]
+    minimum_row = min(rows, key=lambda row: row["min"])
+    maximum_row = max(rows, key=lambda row: row["max"])
+    sample_count = sum(int(row.get("samples", 0)) for row in rows)
 
-    if mins:
-        minimum, minimum_row = min(mins, key=lambda item: item[0])
-        result["min"] = minimum
-        result["min_at"] = _timestamp_isoformat(minimum_row.get("start"))
-    if maxes:
-        maximum, maximum_row = max(maxes, key=lambda item: item[0])
-        result["max"] = maximum
-        result["max_at"] = _timestamp_isoformat(maximum_row.get("start"))
-    if means:
-        result["mean"] = round(sum(means) / len(means), 6)
-    if states:
-        result["first_state"] = states[0]
-        result["last_state"] = states[-1]
-
+    result.update(
+        {
+            "sample_count": sample_count,
+            "min": minimum_row["min"],
+            "min_at": minimum_row["minute"],
+            "max": maximum_row["max"],
+            "max_at": maximum_row["minute"],
+            "first": rows[0]["last"],
+            "last": rows[-1]["last"],
+        }
+    )
+    if sample_count:
+        result["mean"] = round(
+            sum(row["mean"] * row["samples"] for row in rows) / sample_count,
+            6,
+        )
     return result
 
 
-async def _async_get_7d_history(
+async def _async_get_5d_history(
     hass: HomeAssistant | None,
     entry: ConfigEntry,
     enabled_ids: set[int],
 ) -> dict[str, Any]:
-    """Return bounded seven-day hourly recorder statistics for point entities."""
+    """Return five days of recorder history aggregated into minute buckets."""
     if hass is None or not hasattr(entry, "entry_id"):
         return {"available": False, "reason": "recorder_context_unavailable", "points": {}}
 
     point_entities = _point_entity_ids(hass, entry, enabled_ids)
     if not point_entities:
-        return {"available": True, "days": _HISTORY_DAYS, "points": {}}
+        return {"available": True, "days": _HISTORY_DAYS, "period": "minute", "points": {}}
 
     end = dt_util.utcnow()
     start = end - timedelta(days=_HISTORY_DAYS)
-    entity_ids = set(point_entities.values())
+    entity_ids = list(point_entities.values())
 
     try:
-        statistics = await get_instance(hass).async_add_executor_job(
-            statistics_during_period,
+        recorded_states = await get_instance(hass).async_add_executor_job(
+            history.get_significant_states,
             hass,
             start,
             end,
             entity_ids,
-            "hour",
             None,
-            _HISTORY_TYPES,
+            False,
+            False,
+            False,
+            True,
         )
     except Exception as err:  # Diagnostics must still work if recorder is unavailable.
         return {
@@ -197,18 +233,17 @@ async def _async_get_7d_history(
             "reason": "recorder_query_failed",
             "error_type": type(err).__name__,
             "days": _HISTORY_DAYS,
+            "period": "minute",
             "points": {},
         }
 
     history_points: dict[str, Any] = {}
     for point_id, entity_id in sorted(point_entities.items()):
-        raw_rows = statistics.get(entity_id) or []
-        rows = [_format_hourly_statistic(row) for row in raw_rows]
+        rows = _minute_buckets(recorded_states.get(entity_id) or [])
         history_points[str(point_id)] = {
-            "entity_id": entity_id,
-            "statistics_available": bool(rows),
-            "summary": _history_summary(raw_rows) if raw_rows else {"hour_count": 0},
-            "hourly": rows,
+            "history_available": bool(rows),
+            "summary": _history_summary(rows),
+            "minutes": rows,
         }
 
     return {
@@ -216,7 +251,7 @@ async def _async_get_7d_history(
         "days": _HISTORY_DAYS,
         "start": start.isoformat(),
         "end": end.isoformat(),
-        "period": "hour",
+        "period": "minute",
         "points": history_points,
     }
 
@@ -243,7 +278,7 @@ async def async_get_config_entry_diagnostics(
         for point_id in enabled_ids
         if points.get(str(point_id)) is not None or points.get(point_id) is not None
     }
-    seven_day_history = await _async_get_7d_history(hass, entry, enabled_id_set)
+    five_day_history = await _async_get_5d_history(hass, entry, enabled_id_set)
 
     return {
         "configuration": {
@@ -275,7 +310,7 @@ async def async_get_config_entry_diagnostics(
             "enabled_point_ids": enabled_ids,
             "metadata": point_metadata,
             "current_values": current_values,
-            "history_7d": seven_day_history,
+            "history_5d": five_day_history,
         },
         "notifications": {
             "active_alarm_count": _alarm_count(coordinator_data.get("notifications")),
