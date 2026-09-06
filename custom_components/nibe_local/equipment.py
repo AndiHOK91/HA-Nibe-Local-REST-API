@@ -10,11 +10,13 @@ EQUIPMENT_BE6 = "be6"
 EQUIPMENT_BE7 = "be7"
 EQUIPMENT_VENTILATION = "ventilation"
 EQUIPMENT_HOT_WATER_CIRCULATION = "hot_water_circulation"
+EQUIPMENT_PRIORITIZED_EXTERNAL_AUX_HEAT = "prioritized_external_aux_heat"
 EQUIPMENT_OPTIONS = (
     EQUIPMENT_BE6,
     EQUIPMENT_BE7,
     EQUIPMENT_VENTILATION,
     EQUIPMENT_HOT_WATER_CIRCULATION,
+    EQUIPMENT_PRIORITIZED_EXTERNAL_AUX_HEAT,
 )
 ALL_EQUIPMENT = frozenset(EQUIPMENT_OPTIONS)
 
@@ -112,6 +114,12 @@ HOT_WATER_CIRCULATION_POINT_IDS = frozenset(
         7854,
     }
 )
+
+# Point 1186 ("Permit prioritised additional heat") relates to prioritised
+# external auxiliary heat. It is present on systems even when that function is
+# not relevant, so it must be an explicit setup choice rather than something
+# inferred merely from the point being readable.
+PRIORITIZED_EXTERNAL_AUX_HEAT_POINT_IDS = frozenset({1186})
 
 # 5200 and 7048 are REST variable IDs from menu 7.2.1
 # "Zubehör hinzufügen/entfernen":
@@ -252,6 +260,10 @@ def detect_equipment(points: dict[str, Any]) -> frozenset[str]:
     ):
         detected.add(EQUIPMENT_HOT_WATER_CIRCULATION)
 
+    # Do not auto-detect prioritised external auxiliary heat from point 1186.
+    # The point can be readable with value 0 even when the function is unused.
+    # The user therefore decides explicitly during setup/options.
+
     return frozenset(detected)
 
 
@@ -273,6 +285,8 @@ def point_allowed_by_equipment(
         return EQUIPMENT_BE7 in enabled
     if point_id in HOT_WATER_CIRCULATION_POINT_IDS:
         return EQUIPMENT_HOT_WATER_CIRCULATION in enabled
+    if point_id in PRIORITIZED_EXTERNAL_AUX_HEAT_POINT_IDS:
+        return EQUIPMENT_PRIORITIZED_EXTERNAL_AUX_HEAT in enabled
     if point_id in VENTILATION_POINT_IDS or _looks_like_ventilation_point(point):
         return EQUIPMENT_VENTILATION in enabled
 
