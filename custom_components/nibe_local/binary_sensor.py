@@ -38,9 +38,9 @@ async def async_setup_entry(
 class NibeBinarySensor(NibePointEntity, BinarySensorEntity):
     @property
     def device_class(self):
-        if self.definition.point_id in {3097, 3098, 2683}:
+        if self.definition.point_id in {3097, 2683}:
             return BinarySensorDeviceClass.PROBLEM
-        if self.definition.point_id in {2657, 2729, 3138, 1829}:
+        if self.definition.point_id in {2657, 2729, 3138, 1829, 3098}:
             return BinarySensorDeviceClass.RUNNING
         return None
 

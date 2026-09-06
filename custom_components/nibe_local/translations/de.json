@@ -241,7 +241,7 @@
       "fan_rpm_ep14": {"name": "Ventilatordrehzahl (EB101-EP14)"},
       "start_defrost_fan": {"name": "Abtauung Ventilator Start (EB101)"},
       "defrost_requested": {"name": "Abtauung angefordert (EB101)", "state": {"off": "Aus", "active": "Aktiv", "passive": "Passiv", "unknown": "Unbekannt"}},
-      "last_defrost_heat_pump_1": {"name": "Letzte Abtauung Wärmepumpe 1"},
+      "last_defrost_heat_pump_1": {"name": "Letzte Abtauung Wärmepumpe 1", "state": {"Successful": "Erfolgreich", "Low supply": "Vorlauftemperatur zu niedrig", "Low return": "Rücklauftemperatur zu niedrig", "Low flow": "Volumenstrom zu niedrig", "Low LP": "Niederdruck zu niedrig", "Max time": "Maximale Abtauzeit erreicht", "Not accessible": "Nicht verfügbar", "Erfolgreich": "Erfolgreich", "Niedrige Vorlauftemperatur": "Vorlauftemperatur zu niedrig", "Niedrige Rücklauftemperatur": "Rücklauftemperatur zu niedrig", "Niedriger Volumenstrom": "Volumenstrom zu niedrig", "Niedriger LP": "Niederdruck zu niedrig", "Max. Zeit": "Maximale Abtauzeit erreicht", "Nicht verfügbar": "Nicht verfügbar"}},
       "ventilation_exhaust_fan_speed": {"name": "Abluftventilator Drehzahl (AZ30-GQ2)"},
       "ventilation_supply_fan_speed": {"name": "Zuluftventilator Drehzahl (AZ30-GQ3)"},
       "ventilation_exhaust_bt20": {"name": "Ablufttemperatur (AZ30-BT20)"},
