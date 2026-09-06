@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 
 from custom_components.nibe_local.diagnostics import (
+    ALLOWED_HISTORY_DAYS,
+    DEFAULT_HISTORY_DAYS,
     _history_summary,
     _minute_buckets,
     async_get_config_entry_diagnostics,
@@ -88,21 +90,24 @@ def test_standard_diagnostics_exclude_values_history_and_credentials() -> None:
     }
     assert diagnostics["points"]["enabled_point_ids"] == [4]
     assert "current_values" not in diagnostics["points"]
-    assert "history_24h" not in diagnostics["points"]
+    assert "history" not in diagnostics["points"]
     assert diagnostics["notifications"]["active_alarm_count"] == 1
 
 
-def test_extended_diagnostics_explicitly_include_values_and_history() -> None:
-    """Extended diagnostics retain useful values only on explicit request."""
+def test_extended_diagnostics_default_to_one_day() -> None:
+    """Extended diagnostics default to a one-day recorder history."""
     diagnostics = asyncio.run(
         async_get_extended_config_entry_diagnostics(None, _fixture_entry())
     )
 
     _assert_secrets_absent(diagnostics)
+    assert DEFAULT_HISTORY_DAYS == 1
+    assert ALLOWED_HISTORY_DAYS == (1, 3, 5, 7)
     assert diagnostics["diagnostic_mode"] == "extended"
+    assert diagnostics["history_days"] == 1
     assert diagnostics["privacy"]["contains_current_values"] is True
     assert diagnostics["privacy"]["contains_history"] is True
-    assert "Review the data before sharing it publicly" in diagnostics["privacy"]["warning"]
+    assert "up to 1 day" in diagnostics["privacy"]["warning"]
     assert diagnostics["points"]["current_values"]["4"] == {
         "raw_value": 222,
         "scaled_value": 22.2,
@@ -111,11 +116,26 @@ def test_extended_diagnostics_explicitly_include_values_and_history() -> None:
         "value_valid": True,
         "title": "Current outdoor temperature (BT1)",
     }
-    assert diagnostics["points"]["history_24h"] == {
+    assert diagnostics["points"]["history"] == {
         "available": False,
         "reason": "recorder_context_unavailable",
+        "days": 1,
+        "hours": 24,
         "points": {},
     }
+
+
+def test_extended_diagnostics_accept_supported_history_ranges() -> None:
+    """The explicit export supports only 1, 3, 5 or 7 days."""
+    for history_days in ALLOWED_HISTORY_DAYS:
+        diagnostics = asyncio.run(
+            async_get_extended_config_entry_diagnostics(
+                None, _fixture_entry(), history_days=history_days
+            )
+        )
+        assert diagnostics["history_days"] == history_days
+        assert diagnostics["points"]["history"]["days"] == history_days
+        assert diagnostics["points"]["history"]["hours"] == history_days * 24
 
 
 def test_minute_buckets_preserve_short_negative_spikes() -> None:
