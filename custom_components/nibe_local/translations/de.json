@@ -276,7 +276,7 @@
       "smart_mode": {"name": "Smart Mode", "state": {"normal": "Normal", "away": "Abwesend"}}
     },
     "switch": {
-      "aux_heat_allowed_heating": {"name": "Zusatzheizung für Heizung zulassen"},
+      "aux_heat_allowed_heating": {"name": "Zusatzheizung im Heizbetrieb zulassen"},
       "heating_allowed": {"name": "Heizung zulassen"},
       "cooling_allowed": {"name": "Kühlung zulassen"},
       "periodic_hot_water": {"name": "Periodische Brauchwassererhöhung"},
