@@ -29,14 +29,24 @@ from .const import (
     DOMAIN,
 )
 from .coordinator import NibeCoordinator
-from .diagnostics import async_get_extended_config_entry_diagnostics
+from .diagnostics import (
+    ALLOWED_HISTORY_DAYS,
+    DEFAULT_HISTORY_DAYS,
+    async_get_extended_config_entry_diagnostics,
+)
 from .equipment import CONF_EQUIPMENT
 from .profiles import DEFAULT_ENTITY_PROFILE
 
 SERVICE_EXPORT_EXTENDED_DIAGNOSTICS = "export_extended_diagnostics"
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
+ATTR_HISTORY_DAYS = "history_days"
 SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA = vol.Schema(
-    {vol.Required(ATTR_CONFIG_ENTRY_ID): str}
+    {
+        vol.Required(ATTR_CONFIG_ENTRY_ID): str,
+        vol.Optional(ATTR_HISTORY_DAYS, default=DEFAULT_HISTORY_DAYS): vol.In(
+            ALLOWED_HISTORY_DAYS
+        ),
+    }
 )
 
 
@@ -50,7 +60,11 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             raise ServiceValidationError("NIBE Local REST API config entry not found")
         if entry.state is not ConfigEntryState.LOADED:
             raise ServiceValidationError("NIBE Local REST API config entry is not loaded")
-        return await async_get_extended_config_entry_diagnostics(hass, entry)
+        return await async_get_extended_config_entry_diagnostics(
+            hass,
+            entry,
+            history_days=call.data[ATTR_HISTORY_DAYS],
+        )
 
     hass.services.async_register(
         DOMAIN,
