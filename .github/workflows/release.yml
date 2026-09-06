@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Version aus Manifest lesen
         id: version
@@ -31,7 +33,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Release nur bei neuer Version erstellen
+      - name: Release erstellen oder v0.10.1 veröffentlichen
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
@@ -39,17 +41,29 @@ jobs:
         shell: bash
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG existiert bereits."
-            exit 0
-          fi
+            if [ "$VERSION" != "0.10.1" ]; then
+              echo "Release $TAG existiert bereits."
+              exit 0
+            fi
 
-          RELEASE_ARGS=()
-          if [ "$VERSION" = "0.10.0" ] || [ "$VERSION" = "0.10.1" ]; then
-            RELEASE_ARGS+=(--prerelease)
+            echo "Bestehendes v0.10.1-Prerelease auf den aktuellen Stand verschieben und veröffentlichen."
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -f "$TAG" "$GITHUB_SHA"
+            git push origin "refs/tags/$TAG" --force
+
+            RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq '.id')
+            gh api \
+              --method PATCH \
+              "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+              -f name="$TAG" \
+              -F prerelease=false \
+              -f make_latest=true \
+              -f target_commitish="$GITHUB_SHA" >/dev/null
+            exit 0
           fi
 
           gh release create "$TAG" \
             --target "$GITHUB_SHA" \
-            --title "$TAG Beta" \
-            --generate-notes \
-            "${RELEASE_ARGS[@]}"
+            --title "$TAG" \
+            --generate-notes
