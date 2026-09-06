@@ -14,10 +14,10 @@ Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lok
 
 Die Integration wurde im realen Betrieb mit **VVM S320, S2125 und ERS S40-400** entwickelt und getestet. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.10.0 Beta (Prerelease)**
+Aktuelle Integrationsversion: **0.10.1 Beta (Prerelease)**
 
 > [!WARNING]
-> Die mit v0.10.0 eingeführte **Statistikmigration** ist **experimentell und noch nicht auf einer realen Home-Assistant-Installation getestet**. Vor einer Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein. Die integrierte Sicherungsfunktion ersetzt kein vollständiges Home-Assistant-Systembackup.
+> Die mit v0.10.x eingeführte **Statistikmigration** ist **experimentell und noch nicht auf einer realen Home-Assistant-Installation getestet**. Vor einer Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein. Die integrierte Sicherungsfunktion ersetzt kein vollständiges Home-Assistant-Systembackup.
 
 ---
 
@@ -39,6 +39,7 @@ Unterstützt werden unter anderem:
 - read-only `time`-Entitäten für bekannte Zeitpunkte, deren Schreiben durch die NIBE-Firmware/API nicht zuverlässig unterstützt wird
 - Diagnoseinformationen für API-Erreichbarkeit, Fallback und Verbindungsfehler
 - datenschutzorientierte Standarddiagnose sowie explizit anforderbare erweiterte Diagnosedaten
+- automatische Erkennung optionaler Anlagenhardware in Einrichtung und Optionen
 - experimentelle Vorschau und Migration vorhandener Home-Assistant-Langzeitstatistiken auf REST-Sensoren
 - automatische, standardmäßig aktivierte Statistik-Sicherung vor einem Import
 - Auflistung älterer Statistik-Backups und read-only Restore-Vorschau
@@ -59,6 +60,29 @@ Nach erfolgreicher Verbindung liest die Integration die tatsächlich verfügbare
 Das frühere Profil **Minimal** ist nicht mehr Bestandteil der Integration.
 
 Unbekannte Punkte bleiben auch dann **Read-only**, wenn die lokale REST API `isWritable=true` meldet. Schreibfunktionen werden nur für verstandene und explizit abgesicherte Punkte angeboten.
+
+### Automatische Hardware-Erkennung
+
+Optionale Ausstattung wird soweit zuverlässig möglich aus den normalen lokalen REST-Punkten erkannt. Dazu gehören derzeit insbesondere:
+
+- Energiezähler BE6
+- Energiezähler BE7
+- Lüftungsanlage / ERS
+- Brauchwasserzirkulation
+
+Die **priorisierte externe Zusatzheizung** wird bewusst nicht automatisch allein aus Punkt 1186 abgeleitet, weil dessen Vorhandensein keine sichere Aussage über tatsächlich installierte Hardware erlaubt.
+
+Bei der ersten Einrichtung wird erkannte Hardware mit **„(erkannt)“** gekennzeichnet und vorausgewählt.
+
+Im späteren Optionen-Dialog wird zusätzlich mit dem zuletzt gespeicherten Erkennungsstand verglichen:
+
+- **(erkannt – bereits hinzugefügt)**: aktuell erkannt und bereits aktiviert
+- **(erkannt – neu hinzugefügt)**: seit der letzten Prüfung neu erkannt; wird automatisch vorausgewählt
+- **(erkannt – nicht hinzugefügt)**: aktuell erkannt, aber zuvor bewusst nicht aktiviert; wird nicht erneut automatisch aktiviert
+- **(nicht mehr erkannt – weiterhin hinzugefügt)**: aktuell nicht mehr erkannt, bleibt aus Sicherheitsgründen aber aktiviert, bis der Nutzer es bewusst abwählt
+- **(erkannt)**: aktueller Fund ohne ausreichend sichere frühere Vergleichsbasis
+
+Dadurch kann beispielsweise ein später eingebauter BE7 beim nächsten Öffnen der Optionen automatisch erkannt und vorausgewählt werden, ohne bewusst abgewählte Hardware bei jedem Öffnen wieder zu aktivieren.
 
 ---
 
@@ -311,7 +335,7 @@ Die lokale REST API muss direkt an der NIBE-Steuerung unter **Menü 7 → Servic
 
 ### HACS
 
-Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. Bei **v0.10.0** handelt es sich um ein **Prerelease/Beta**.
+Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. Bei **v0.10.1** handelt es sich um ein **Prerelease/Beta**.
 
 ### Einrichtungsablauf
 
@@ -323,7 +347,7 @@ Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Inte
 6. Verbindung prüfen.
 7. Verfügbare REST-Punkte laden.
 8. **Standard / Erweitert / Komplett / Individuell** auswählen.
-9. Anlagenoptionen auswählen, damit nicht vorhandene Ausstattungen keine unnötigen Entitäten erzeugen.
+9. Automatisch erkannte Anlagenoptionen prüfen und bei Bedarf manuell korrigieren.
 10. Benennung auswählen.
 11. Bei **Individuell** die gewünschten Variable-IDs auswählen.
 12. Entitätsübersicht prüfen.
@@ -341,7 +365,7 @@ GitHub Actions prüft die Integration gegen:
 - **Home Assistant 2026.9.1**
 - eine aktuelle Home-Assistant-Version (`latest`)
 
-Die Regressionstests decken unter anderem API-Normalisierung, Authentifizierung, Schreibschutz, Profile, Diagnose-Datenschutz, Sentinelwerte, Abtau-Sonderzustände sowie die Schutzlogik für Statistikmigration, Backups und Restore-Vorschau ab.
+Die Regressionstests decken unter anderem API-Normalisierung, Authentifizierung, Schreibschutz, Profile, Hardware-Erkennung, Diagnose-Datenschutz, Sentinelwerte, Abtau-Sonderzustände sowie die Schutzlogik für Statistikmigration, Backups und Restore-Vorschau ab.
 
 Die vorhandenen automatisierten Tests ersetzen ausdrücklich **keinen realen Migrationstest auf einer produktiven Recorder-Datenbank**.
 
@@ -368,7 +392,7 @@ Die tatsächlich verfügbaren Variablen hängen von Modell, angeschlossenen Modu
 
 Diese Integration ist ein **inoffizielles Community-Projekt** und steht in keiner Verbindung zu NIBE. Sie befindet sich weiterhin vor Version 1.0 und wird auf einer realen Anlage weiterentwickelt und getestet.
 
-**v0.10.0 ist eine Beta-/Prerelease-Version.** Insbesondere die Statistikmigration ist experimentell und bisher nicht praktisch auf einer realen Home-Assistant-Recorder-Datenbank verifiziert.
+**v0.10.1 ist eine Beta-/Prerelease-Version.** Insbesondere die Statistikmigration ist experimentell und bisher nicht praktisch auf einer realen Home-Assistant-Recorder-Datenbank verifiziert.
 
 Die Software wird ohne Gewährleistung oder Garantie bereitgestellt. Die Nutzung erfolgt auf eigene Gefahr. Bei sicherheitsrelevanten Funktionen sind im Zweifel die Anzeigen und Einstellungen am Gerät sowie die offizielle Herstellerdokumentation maßgeblich.
 
