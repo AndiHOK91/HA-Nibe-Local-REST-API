@@ -1,11 +1,15 @@
 """NIBE Local REST API integration."""
 from __future__ import annotations
 
-from homeassistant.config_entries import ConfigEntry
+import voluptuous as vol
+
+from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.typing import ConfigType
 
 from .api import NibeLocalApi
 from .const import (
@@ -25,8 +29,37 @@ from .const import (
     DOMAIN,
 )
 from .coordinator import NibeCoordinator
+from .diagnostics import async_get_extended_config_entry_diagnostics
 from .equipment import CONF_EQUIPMENT
 from .profiles import DEFAULT_ENTITY_PROFILE
+
+SERVICE_EXPORT_EXTENDED_DIAGNOSTICS = "export_extended_diagnostics"
+ATTR_CONFIG_ENTRY_ID = "config_entry_id"
+SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA = vol.Schema(
+    {vol.Required(ATTR_CONFIG_ENTRY_ID): str}
+)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up integration-level actions."""
+
+    async def async_export_extended_diagnostics(call: ServiceCall) -> ServiceResponse:
+        """Return explicitly requested diagnostics with current values and history."""
+        entry = hass.config_entries.async_get_entry(call.data[ATTR_CONFIG_ENTRY_ID])
+        if entry is None or entry.domain != DOMAIN:
+            raise ServiceValidationError("NIBE Local REST API config entry not found")
+        if entry.state is not ConfigEntryState.LOADED:
+            raise ServiceValidationError("NIBE Local REST API config entry is not loaded")
+        return await async_get_extended_config_entry_diagnostics(hass, entry)
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_EXPORT_EXTENDED_DIAGNOSTICS,
+        async_export_extended_diagnostics,
+        schema=SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+    return True
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
