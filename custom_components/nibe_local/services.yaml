@@ -52,3 +52,37 @@ preview_statistics_migration:
         entity:
           domain: sensor
           integration: nibe_local
+
+import_statistics_migration:
+  name: Historische Statistik importieren
+  description: >-
+    Übernimmt ausschließlich fehlende stündliche Langzeitstatistiken eines
+    bisherigen Sensors in einen NIBE-Local-REST-API-Sensor. Vorhandene
+    Zielzeitpunkte werden nicht überschrieben. Standardmäßig wird vor dem
+    Import eine Sicherung der Zielstatistik erstellt.
+  fields:
+    source_entity_id:
+      name: Quellsensor
+      description: Bisheriger Sensor, z. B. aus der Modbus-Integration.
+      required: true
+      selector:
+        entity:
+          domain: sensor
+    target_entity_id:
+      name: REST-Zielsensor
+      description: Zugehöriger Sensor der NIBE Local REST API.
+      required: true
+      selector:
+        entity:
+          domain: sensor
+          integration: nibe_local
+    create_backup:
+      name: Backup erstellen
+      description: >-
+        Sichert die vorhandene Ziel-Langzeitstatistik und Metadaten vor dem
+        Import. Wenn das Backup aktiviert ist und nicht erstellt werden kann,
+        wird der Import abgebrochen.
+      required: false
+      default: true
+      selector:
+        boolean:
