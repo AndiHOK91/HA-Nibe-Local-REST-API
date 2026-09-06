@@ -70,6 +70,15 @@ _AUTH_KEYS = (CONF_AUTH_METHOD, CONF_USERNAME, CONF_PASSWORD, CONF_AUTH_HEADER)
 _AUTH_METHODS = (AUTH_METHOD_BASIC, AUTH_METHOD_HEADER)
 CONF_REMOVE_INACTIVE_ENTITIES = "remove_inactive_entities"
 CONF_BACKUP_BEFORE_CLEANUP = "backup_before_cleanup"
+CONF_DETECTED_EQUIPMENT = "detected_equipment"
+_AUTO_DETECTABLE_EQUIPMENT = frozenset(
+    {
+        EQUIPMENT_BE6,
+        EQUIPMENT_BE7,
+        EQUIPMENT_VENTILATION,
+        EQUIPMENT_HOT_WATER_CIRCULATION,
+    }
+)
 PREVIEW_LIST_LIMIT = 50
 
 
@@ -165,9 +174,73 @@ def _ordered_equipment(values) -> list[str]:
     return [value for value in EQUIPMENT_OPTIONS if value in enabled]
 
 
-def _equipment_selector(hass, *, detected=()) -> SelectSelector:
+def _equipment_status_suffix(
+    value: str,
+    *,
+    german: bool,
+    detected=(),
+    configured=(),
+    previous_detected=None,
+    detection_available: bool = True,
+    options_mode: bool = False,
+) -> str:
+    """Return a human-readable optional-equipment detection status suffix."""
+    current = normalize_equipment(detected, legacy_default=False)
+    selected = normalize_equipment(configured, legacy_default=False)
+    previous = (
+        None
+        if previous_detected is None
+        else normalize_equipment(previous_detected, legacy_default=False)
+    )
+
+    if not options_mode:
+        if value in current:
+            return " (erkannt)" if german else " (detected)"
+        return ""
+
+    if not detection_available or value not in _AUTO_DETECTABLE_EQUIPMENT:
+        return ""
+
+    if value in current:
+        if value in selected:
+            return (
+                " (erkannt – bereits hinzugefügt)"
+                if german
+                else " (detected – already added)"
+            )
+        if previous is not None and value not in previous:
+            return (
+                " (erkannt – neu hinzugefügt)"
+                if german
+                else " (detected – newly added)"
+            )
+        if previous is not None and value in previous:
+            return (
+                " (erkannt – nicht hinzugefügt)"
+                if german
+                else " (detected – not added)"
+            )
+        return " (erkannt)" if german else " (detected)"
+
+    if value in selected:
+        return (
+            " (nicht mehr erkannt – weiterhin hinzugefügt)"
+            if german
+            else " (no longer detected – still added)"
+        )
+    return ""
+
+
+def _equipment_selector(
+    hass,
+    *,
+    detected=(),
+    configured=(),
+    previous_detected=None,
+    detection_available: bool = True,
+    options_mode: bool = False,
+) -> SelectSelector:
     german = _is_german(hass)
-    detected_values = normalize_equipment(detected, legacy_default=False)
     labels_de = {
         EQUIPMENT_BE6: "Energiezähler BE6",
         EQUIPMENT_BE7: "Energiezähler BE7",
@@ -183,11 +256,19 @@ def _equipment_selector(hass, *, detected=()) -> SelectSelector:
         "prioritized_external_aux_heat": "Prioritized external auxiliary heat",
     }
     labels = labels_de if german else labels_en
-    suffix = " (erkannt)" if german else " (detected)"
     options = [
         {
             "value": value,
-            "label": labels[value] + (suffix if value in detected_values else ""),
+            "label": labels[value]
+            + _equipment_status_suffix(
+                value,
+                german=german,
+                detected=detected,
+                configured=configured,
+                previous_detected=previous_detected,
+                detection_available=detection_available,
+                options_mode=options_mode,
+            ),
         }
         for value in EQUIPMENT_OPTIONS
     ]
@@ -198,6 +279,40 @@ def _equipment_selector(hass, *, detected=()) -> SelectSelector:
             mode=SelectSelectorMode.LIST,
         )
     )
+
+
+def _equipment_options_default(
+    current: dict,
+    detected=(),
+    *,
+    detection_available: bool,
+) -> list[str]:
+    """Return the safe equipment preselection for the options flow."""
+    current_detected = normalize_equipment(detected, legacy_default=False)
+    has_configured = CONF_EQUIPMENT in current
+    configured = normalize_equipment(
+        current.get(CONF_EQUIPMENT), legacy_default=False
+    )
+
+    if not detection_available:
+        return _ordered_equipment(configured if has_configured else ())
+
+    if not has_configured:
+        # Legacy entry without an equipment choice: use only live detection,
+        # never the previous all-equipment fallback.
+        return _ordered_equipment(current_detected)
+
+    if CONF_DETECTED_EQUIPMENT not in current:
+        # First options run after upgrading: establish a baseline but do not
+        # guess whether a detected-but-unselected component is genuinely new
+        # or was deliberately deselected earlier.
+        return _ordered_equipment(configured)
+
+    previous = normalize_equipment(
+        current.get(CONF_DETECTED_EQUIPMENT), legacy_default=False
+    )
+    newly_detected = (current_detected - previous) & _AUTO_DETECTABLE_EQUIPMENT
+    return _ordered_equipment(configured | newly_detected)
 
 
 def _connection_schema(defaults: dict) -> vol.Schema:
@@ -247,7 +362,13 @@ def _header_auth_schema(*, auth_header_default: str = "") -> vol.Schema:
     )
 
 
-def _options_schema(current: dict, hass=None) -> vol.Schema:
+def _options_schema(
+    current: dict,
+    hass=None,
+    *,
+    detected=(),
+    detection_available: bool = False,
+) -> vol.Schema:
     fields = dict(_connection_schema(current).schema)
     fields[
         vol.Required(
@@ -261,12 +382,29 @@ def _options_schema(current: dict, hass=None) -> vol.Schema:
             default=current.get(CONF_ENTITY_NAMING, DEFAULT_ENTITY_NAMING),
         )
     ] = _entity_naming_selector()
+    configured = current.get(CONF_EQUIPMENT, ())
+    previous_detected = (
+        current.get(CONF_DETECTED_EQUIPMENT)
+        if CONF_DETECTED_EQUIPMENT in current
+        else None
+    )
     fields[
         vol.Required(
             _equipment_form_key(hass),
-            default=_ordered_equipment(current.get(CONF_EQUIPMENT, EQUIPMENT_OPTIONS)),
+            default=_equipment_options_default(
+                current,
+                detected,
+                detection_available=detection_available,
+            ),
         )
-    ] = _equipment_selector(hass)
+    ] = _equipment_selector(
+        hass,
+        detected=detected,
+        configured=configured,
+        previous_detected=previous_detected,
+        detection_available=detection_available,
+        options_mode=True,
+    )
     fields[vol.Optional(CONF_REMOVE_INACTIVE_ENTITIES, default=False)] = bool
     fields[vol.Optional(CONF_BACKUP_BEFORE_CLEANUP, default=True)] = bool
     return vol.Schema(fields)
@@ -781,6 +919,8 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if self._pending_data is None:
             return self.async_abort(reason="setup_state_missing")
         equipment_key = _equipment_form_key(self.hass)
+        points = self._available_points or {}
+        detected = detect_equipment(points)
         if user_input is not None:
             profile = str(user_input[CONF_ENTITY_PROFILE])
             self._pending_data[CONF_ENTITY_PROFILE] = profile
@@ -790,12 +930,11 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._pending_data[CONF_EQUIPMENT] = _ordered_equipment(
                 user_input.get(equipment_key, ())
             )
+            self._pending_data[CONF_DETECTED_EQUIPMENT] = _ordered_equipment(detected)
             if profile == PROFILE_INDIVIDUAL:
                 return await self.async_step_entity_selection()
             return await self.async_step_entity_preview()
 
-        points = self._available_points or {}
-        detected = detect_equipment(points)
         filtered_points = filter_points_for_equipment(points, detected)
         counts = profile_counts(filtered_points.keys())
         return self.async_show_form(
@@ -928,6 +1067,8 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
     _pending_device: dict[str, Any] | None = None
     _cleanup_inactive = False
     _backup_before_cleanup = True
+    _detected_equipment: frozenset[str] = frozenset()
+    _equipment_detection_available = False
 
     async def async_step_init(self, user_input=None):
         current = {**self.config_entry.data, **self.config_entry.options}
@@ -942,14 +1083,33 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             equipment_value = submitted.pop(_equipment_form_key(self.hass), None)
             if equipment_value is not None:
                 submitted[CONF_EQUIPMENT] = _ordered_equipment(equipment_value)
+            if self._equipment_detection_available:
+                submitted[CONF_DETECTED_EQUIPMENT] = _ordered_equipment(
+                    self._detected_equipment
+                )
             self._pending_options = merge_auth_settings(submitted, current)
             if auth_method_from_values(self._pending_options) == AUTH_METHOD_HEADER:
                 return await self.async_step_auth_header()
             return await self.async_step_auth_basic()
 
+        self._detected_equipment = frozenset()
+        self._equipment_detection_available = False
+        try:
+            _device, points = await _validate_and_discover(self.hass, current)
+        except (NibeAuthError, NibeApiError, KeyError):
+            pass
+        else:
+            self._detected_equipment = detect_equipment(points)
+            self._equipment_detection_available = True
+
         return self.async_show_form(
             step_id="init",
-            data_schema=_options_schema(current, self.hass),
+            data_schema=_options_schema(
+                current,
+                self.hass,
+                detected=self._detected_equipment,
+                detection_available=self._equipment_detection_available,
+            ),
         )
 
     async def _async_finish_auth(self, user_input: dict, step_id: str):
@@ -965,6 +1125,11 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
         except NibeApiError:
             errors["base"] = "cannot_connect"
         else:
+            self._detected_equipment = detect_equipment(points)
+            self._equipment_detection_available = True
+            candidate[CONF_DETECTED_EQUIPMENT] = _ordered_equipment(
+                self._detected_equipment
+            )
             self._pending_options = candidate
             self._available_points = points
             self._pending_device = device
