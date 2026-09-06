@@ -36,14 +36,19 @@ from .diagnostics import (
 )
 from .equipment import CONF_EQUIPMENT
 from .profiles import DEFAULT_ENTITY_PROFILE
-from .statistics_migration import async_preview_statistics_migration
+from .statistics_migration import (
+    async_import_statistics_migration,
+    async_preview_statistics_migration,
+)
 
 SERVICE_EXPORT_EXTENDED_DIAGNOSTICS = "export_extended_diagnostics"
 SERVICE_PREVIEW_STATISTICS_MIGRATION = "preview_statistics_migration"
+SERVICE_IMPORT_STATISTICS_MIGRATION = "import_statistics_migration"
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
 ATTR_HISTORY_DAYS = "history_days"
 ATTR_SOURCE_ENTITY_ID = "source_entity_id"
 ATTR_TARGET_ENTITY_ID = "target_entity_id"
+ATTR_CREATE_BACKUP = "create_backup"
 SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_CONFIG_ENTRY_ID): str,
@@ -56,6 +61,13 @@ SERVICE_PREVIEW_STATISTICS_MIGRATION_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_SOURCE_ENTITY_ID): str,
         vol.Required(ATTR_TARGET_ENTITY_ID): str,
+    }
+)
+SERVICE_IMPORT_STATISTICS_MIGRATION_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_SOURCE_ENTITY_ID): str,
+        vol.Required(ATTR_TARGET_ENTITY_ID): str,
+        vol.Optional(ATTR_CREATE_BACKUP, default=True): bool,
     }
 )
 
@@ -76,8 +88,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             history_days=call.data[ATTR_HISTORY_DAYS],
         )
 
-    async def async_preview_migration(call: ServiceCall) -> ServiceResponse:
-        """Return a read-only comparison of historical source and target statistics."""
+    def validate_migration_entities(call: ServiceCall) -> tuple[str, str]:
+        """Validate one source/target entity pair for a migration action."""
         source_entity_id = call.data[ATTR_SOURCE_ENTITY_ID]
         target_entity_id = call.data[ATTR_TARGET_ENTITY_ID]
         if source_entity_id == target_entity_id:
@@ -89,11 +101,25 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             raise ServiceValidationError(
                 "Target entity must belong to the NIBE Local REST API integration"
             )
+        return source_entity_id, target_entity_id
 
+    async def async_preview_migration(call: ServiceCall) -> ServiceResponse:
+        """Return a read-only comparison of historical source and target statistics."""
+        source_entity_id, target_entity_id = validate_migration_entities(call)
         return await async_preview_statistics_migration(
             hass,
             source_entity_id,
             target_entity_id,
+        )
+
+    async def async_import_migration(call: ServiceCall) -> ServiceResponse:
+        """Import missing historical source statistics into a REST target sensor."""
+        source_entity_id, target_entity_id = validate_migration_entities(call)
+        return await async_import_statistics_migration(
+            hass,
+            source_entity_id,
+            target_entity_id,
+            create_backup=call.data[ATTR_CREATE_BACKUP],
         )
 
     hass.services.async_register(
@@ -108,6 +134,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         SERVICE_PREVIEW_STATISTICS_MIGRATION,
         async_preview_migration,
         schema=SERVICE_PREVIEW_STATISTICS_MIGRATION_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_IMPORT_STATISTICS_MIGRATION,
+        async_import_migration,
+        schema=SERVICE_IMPORT_STATISTICS_MIGRATION_SCHEMA,
         supports_response=SupportsResponse.ONLY,
     )
     return True
