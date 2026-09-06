@@ -8,11 +8,11 @@ from custom_components.nibe_local.diagnostics import (
     _history_summary,
     _minute_buckets,
     async_get_config_entry_diagnostics,
+    async_get_extended_config_entry_diagnostics,
 )
 
 
-def test_diagnostics_exclude_credentials_but_include_current_values() -> None:
-    """Diagnostics keep secrets private while exporting useful point values."""
+def _fixture_entry() -> SimpleNamespace:
     coordinator = SimpleNamespace(
         data={
             "points": {
@@ -49,7 +49,7 @@ def test_diagnostics_exclude_credentials_but_include_current_values() -> None:
         last_successful_poll=datetime(2026, 9, 3, tzinfo=UTC),
         last_connection_error=None,
     )
-    entry = SimpleNamespace(
+    return SimpleNamespace(
         data={
             "host": "192.0.2.10",
             "username": "admin",
@@ -61,20 +61,48 @@ def test_diagnostics_exclude_credentials_but_include_current_values() -> None:
         runtime_data=coordinator,
     )
 
-    diagnostics = asyncio.run(async_get_config_entry_diagnostics(None, entry))
-    rendered = repr(diagnostics)
 
+def _assert_secrets_absent(diagnostics: dict) -> None:
+    rendered = repr(diagnostics)
     assert "192.0.2.10" not in rendered
     assert "admin" not in rendered
     assert "super-secret" not in rendered
     assert "top-secret" not in rendered
     assert "SECRET-SERIAL" not in rendered
     assert "private alarm text" not in rendered
+
+
+def test_standard_diagnostics_exclude_values_history_and_credentials() -> None:
+    """Normal HA diagnostics are privacy-first and contain no live/home history."""
+    diagnostics = asyncio.run(async_get_config_entry_diagnostics(None, _fixture_entry()))
+
+    _assert_secrets_absent(diagnostics)
+    assert diagnostics["diagnostic_mode"] == "standard"
+    assert diagnostics["privacy"] == {
+        "contains_current_values": False,
+        "contains_history": False,
+    }
     assert diagnostics["device"] == {
         "model": "NIBE VVM S320 E EM 3x400V",
         "software_version": "4.12.8",
     }
     assert diagnostics["points"]["enabled_point_ids"] == [4]
+    assert "current_values" not in diagnostics["points"]
+    assert "history_24h" not in diagnostics["points"]
+    assert diagnostics["notifications"]["active_alarm_count"] == 1
+
+
+def test_extended_diagnostics_explicitly_include_values_and_history() -> None:
+    """Extended diagnostics retain useful values only on explicit request."""
+    diagnostics = asyncio.run(
+        async_get_extended_config_entry_diagnostics(None, _fixture_entry())
+    )
+
+    _assert_secrets_absent(diagnostics)
+    assert diagnostics["diagnostic_mode"] == "extended"
+    assert diagnostics["privacy"]["contains_current_values"] is True
+    assert diagnostics["privacy"]["contains_history"] is True
+    assert "Review the data before sharing it publicly" in diagnostics["privacy"]["warning"]
     assert diagnostics["points"]["current_values"]["4"] == {
         "raw_value": 222,
         "scaled_value": 22.2,
@@ -88,7 +116,6 @@ def test_diagnostics_exclude_credentials_but_include_current_values() -> None:
         "reason": "recorder_context_unavailable",
         "points": {},
     }
-    assert diagnostics["notifications"]["active_alarm_count"] == 1
 
 
 def test_minute_buckets_preserve_short_negative_spikes() -> None:
