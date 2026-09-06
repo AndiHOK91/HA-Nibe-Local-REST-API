@@ -35,6 +35,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
@@ -42,7 +43,13 @@ jobs:
             exit 0
           fi
 
+          RELEASE_ARGS=()
+          if [ "$VERSION" = "0.10.0" ]; then
+            RELEASE_ARGS+=(--prerelease)
+          fi
+
           gh release create "$TAG" \
             --target "$GITHUB_SHA" \
-            --title "$TAG" \
-            --generate-notes
+            --title "$TAG Beta" \
+            --generate-notes \
+            "${RELEASE_ARGS[@]}"
