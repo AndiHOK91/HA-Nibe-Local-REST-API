@@ -50,7 +50,8 @@ _POINT_METADATA_KEYS = (
     "decimal",
     "step",
 )
-_HISTORY_HOURS = 24
+DEFAULT_HISTORY_DAYS = 1
+ALLOWED_HISTORY_DAYS = (1, 3, 5, 7)
 
 
 def _isoformat(value: Any) -> str | None:
@@ -215,26 +216,38 @@ def _history_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return result
 
 
-async def _async_get_24h_history(
+async def _async_get_history(
     hass: HomeAssistant | None,
     entry: ConfigEntry,
     enabled_ids: set[int],
+    history_days: int,
 ) -> dict[str, Any]:
-    """Return 24 hours of recorder history aggregated into minute buckets."""
+    """Return selected recorder history aggregated into minute buckets."""
+    if history_days not in ALLOWED_HISTORY_DAYS:
+        raise ValueError(f"Unsupported diagnostic history range: {history_days}")
+
+    hours = history_days * 24
     if hass is None or not hasattr(entry, "entry_id"):
-        return {"available": False, "reason": "recorder_context_unavailable", "points": {}}
+        return {
+            "available": False,
+            "reason": "recorder_context_unavailable",
+            "days": history_days,
+            "hours": hours,
+            "points": {},
+        }
 
     point_entities = _point_entity_ids(hass, entry, enabled_ids)
     if not point_entities:
         return {
             "available": True,
-            "hours": _HISTORY_HOURS,
+            "days": history_days,
+            "hours": hours,
             "period": "minute",
             "points": {},
         }
 
     end = dt_util.utcnow()
-    start = end - timedelta(hours=_HISTORY_HOURS)
+    start = end - timedelta(days=history_days)
     entity_ids = list(point_entities.values())
 
     try:
@@ -255,7 +268,8 @@ async def _async_get_24h_history(
             "available": False,
             "reason": "recorder_query_failed",
             "error_type": type(err).__name__,
-            "hours": _HISTORY_HOURS,
+            "days": history_days,
+            "hours": hours,
             "period": "minute",
             "points": {},
         }
@@ -271,7 +285,8 @@ async def _async_get_24h_history(
 
     return {
         "available": True,
-        "hours": _HISTORY_HOURS,
+        "days": history_days,
+        "hours": hours,
         "start": start.isoformat(),
         "end": end.isoformat(),
         "period": "minute",
@@ -342,18 +357,25 @@ async def async_get_config_entry_diagnostics(
 
 
 async def async_get_extended_config_entry_diagnostics(
-    hass: HomeAssistant | None, entry: ConfigEntry
+    hass: HomeAssistant | None,
+    entry: ConfigEntry,
+    history_days: int = DEFAULT_HISTORY_DAYS,
 ) -> dict[str, Any]:
     """Return explicitly requested extended diagnostics with values and history."""
+    if history_days not in ALLOWED_HISTORY_DAYS:
+        raise ValueError(f"Unsupported diagnostic history range: {history_days}")
+
     diagnostics, points, enabled_ids = _base_diagnostics(entry)
     enabled_id_set = set(enabled_ids)
     diagnostics["diagnostic_mode"] = "extended"
+    diagnostics["history_days"] = history_days
     diagnostics["privacy"] = {
         "contains_current_values": True,
         "contains_history": True,
         "warning": (
-            "Extended diagnostics contain current NIBE values and up to 24 hours "
-            "of recorder history. Review the data before sharing it publicly."
+            f"Extended diagnostics contain current NIBE values and up to {history_days} "
+            f"day{'s' if history_days != 1 else ''} of recorder history. Review the "
+            "data before sharing it publicly."
         ),
     }
     diagnostics["points"]["current_values"] = {
@@ -363,7 +385,7 @@ async def async_get_extended_config_entry_diagnostics(
         for point_id in enabled_ids
         if points.get(str(point_id)) is not None or points.get(point_id) is not None
     }
-    diagnostics["points"]["history_24h"] = await _async_get_24h_history(
-        hass, entry, enabled_id_set
+    diagnostics["points"]["history"] = await _async_get_history(
+        hass, entry, enabled_id_set, history_days
     )
     return diagnostics
