@@ -131,6 +131,52 @@ def _row_start(row: dict[str, Any]) -> float | None:
     return None
 
 
+def _restore_safety(
+    *,
+    public_selective_delete_available: bool,
+    invalid_original_timestamps: int,
+    invalid_planned_timestamps: int,
+    original_values_currently_missing: int,
+    newer_unrelated_values_at_risk: int,
+) -> dict[str, Any]:
+    """Return an explicit fail-closed restore safety decision."""
+    blocking_reasons: list[str] = []
+
+    if not public_selective_delete_available:
+        blocking_reasons.append(
+            "Home Assistant bietet keine unterstützte öffentliche Recorder-API, "
+            "um ausschließlich die damals importierten einzelnen Stundenwerte zu löschen."
+        )
+    if invalid_original_timestamps:
+        blocking_reasons.append(
+            f"{invalid_original_timestamps} Zeitstempel der gesicherten Zielstatistik "
+            "konnten nicht eindeutig ausgewertet werden."
+        )
+    if invalid_planned_timestamps:
+        blocking_reasons.append(
+            f"{invalid_planned_timestamps} Zeitstempel der damaligen Importplanung "
+            "konnten nicht eindeutig ausgewertet werden."
+        )
+    if original_values_currently_missing:
+        blocking_reasons.append(
+            f"{original_values_currently_missing} bereits vor der Migration vorhandene "
+            "Zielwerte fehlen heute; der aktuelle Zustand entspricht daher nicht mehr "
+            "vollständig dem Sicherungszustand."
+        )
+    if newer_unrelated_values_at_risk:
+        blocking_reasons.append(
+            f"{newer_unrelated_values_at_risk} neuere bzw. nicht zum damaligen Import "
+            "gehörende Zielwerte müssen zwingend erhalten bleiben."
+        )
+
+    return {
+        "safe_to_restore": not blocking_reasons,
+        "blocked": bool(blocking_reasons),
+        "blocking_reasons": blocking_reasons,
+        "policy": "fail_closed",
+    }
+
+
 async def async_list_statistics_backups(hass: HomeAssistant) -> dict[str, Any]:
     """Return all available statistics backups without modifying anything."""
     backups, invalid = await hass.async_add_executor_job(
@@ -155,27 +201,40 @@ async def async_preview_statistics_restore(
     target_entity_id = payload["target_entity_id"]
     current_rows = await _async_statistics(hass, target_entity_id)
 
-    original_starts = {
-        start
+    original_timestamp_values = [
+        row.get("start") if isinstance(row, dict) else None
         for row in payload["target_statistics"]
-        if (start := _parse_iso(row.get("start") if isinstance(row, dict) else None)) is not None
-    }
-    planned_starts = {
-        start for value in payload["planned_import_starts"] if (start := _parse_iso(value)) is not None
-    }
+    ]
+    planned_timestamp_values = payload["planned_import_starts"]
+
+    original_parsed = [_parse_iso(value) for value in original_timestamp_values]
+    planned_parsed = [_parse_iso(value) for value in planned_timestamp_values]
+
+    original_starts = {start for start in original_parsed if start is not None}
+    planned_starts = {start for start in planned_parsed if start is not None}
     current_starts = {
         start for row in current_rows if (start := _row_start(row)) is not None
     }
 
+    invalid_original_timestamps = sum(value is None for value in original_parsed)
+    invalid_planned_timestamps = sum(value is None for value in planned_parsed)
     planned_currently_present = planned_starts & current_starts
     original_currently_missing = original_starts - current_starts
     current_not_in_original = current_starts - original_starts
     current_after_backup_not_planned = current_not_in_original - planned_starts
 
+    safety = _restore_safety(
+        public_selective_delete_available=False,
+        invalid_original_timestamps=invalid_original_timestamps,
+        invalid_planned_timestamps=invalid_planned_timestamps,
+        original_values_currently_missing=len(original_currently_missing),
+        newer_unrelated_values_at_risk=len(current_after_backup_not_planned),
+    )
+
     result = {
         "preview_only": True,
         "writes_performed": False,
-        "restore_available": False,
+        "restore_available": safety["safe_to_restore"],
         "backup": _backup_summary(path, payload),
         "comparison": {
             "current_target_statistics": len(current_starts),
@@ -185,15 +244,18 @@ async def async_preview_statistics_restore(
             "original_values_currently_missing": len(original_currently_missing),
             "current_values_not_in_original_backup": len(current_not_in_original),
             "newer_unrelated_values_at_risk": len(current_after_backup_not_planned),
+            "invalid_original_timestamps": invalid_original_timestamps,
+            "invalid_planned_timestamps": invalid_planned_timestamps,
         },
-        "safety": {
-            "can_restore_safely_with_public_recorder_api": False,
-            "reason": (
-                "Home Assistant bietet derzeit keine saubere öffentliche Recorder-API, "
-                "um nur einzelne importierte Stundenwerte gezielt zu löschen."
-            ),
-        },
+        "safety": safety,
     }
+
+    if safety["blocking_reasons"]:
+        reason_lines = "\n".join(
+            f"- {reason}" for reason in safety["blocking_reasons"]
+        )
+    else:
+        reason_lines = "- Keine Blockierungsgründe erkannt."
 
     persistent_notification.async_create(
         hass,
@@ -205,6 +267,9 @@ async def async_preview_statistics_restore(
             f"Davon aktuell vorhanden: **{len(planned_currently_present)}**  \n"
             f"Neuere, nicht zum damaligen Import gehörende Werte: "
             f"**{len(current_after_backup_not_planned)}**\n\n"
+            f"Sicher automatisch wiederherstellbar: "
+            f"**{'Ja' if safety['safe_to_restore'] else 'Nein'}**\n\n"
+            f"Blockierungsgründe:\n{reason_lines}\n\n"
             "Dies ist nur eine Wiederherstellungs-Vorschau. Es wurden keine "
             "Recorder-Daten verändert."
         ),
