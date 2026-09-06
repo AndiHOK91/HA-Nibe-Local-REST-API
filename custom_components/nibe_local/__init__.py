@@ -40,15 +40,22 @@ from .statistics_migration import (
     async_import_statistics_migration,
     async_preview_statistics_migration,
 )
+from .statistics_restore import (
+    async_list_statistics_backups,
+    async_preview_statistics_restore,
+)
 
 SERVICE_EXPORT_EXTENDED_DIAGNOSTICS = "export_extended_diagnostics"
 SERVICE_PREVIEW_STATISTICS_MIGRATION = "preview_statistics_migration"
 SERVICE_IMPORT_STATISTICS_MIGRATION = "import_statistics_migration"
+SERVICE_LIST_STATISTICS_BACKUPS = "list_statistics_backups"
+SERVICE_PREVIEW_STATISTICS_RESTORE = "preview_statistics_restore"
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
 ATTR_HISTORY_DAYS = "history_days"
 ATTR_SOURCE_ENTITY_ID = "source_entity_id"
 ATTR_TARGET_ENTITY_ID = "target_entity_id"
 ATTR_CREATE_BACKUP = "create_backup"
+ATTR_BACKUP_FILE = "backup_file"
 SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_CONFIG_ENTRY_ID): str,
@@ -68,6 +75,12 @@ SERVICE_IMPORT_STATISTICS_MIGRATION_SCHEMA = vol.Schema(
         vol.Required(ATTR_SOURCE_ENTITY_ID): str,
         vol.Required(ATTR_TARGET_ENTITY_ID): str,
         vol.Optional(ATTR_CREATE_BACKUP, default=True): bool,
+    }
+)
+SERVICE_LIST_STATISTICS_BACKUPS_SCHEMA = vol.Schema({})
+SERVICE_PREVIEW_STATISTICS_RESTORE_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_BACKUP_FILE): str,
     }
 )
 
@@ -122,6 +135,25 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             create_backup=call.data[ATTR_CREATE_BACKUP],
         )
 
+    async def async_list_backups(call: ServiceCall) -> ServiceResponse:
+        """Return all integration-owned statistics migration backups."""
+        return await async_list_statistics_backups(hass)
+
+    async def async_preview_restore(call: ServiceCall) -> ServiceResponse:
+        """Return a read-only restore preview for one selected backup."""
+        result = await async_preview_statistics_restore(
+            hass,
+            call.data[ATTR_BACKUP_FILE],
+        )
+        target_entity_id = result["backup"]["target_entity_id"]
+        registry = er.async_get(hass)
+        target_entry = registry.async_get(target_entity_id)
+        if target_entry is not None and target_entry.platform != DOMAIN:
+            raise ServiceValidationError(
+                "Backup target does not belong to the NIBE Local REST API integration"
+            )
+        return result
+
     hass.services.async_register(
         DOMAIN,
         SERVICE_EXPORT_EXTENDED_DIAGNOSTICS,
@@ -141,6 +173,20 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         SERVICE_IMPORT_STATISTICS_MIGRATION,
         async_import_migration,
         schema=SERVICE_IMPORT_STATISTICS_MIGRATION_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_LIST_STATISTICS_BACKUPS,
+        async_list_backups,
+        schema=SERVICE_LIST_STATISTICS_BACKUPS_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_PREVIEW_STATISTICS_RESTORE,
+        async_preview_restore,
+        schema=SERVICE_PREVIEW_STATISTICS_RESTORE_SCHEMA,
         supports_response=SupportsResponse.ONLY,
     )
     return True
