@@ -279,31 +279,16 @@ async def _async_get_24h_history(
     }
 
 
-async def async_get_config_entry_diagnostics(
-    hass: HomeAssistant, entry: ConfigEntry
-) -> dict[str, Any]:
-    """Return privacy-conscious diagnostics for a config entry."""
+def _base_diagnostics(entry: ConfigEntry) -> tuple[dict[str, Any], dict[str, Any], list[int]]:
+    """Build the privacy-first diagnostic base shared by both export modes."""
     coordinator: NibeCoordinator = entry.runtime_data
     configured = {**entry.data, **entry.options}
     coordinator_data = coordinator.data or {}
     points = coordinator_data.get("points") or {}
-
-    point_metadata = {
-        str(point_id): _safe_point_metadata(point)
-        for point_id, point in points.items()
-    }
-
     selected_ids = configured.get(CONF_SELECTED_POINT_IDS, ()) or ()
     enabled_ids = sorted(coordinator.enabled_point_ids)
-    enabled_id_set = set(enabled_ids)
-    current_values = {
-        str(point_id): _diagnostic_point_value(points.get(str(point_id)) or points.get(point_id))
-        for point_id in enabled_ids
-        if points.get(str(point_id)) is not None or points.get(point_id) is not None
-    }
-    history_24h = await _async_get_24h_history(hass, entry, enabled_id_set)
 
-    return {
+    diagnostics = {
         "configuration": {
             # Deliberately allowlisted: host, username, password and Authorization
             # header are never included in diagnostics.
@@ -331,11 +316,54 @@ async def async_get_config_entry_diagnostics(
             "available_count": len(points),
             "enabled_count": len(enabled_ids),
             "enabled_point_ids": enabled_ids,
-            "metadata": point_metadata,
-            "current_values": current_values,
-            "history_24h": history_24h,
+            "metadata": {
+                str(point_id): _safe_point_metadata(point)
+                for point_id, point in points.items()
+            },
         },
         "notifications": {
             "active_alarm_count": _alarm_count(coordinator_data.get("notifications")),
         },
     }
+    return diagnostics, points, enabled_ids
+
+
+async def async_get_config_entry_diagnostics(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> dict[str, Any]:
+    """Return privacy-first standard diagnostics without live or historic values."""
+    diagnostics, _points, _enabled_ids = _base_diagnostics(entry)
+    diagnostics["diagnostic_mode"] = "standard"
+    diagnostics["privacy"] = {
+        "contains_current_values": False,
+        "contains_history": False,
+    }
+    return diagnostics
+
+
+async def async_get_extended_config_entry_diagnostics(
+    hass: HomeAssistant | None, entry: ConfigEntry
+) -> dict[str, Any]:
+    """Return explicitly requested extended diagnostics with values and history."""
+    diagnostics, points, enabled_ids = _base_diagnostics(entry)
+    enabled_id_set = set(enabled_ids)
+    diagnostics["diagnostic_mode"] = "extended"
+    diagnostics["privacy"] = {
+        "contains_current_values": True,
+        "contains_history": True,
+        "warning": (
+            "Extended diagnostics contain current NIBE values and up to 24 hours "
+            "of recorder history. Review the data before sharing it publicly."
+        ),
+    }
+    diagnostics["points"]["current_values"] = {
+        str(point_id): _diagnostic_point_value(
+            points.get(str(point_id)) or points.get(point_id)
+        )
+        for point_id in enabled_ids
+        if points.get(str(point_id)) is not None or points.get(point_id) is not None
+    }
+    diagnostics["points"]["history_24h"] = await _async_get_24h_history(
+        hass, entry, enabled_id_set
+    )
+    return diagnostics
