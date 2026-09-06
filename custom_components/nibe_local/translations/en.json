@@ -126,7 +126,7 @@
       "fan_rpm_ep14": {"name": "Fan speed (EB101-EP14)"},
       "start_defrost_fan": {"name": "Defrost fan start (EB101)"},
       "defrost_requested": {"name": "Defrost requested (EB101)", "state": {"off": "Off", "active": "Active", "passive": "Passive", "unknown": "Unknown"}},
-      "last_defrost_heat_pump_1": {"name": "Last defrost heat pump 1"},
+      "last_defrost_heat_pump_1": {"name": "Last defrost heat pump 1", "state": {"Successful": "Successful", "Low supply": "Supply temperature too low", "Low return": "Return temperature too low", "Low flow": "Flow rate too low", "Low LP": "Low pressure too low", "Max time": "Maximum defrost time reached", "Not accessible": "Not available", "Erfolgreich": "Successful", "Niedrige Vorlauftemperatur": "Supply temperature too low", "Niedrige Rücklauftemperatur": "Return temperature too low", "Niedriger Volumenstrom": "Flow rate too low", "Niedriger LP": "Low pressure too low", "Max. Zeit": "Maximum defrost time reached", "Nicht verfügbar": "Not available"}},
       "ventilation_exhaust_fan_speed": {"name": "Exhaust fan speed (AZ30-GQ2)"},
       "ventilation_supply_fan_speed": {"name": "Supply fan speed (AZ30-GQ3)"},
       "ventilation_exhaust_bt20": {"name": "Exhaust air temperature (AZ30-BT20)"},
