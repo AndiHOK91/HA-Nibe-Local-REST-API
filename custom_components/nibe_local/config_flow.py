@@ -202,25 +202,25 @@ def _equipment_status_suffix(
         return ""
 
     if value in current:
+        if previous is None:
+            return " (erkannt)" if german else " (detected)"
         if value in selected:
             return (
                 " (erkannt – bereits hinzugefügt)"
                 if german
                 else " (detected – already added)"
             )
-        if previous is not None and value not in previous:
+        if value not in previous:
             return (
                 " (erkannt – neu hinzugefügt)"
                 if german
                 else " (detected – newly added)"
             )
-        if previous is not None and value in previous:
-            return (
-                " (erkannt – nicht hinzugefügt)"
-                if german
-                else " (detected – not added)"
-            )
-        return " (erkannt)" if german else " (detected)"
+        return (
+            " (erkannt – nicht hinzugefügt)"
+            if german
+            else " (detected – not added)"
+        )
 
     if value in selected:
         return (
@@ -298,14 +298,9 @@ def _equipment_options_default(
         return _ordered_equipment(configured if has_configured else ())
 
     if not has_configured:
-        # Legacy entry without an equipment choice: use only live detection,
-        # never the previous all-equipment fallback.
         return _ordered_equipment(current_detected)
 
     if CONF_DETECTED_EQUIPMENT not in current:
-        # First options run after upgrading: establish a baseline but do not
-        # guess whether a detected-but-unselected component is genuinely new
-        # or was deliberately deselected earlier.
         return _ordered_equipment(configured)
 
     previous = normalize_equipment(
