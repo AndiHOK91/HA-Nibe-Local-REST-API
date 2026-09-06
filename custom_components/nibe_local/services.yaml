@@ -2,7 +2,7 @@ export_extended_diagnostics:
   name: Erweiterte Diagnosedaten exportieren
   description: >-
     Gibt bewusst erweiterte Diagnosedaten für eine NIBE-Instanz zurück. Diese
-    enthalten aktuelle Mess-/Einstellwerte und bis zu 24 Stunden Recorder-Historie.
+    enthalten aktuelle Mess-/Einstellwerte und die ausgewählte Recorder-Historie.
     Vor öffentlicher Weitergabe prüfen.
   fields:
     config_entry_id:
@@ -12,3 +12,20 @@ export_extended_diagnostics:
       selector:
         config_entry:
           integration: nibe_local
+    history_days:
+      name: Historienlänge
+      description: Recorder-Historie für den erweiterten Export.
+      required: false
+      default: 1
+      selector:
+        select:
+          options:
+            - label: 1 Tag
+              value: 1
+            - label: 3 Tage
+              value: 3
+            - label: 5 Tage
+              value: 5
+            - label: 7 Tage
+              value: 7
+          mode: dropdown
