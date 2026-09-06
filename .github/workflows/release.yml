@@ -44,7 +44,7 @@ jobs:
           fi
 
           RELEASE_ARGS=()
-          if [ "$VERSION" = "0.10.0" ]; then
+          if [ "$VERSION" = "0.10.0" ] || [ "$VERSION" = "0.10.1" ]; then
             RELEASE_ARGS+=(--prerelease)
           fi
 
