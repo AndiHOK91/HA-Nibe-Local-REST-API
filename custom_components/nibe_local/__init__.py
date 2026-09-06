@@ -36,16 +36,26 @@ from .diagnostics import (
 )
 from .equipment import CONF_EQUIPMENT
 from .profiles import DEFAULT_ENTITY_PROFILE
+from .statistics_migration import async_preview_statistics_migration
 
 SERVICE_EXPORT_EXTENDED_DIAGNOSTICS = "export_extended_diagnostics"
+SERVICE_PREVIEW_STATISTICS_MIGRATION = "preview_statistics_migration"
 ATTR_CONFIG_ENTRY_ID = "config_entry_id"
 ATTR_HISTORY_DAYS = "history_days"
+ATTR_SOURCE_ENTITY_ID = "source_entity_id"
+ATTR_TARGET_ENTITY_ID = "target_entity_id"
 SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_CONFIG_ENTRY_ID): str,
         vol.Optional(ATTR_HISTORY_DAYS, default=DEFAULT_HISTORY_DAYS): vol.In(
             ALLOWED_HISTORY_DAYS
         ),
+    }
+)
+SERVICE_PREVIEW_STATISTICS_MIGRATION_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_SOURCE_ENTITY_ID): str,
+        vol.Required(ATTR_TARGET_ENTITY_ID): str,
     }
 )
 
@@ -66,11 +76,38 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             history_days=call.data[ATTR_HISTORY_DAYS],
         )
 
+    async def async_preview_migration(call: ServiceCall) -> ServiceResponse:
+        """Return a read-only comparison of historical source and target statistics."""
+        source_entity_id = call.data[ATTR_SOURCE_ENTITY_ID]
+        target_entity_id = call.data[ATTR_TARGET_ENTITY_ID]
+        if source_entity_id == target_entity_id:
+            raise ServiceValidationError("Source and target entity must be different")
+
+        registry = er.async_get(hass)
+        target_entry = registry.async_get(target_entity_id)
+        if target_entry is None or target_entry.platform != DOMAIN:
+            raise ServiceValidationError(
+                "Target entity must belong to the NIBE Local REST API integration"
+            )
+
+        return await async_preview_statistics_migration(
+            hass,
+            source_entity_id,
+            target_entity_id,
+        )
+
     hass.services.async_register(
         DOMAIN,
         SERVICE_EXPORT_EXTENDED_DIAGNOSTICS,
         async_export_extended_diagnostics,
         schema=SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_PREVIEW_STATISTICS_MIGRATION,
+        async_preview_migration,
+        schema=SERVICE_PREVIEW_STATISTICS_MIGRATION_SCHEMA,
         supports_response=SupportsResponse.ONLY,
     )
     return True
