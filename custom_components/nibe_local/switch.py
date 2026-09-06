@@ -29,12 +29,30 @@ MODE_DEPENDENT_SWITCHES = {
     POINT_COOLING_ALLOWED,
 }
 
+# These settings are accepted by the NIBE REST API before the updated value is
+# immediately visible on a subsequent GET. Keep the requested Home Assistant
+# state optimistically until the NIBE confirms it, otherwise the switch appears
+# to jump back until the next normal coordinator poll.
+DELAYED_VERIFY_SWITCHES = MODE_DEPENDENT_SWITCHES | {
+    3706,  # Periodic hot water
+}
+
 MORE_HOT_WATER_DEFINITION = next(
     definition for definition in POINTS if definition.point_id == POINT_MORE_HOT_WATER
 )
 VENTILATION_MODE_DEFINITION = next(
     definition for definition in POINTS if definition.point_id == POINT_VENTILATION_MODE
 )
+
+
+def _switch_state(point: dict | None) -> bool | None:
+    """Return a boolean switch state from one NIBE point."""
+    value = raw_value(point or {})
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value.lower() not in {"", "0", "off", "false", "none"}
+    return bool(value)
 
 
 async def async_setup_entry(
@@ -85,6 +103,12 @@ def write_allowed_for_mode(point_id: int, mode: int | None) -> bool:
 class NibeSwitch(NibePointEntity, SwitchEntity):
     """Generic writable switch, with mode-dependent protection."""
 
+    def __init__(self, coordinator: NibeCoordinator, definition) -> None:
+        super().__init__(coordinator, definition)
+        self._optimistic_state: bool | None = None
+        self._expected_state: bool | None = None
+        self._verify_task: asyncio.Task[None] | None = None
+
     def _operating_mode(self) -> int | None:
         value = raw_value(self.coordinator.point(POINT_OPERATING_MODE_SETTING) or {})
         try:
@@ -97,12 +121,12 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
 
     @property
     def is_on(self) -> bool | None:
-        value = raw_value(self.point or {})
-        if value is None:
-            return None
-        if isinstance(value, str):
-            return value.lower() not in {"", "0", "off", "false", "none"}
-        return bool(value)
+        if (
+            self.definition.point_id in DELAYED_VERIFY_SWITCHES
+            and self._optimistic_state is not None
+        ):
+            return self._optimistic_state
+        return _switch_state(self.point)
 
     @property
     def extra_state_attributes(self):
@@ -134,15 +158,80 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
             translation_key="write_not_allowed_in_current_mode",
         )
 
-    async def async_turn_on(self, **kwargs) -> None:
+    def _cancel_verify_task(self) -> None:
+        if self._verify_task and not self._verify_task.done():
+            self._verify_task.cancel()
+        self._verify_task = None
+
+    def _start_verify_task(self) -> None:
+        self._cancel_verify_task()
+        self._verify_task = self.hass.async_create_task(self._verify_after_write())
+
+    async def _verify_after_write(self) -> None:
+        delays = (
+            self.coordinator.command_poll_delay_ms / 1000,
+            1.0,
+            1.5,
+            2.0,
+            3.0,
+        )
+        expected = self._expected_state
+        if expected is None:
+            return
+
+        for delay in delays:
+            await asyncio.sleep(delay)
+            await self.coordinator.async_refresh_point(self.definition.point_id)
+            current = _switch_state(
+                self.coordinator.point(self.definition.point_id)
+            )
+            if current is expected:
+                self._optimistic_state = None
+                self._expected_state = None
+                self.async_write_ha_state()
+                return
+
+        # The NIBE did not confirm the requested state in the verification
+        # window. Fall back to the last real REST value instead of keeping an
+        # optimistic state indefinitely.
+        self._optimistic_state = None
+        self._expected_state = None
+        self.async_write_ha_state()
+
+    async def _set_state(self, state: bool) -> None:
         await self._ensure_write_allowed()
-        await self.coordinator.api.patch_point(self.definition.point_id, 1)
-        await self.coordinator.async_refresh_point(self.definition.point_id)
+
+        if self.definition.point_id not in DELAYED_VERIFY_SWITCHES:
+            await self.coordinator.api.patch_point(
+                self.definition.point_id, 1 if state else 0
+            )
+            await self.coordinator.async_refresh_point(self.definition.point_id)
+            return
+
+        self._cancel_verify_task()
+        self._optimistic_state = state
+        self._expected_state = state
+        self.async_write_ha_state()
+        try:
+            await self.coordinator.api.patch_point(
+                self.definition.point_id, 1 if state else 0
+            )
+            self._start_verify_task()
+        except Exception:
+            self._optimistic_state = None
+            self._expected_state = None
+            self.async_write_ha_state()
+            raise
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self._set_state(True)
 
     async def async_turn_off(self, **kwargs) -> None:
-        await self._ensure_write_allowed()
-        await self.coordinator.api.patch_point(self.definition.point_id, 0)
-        await self.coordinator.async_refresh_point(self.definition.point_id)
+        await self._set_state(False)
+
+    async def async_will_remove_from_hass(self) -> None:
+        self._cancel_verify_task()
+        await super().async_will_remove_from_hass()
 
 
 class NibeMoreHotWaterSwitch(NibePointEntity, SwitchEntity):
