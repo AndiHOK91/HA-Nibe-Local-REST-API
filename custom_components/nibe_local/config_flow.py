@@ -173,12 +173,14 @@ def _equipment_selector(hass, *, detected=()) -> SelectSelector:
         EQUIPMENT_BE7: "Energiezähler BE7",
         EQUIPMENT_VENTILATION: "Lüftungsanlage / ERS",
         EQUIPMENT_HOT_WATER_CIRCULATION: "Brauchwasserzirkulation",
+        "prioritized_external_aux_heat": "Priorisierte externe Zusatzheizung",
     }
     labels_en = {
         EQUIPMENT_BE6: "Energy meter BE6",
         EQUIPMENT_BE7: "Energy meter BE7",
         EQUIPMENT_VENTILATION: "Ventilation / ERS",
         EQUIPMENT_HOT_WATER_CIRCULATION: "Hot-water circulation",
+        "prioritized_external_aux_heat": "Prioritized external auxiliary heat",
     }
     labels = labels_de if german else labels_en
     suffix = " (erkannt)" if german else " (detected)"
