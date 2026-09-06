@@ -1,7 +1,6 @@
 """Regression tests for the explicit extended diagnostics action."""
 
 import pytest
-import voluptuous as vol
 
 from custom_components.nibe_local import (
     ATTR_CONFIG_ENTRY_ID,
@@ -9,6 +8,10 @@ from custom_components.nibe_local import (
     SERVICE_EXPORT_EXTENDED_DIAGNOSTICS,
     SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA,
 )
+
+# Import voluptuous only after Home Assistant/custom component initialization.
+# Newer Home Assistant versions install Probatio as the voluptuous implementation.
+import voluptuous as vol
 
 
 def test_extended_diagnostics_action_contract() -> None:
