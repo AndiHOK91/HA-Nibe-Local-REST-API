@@ -14,7 +14,10 @@ Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lok
 
 Die Integration wurde im realen Betrieb mit **VVM S320, S2125 und ERS S40-400** entwickelt und getestet. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.9.8**
+Aktuelle Integrationsversion: **0.10.0 Beta (Prerelease)**
+
+> [!WARNING]
+> Die mit v0.10.0 eingeführte **Statistikmigration** ist **experimentell und noch nicht auf einer realen Home-Assistant-Installation getestet**. Vor einer Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein. Die integrierte Sicherungsfunktion ersetzt kein vollständiges Home-Assistant-Systembackup.
 
 ---
 
@@ -32,9 +35,13 @@ Unterstützt werden unter anderem:
 - EEV-/EVI-, Kältekreis- und Abtauwerte
 - Energie- und Leistungswerte
 - Alarm- und Meldungsinformationen
-- ausdrücklich freigegebene Schreibfunktionen über `switch`, `select`, `number` und `time`
+- ausdrücklich freigegebene Schreibfunktionen über `switch`, `select` und `number`
+- read-only `time`-Entitäten für bekannte Zeitpunkte, deren Schreiben durch die NIBE-Firmware/API nicht zuverlässig unterstützt wird
 - Diagnoseinformationen für API-Erreichbarkeit, Fallback und Verbindungsfehler
-- Diagnosedatei mit aktuellen Roh-/Skalierwerten und 24 Stunden Minutenhistorie
+- datenschutzorientierte Standarddiagnose sowie explizit anforderbare erweiterte Diagnosedaten
+- experimentelle Vorschau und Migration vorhandener Home-Assistant-Langzeitstatistiken auf REST-Sensoren
+- automatische, standardmäßig aktivierte Statistik-Sicherung vor einem Import
+- Auflistung älterer Statistik-Backups und read-only Restore-Vorschau
 
 ---
 
@@ -59,7 +66,7 @@ Unbekannte Punkte bleiben auch dann **Read-only**, wenn die lokale REST API `isW
 
 Die Integration verwendet ein Allowlist-Prinzip. Schreibbar sind nur Punkte, deren Bedeutung und zulässige Werte bekannt und ausdrücklich implementiert sind.
 
-Alle schreibenden REST-Aufrufe werden integrationsweit serialisiert. Nach einem Schreibbefehl wird der betroffene Punkt gezielt neu gelesen.
+Alle schreibenden REST-Aufrufe werden integrationsweit serialisiert. Nach einem Schreibbefehl wird der betroffene Punkt gezielt neu gelesen. Für einzelne bekannte Schalter, bei denen die REST API unmittelbar nach einem erfolgreichen Schreibvorgang noch einen alten Wert liefern kann, wird zusätzlich mit einem verzögerten gezielten Kontrollabruf gearbeitet.
 
 ### Heizung und Kühlung
 
@@ -72,7 +79,11 @@ Die Schalter **Heizung zulassen** und **Kühlung zulassen** werden unmittelbar v
 | Nur Zusatzheizung | schreiben erlaubt | blockiert |
 | unbekannt / nicht sicher lesbar | blockiert | blockiert |
 
-Der AUX-Schalter für die Zusatzheizung ist davon unabhängig und wird nicht über diese Betriebsmodus-Sperre blockiert.
+Der AUX-Schalter **Zusatzheizung im Heizbetrieb zulassen** ist davon unabhängig und wird nicht über diese Betriebsmodus-Sperre blockiert.
+
+### Zeitwerte
+
+Bekannte NIBE-Zeitpunkte werden als `time`-Entitäten dargestellt, wenn ihre REST-Metadaten dies sinnvoll erlauben. Das Schreiben solcher Zeitwerte ist derzeit bewusst blockiert, weil sowohl die lokale REST API als auch die getestete Modbus-Schnittstelle entsprechende Schreibversuche nicht zuverlässig akzeptieren. Die Entität bleibt damit read-only, statt einen scheinbar erfolgreichen, tatsächlich aber nicht ausgeführten Schreibvorgang anzubieten.
 
 ---
 
@@ -134,9 +145,15 @@ Zusätzlich stehen Diagnoseinformationen bereit, darunter:
 - **Letzter Verbindungsfehler**
 - aktive Meldungen/Alarme
 
-### Diagnosedaten herunterladen
+### Standarddiagnose
 
-Die Diagnosedatei enthält für aktivierte NIBE-Punkte – soweit vorhanden – unter anderem:
+Die normale Home-Assistant-Diagnose ist datenschutzorientiert und enthält keine Zugangsdaten. Erweiterte aktuelle Messwerte und Recorder-Historie werden nicht automatisch in jede Standarddiagnose aufgenommen.
+
+### Erweiterte Diagnosedaten
+
+Über die Aktion `nibe_local.export_extended_diagnostics` können bewusst erweiterte Diagnosedaten angefordert werden. Dabei lässt sich die Recorder-Historie auf **1, 3, 5 oder 7 Tage** begrenzen; Standard ist **1 Tag**.
+
+Der erweiterte Export enthält für aktivierte NIBE-Punkte – soweit vorhanden – unter anderem:
 
 - Variable-ID
 - REST-Titel und REST-Beschreibung
@@ -149,18 +166,97 @@ Die Diagnosedatei enthält für aktivierte NIBE-Punkte – soweit vorhanden – 
 - `isOk`-Status
 - Kennzeichnung erkannter Integer-Sentinelwerte
 - daraus abgeleitete Gültigkeit des aktuellen Werts
+- die ausdrücklich ausgewählte Recorder-Historie
 
-Zusätzlich wird eine **24-Stunden-Historie in 1-Minuten-Buckets** aus dem Home-Assistant-Recorder erzeugt. Pro Minute werden Minimum, Maximum, Mittelwert, letzter Wert und Sample-Anzahl gespeichert.
+Aus Datenschutz- und Sicherheitsgründen werden Zugangsdaten nicht exportiert. Erweiterte Diagnosedaten können jedoch Mess- und Einstellwerte enthalten und sollten vor öffentlicher Weitergabe geprüft werden.
 
-Aus Datenschutz- und Sicherheitsgründen werden bewusst nicht exportiert:
+---
 
-- Hostname oder IP-Adresse der NIBE
-- Benutzername und Passwort
-- Authorization-Header oder andere Zugangsdaten
-- Seriennummern
-- Alarmtexte
+## 🧪 Experimentelle Statistikmigration
 
-Die aktuellen NIBE-Mess- und Einstellwerte sind bewusst Bestandteil der Diagnosedatei, weil sie für technische Fehleranalyse erforderlich sind. Vor öffentlicher Weitergabe sollte die Datei geprüft werden.
+> [!CAUTION]
+> **Experimentell / noch nicht real getestet:** Die Statistikmigration wurde mit Regressionstests und gegen mehrere Home-Assistant-Versionen entwickelt, aber noch nicht auf einer produktiven Home-Assistant-Recorder-Datenbank praktisch erprobt. Verwende sie zunächst nur mit besonderer Vorsicht.
+
+Ziel der Funktion ist es, vorhandene **Langzeitstatistiken** eines bisherigen Sensors – zum Beispiel aus einer Modbus-Integration – auf den entsprechenden Sensor dieser REST-Integration zu übernehmen, ohne bereits vorhandene REST-Statistiken zu überschreiben.
+
+### Sicherheitsprinzip
+
+Die Migration ist absichtlich mehrstufig aufgebaut:
+
+1. **Vorschau** der Quelle und des REST-Ziels
+2. Prüfung von Einheit, Statistiktyp, Metadaten, vorhandenen Zeiträumen und Überschneidungen
+3. optionaler Import ausschließlich fehlender Stundenwerte
+4. standardmäßig vorherige Sicherung der Ziel-Langzeitstatistik
+5. vorhandene Zielzeitpunkte werden nicht überschrieben
+6. kein direkter SQL-/SQLite-/MariaDB-/PostgreSQL-Zugriff durch die Integration
+
+### Verfügbare Aktionen
+
+#### `nibe_local.preview_statistics_migration`
+
+Read-only-Vorschau für ein ausgewähltes Sensorpaar. Es werden keine Recorder-Daten verändert.
+
+Die Antwort enthält unter anderem:
+
+- Quell- und Zielsensor
+- vorhandene Langzeitstatistik-Metadaten
+- Anzahl und Zeitraum der Quell- und Zielstatistiken
+- bereits vorhandene Überschneidungen
+- voraussichtlich importierbare Stundenwerte
+- Kompatibilitätswarnungen
+
+#### `nibe_local.import_statistics_migration`
+
+**Experimentelle Schreibaktion. Noch nicht real getestet.**
+
+Importiert ausschließlich fehlende stündliche Langzeitstatistiken. Bereits vorhandene Zielzeitpunkte werden übersprungen.
+
+Optionen:
+
+- `source_entity_id`: bisheriger Quellsensor
+- `target_entity_id`: REST-Zielsensor
+- `create_backup`: Sicherung vor dem Import; **standardmäßig aktiviert**, kann bewusst deaktiviert werden
+
+Wenn die Sicherung aktiviert ist und nicht erstellt werden kann, wird der Import abgebrochen.
+
+### Statistik-Backup
+
+Das integrierte Backup ist **kein vollständiges Home-Assistant-Systembackup**. Es ist ein gezielter JSON-Snapshot für die Statistikmigration und wird unter `nibe_local_backups` im Home-Assistant-Konfigurationsverzeichnis gespeichert.
+
+Gesichert werden insbesondere:
+
+- Quell- und Zielsensor
+- Statistik-Metadaten
+- die vor dem Import vorhandene Ziel-Langzeitstatistik
+- die Zeitpunkte, die beim anschließenden Import hinzugefügt werden sollen
+
+Jede Sicherung erhält einen eigenen Zeitstempel; ältere Sicherungen werden nicht automatisch überschrieben.
+
+#### `nibe_local.list_statistics_backups`
+
+Listet alle vorhandenen, von der Integration erzeugten Statistik-Backups auf. Die neuesten Sicherungen erscheinen zuerst. Beschädigte oder nicht lesbare Backup-Dateien werden separat gemeldet.
+
+#### `nibe_local.preview_statistics_restore`
+
+Read-only-Prüfung eines ausgewählten älteren Backups. Es findet **keine tatsächliche Wiederherstellung** statt.
+
+Die Vorschau vergleicht den damaligen Zustand mit der heute vorhandenen Zielstatistik und zeigt unter anderem:
+
+- ursprünglich gesicherte Zielwerte
+- damals geplante Importwerte
+- aktuell noch vorhandene importierte Zeitpunkte
+- inzwischen fehlende ursprüngliche Werte
+- seitdem neu entstandene bzw. nicht zum damaligen Import gehörende Werte
+- `safe_to_restore`
+- konkrete Blockierungsgründe
+
+Die Restore-Bewertung arbeitet **fail-closed**: Sobald ein Zustand nicht eindeutig sicher bewertet werden kann, wird eine automatische Wiederherstellung blockiert.
+
+### Warum es noch keine automatische Restore-Aktion gibt
+
+Home Assistant stellt eine unterstützte API zum Importieren von Langzeitstatistiken bereit, aber derzeit keinen ebenso sauberen öffentlichen Gegenpart zum gezielten Löschen nur bestimmter einzelner importierter Stundenwerte. Ein vollständiges Löschen und anschließender Neuaufbau der Zielstatistik wäre für das hier verfolgte Ziel maximaler Datensicherheit zu invasiv.
+
+Deshalb existieren derzeit bewusst nur Backup, Backup-Liste und Restore-Vorschau. Eine echte Restore-Aktion soll erst ergänzt werden, wenn die betroffenen importierten Zeitpunkte sicher und ohne Gefährdung später entstandener legitimer Recorder-Daten zurückgesetzt werden können.
 
 ---
 
@@ -186,6 +282,7 @@ Weitere Schutzmechanismen:
 - iterative Normalisierung statt unbegrenzter Rekursion
 - Backoff beim vollständigen Einzelpunkt-Fallback
 - serialisierte Schreibzugriffe
+- technische Authentifizierungsfehler erzeugen keine dauerhafte Benachrichtigungsflut
 
 Die Laufzeitintegration verwendet ausschließlich die lokale REST API.
 
@@ -214,7 +311,7 @@ Die lokale REST API muss direkt an der NIBE-Steuerung unter **Menü 7 → Servic
 
 ### HACS
 
-Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden.
+Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. Bei **v0.10.0** handelt es sich um ein **Prerelease/Beta**.
 
 ### Einrichtungsablauf
 
@@ -226,10 +323,11 @@ Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Inte
 6. Verbindung prüfen.
 7. Verfügbare REST-Punkte laden.
 8. **Standard / Erweitert / Komplett / Individuell** auswählen.
-9. Benennung auswählen.
-10. Bei **Individuell** die gewünschten Variable-IDs auswählen.
-11. Entitätsübersicht prüfen.
-12. Mit **OK** anwenden.
+9. Anlagenoptionen auswählen, damit nicht vorhandene Ausstattungen keine unnötigen Entitäten erzeugen.
+10. Benennung auswählen.
+11. Bei **Individuell** die gewünschten Variable-IDs auswählen.
+12. Entitätsübersicht prüfen.
+13. Mit **OK** anwenden.
 
 Die API-Geräte-ID wird intern fest als `0` verwendet.
 
@@ -240,9 +338,12 @@ Die API-Geräte-ID wird intern fest als `0` verwendet.
 GitHub Actions prüft die Integration gegen:
 
 - **Home Assistant 2024.12.0**
-- eine aktuelle Home-Assistant-Version
+- **Home Assistant 2026.9.1**
+- eine aktuelle Home-Assistant-Version (`latest`)
 
-Die Regressionstests decken unter anderem API-Normalisierung, Authentifizierung, Schreibschutz, Profile, Diagnose-Datenschutz, Sentinelwerte und Abtau-Sonderzustände ab.
+Die Regressionstests decken unter anderem API-Normalisierung, Authentifizierung, Schreibschutz, Profile, Diagnose-Datenschutz, Sentinelwerte, Abtau-Sonderzustände sowie die Schutzlogik für Statistikmigration, Backups und Restore-Vorschau ab.
+
+Die vorhandenen automatisierten Tests ersetzen ausdrücklich **keinen realen Migrationstest auf einer produktiven Recorder-Datenbank**.
 
 ---
 
@@ -255,6 +356,9 @@ Nicht automatisch unterstützt werden:
 - automatisches Freischalten unbekannter Service-/Installerparameter
 - Alarmquittierung oder Alarmreset
 - myUplink-Cloudfunktionen
+- generisches Schreiben von NIBE-Zeitwerten
+- Migration detaillierter Rohzustände aus der normalen Recorder-Historie; die experimentelle Migration bezieht sich auf Langzeitstatistiken
+- automatische Wiederherstellung eines Statistikimports, solange Home Assistant keine ausreichend sichere selektive Recorder-API dafür bereitstellt
 
 Die tatsächlich verfügbaren Variablen hängen von Modell, angeschlossenen Modulen, Firmware und Anlagenkonfiguration ab.
 
@@ -263,6 +367,8 @@ Die tatsächlich verfügbaren Variablen hängen von Modell, angeschlossenen Modu
 ## ⚖️ Projektstatus und Haftung
 
 Diese Integration ist ein **inoffizielles Community-Projekt** und steht in keiner Verbindung zu NIBE. Sie befindet sich weiterhin vor Version 1.0 und wird auf einer realen Anlage weiterentwickelt und getestet.
+
+**v0.10.0 ist eine Beta-/Prerelease-Version.** Insbesondere die Statistikmigration ist experimentell und bisher nicht praktisch auf einer realen Home-Assistant-Recorder-Datenbank verifiziert.
 
 Die Software wird ohne Gewährleistung oder Garantie bereitgestellt. Die Nutzung erfolgt auf eigene Gefahr. Bei sicherheitsrelevanten Funktionen sind im Zweifel die Anzeigen und Einstellungen am Gerät sowie die offizielle Herstellerdokumentation maßgeblich.
 
