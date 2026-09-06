@@ -86,3 +86,25 @@ import_statistics_migration:
       default: true
       selector:
         boolean:
+
+list_statistics_backups:
+  name: Statistik-Backups auflisten
+  description: >-
+    Listet alle von der NIBE-Statistikmigration angelegten Sicherungen auf,
+    neueste zuerst. Die Aktion ist ausschließlich lesend.
+
+preview_statistics_restore:
+  name: Statistik-Wiederherstellung prüfen
+  description: >-
+    Vergleicht ein ausgewähltes älteres Statistik-Backup mit dem heutigen
+    Zustand des REST-Zielsensors. Es werden keine Recorder-Daten verändert.
+    Den Dateinamen erhältst du zuvor über „Statistik-Backups auflisten“.
+  fields:
+    backup_file:
+      name: Backup-Datei
+      description: >-
+        Dateiname eines vorhandenen NIBE-Statistik-Backups, zum Beispiel
+        sensor_nibe_api_outdoor_temperature_bt1_20260906T142315Z.json.
+      required: true
+      selector:
+        text:
