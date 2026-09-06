@@ -205,7 +205,7 @@
       "s2125_liquid_line_bt15": {"name": "Flüssigkeitsleitungstemperatur (EB101-BT15)"},
       "s2125_suction_gas_bt17": {"name": "Sauggastemperatur (EB101-BT17)"},
       "compressor_status": {"name": "Verdichterstatus (EB101)"},
-      "compressor_time_to_start": {"name": "Verdichter Zeit bis Start (EB101-EP14)"},
+      "compressor_time_to_start": {"name": "Zeit bis Verdichterstart (EB101-EP14)"},
       "compressor_starts": {"name": "Verdichter Starts (EB101-EP14)"},
       "compressor_total_time": {"name": "Verdichter Gesamtbetriebszeit (EB101-EP14)"},
       "compressor_hot_water_time": {"name": "Verdichter Betriebszeit Brauchwasser (EB101-EP14)"},
