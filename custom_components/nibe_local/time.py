@@ -47,6 +47,11 @@ def time_from_seconds(raw: int | str | None) -> time | None:
     return time(hour=hours, minute=minutes, second=seconds)
 
 
+def seconds_from_time(value: time) -> int:
+    """Encode a time as seconds since midnight without performing a write."""
+    return value.hour * 3600 + value.minute * 60 + value.second
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
