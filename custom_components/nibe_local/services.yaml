@@ -29,3 +29,26 @@ export_extended_diagnostics:
             - label: 7 Tage
               value: 7
           mode: dropdown
+
+preview_statistics_migration:
+  name: Statistikmigration prüfen
+  description: >-
+    Vergleicht die Langzeitstatistik eines bisherigen Sensors mit einem
+    NIBE-Local-REST-API-Sensor. Die Aktion ist ausschließlich lesend und
+    verändert keine Recorder-Daten.
+  fields:
+    source_entity_id:
+      name: Quellsensor
+      description: Bisheriger Sensor, z. B. aus der Modbus-Integration.
+      required: true
+      selector:
+        entity:
+          domain: sensor
+    target_entity_id:
+      name: REST-Zielsensor
+      description: Zugehöriger Sensor der NIBE Local REST API.
+      required: true
+      selector:
+        entity:
+          domain: sensor
+          integration: nibe_local
