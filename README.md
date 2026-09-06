@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lok
 
 Die Integration wurde im realen Betrieb mit **VVM S320, S2125 und ERS S40-400** entwickelt und getestet. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.10.1 Beta (Prerelease)**
+Aktuelle Integrationsversion: **0.10.1**
 
 > [!WARNING]
 > Die mit v0.10.x eingeführte **Statistikmigration** ist **experimentell und noch nicht auf einer realen Home-Assistant-Installation getestet**. Vor einer Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein. Die integrierte Sicherungsfunktion ersetzt kein vollständiges Home-Assistant-Systembackup.
@@ -82,7 +82,9 @@ Im späteren Optionen-Dialog wird zusätzlich mit dem zuletzt gespeicherten Erke
 - **(nicht mehr erkannt – weiterhin hinzugefügt)**: aktuell nicht mehr erkannt, bleibt aus Sicherheitsgründen aber aktiviert, bis der Nutzer es bewusst abwählt
 - **(erkannt)**: aktueller Fund ohne ausreichend sichere frühere Vergleichsbasis
 
-Dadurch kann beispielsweise ein später eingebauter BE7 beim nächsten Öffnen der Optionen automatisch erkannt und vorausgewählt werden, ohne bewusst abgewählte Hardware bei jedem Öffnen wieder zu aktivieren.
+Die Hardware-Erkennung in den Optionen läuft **erst nach erfolgreicher Authentifizierung mit den im Dialog bestätigten Zugangsdaten**. Veraltete gespeicherte Passwörter oder Authorization-Header können dadurch keinen falschen Status wie „nicht mehr erkannt“ erzeugen.
+
+Dadurch kann beispielsweise ein später eingebauter BE7 beim nächsten Konfigurationsdurchlauf automatisch erkannt und vorausgewählt werden, ohne bewusst abgewählte Hardware bei jedem Öffnen wieder zu aktivieren.
 
 ---
 
@@ -335,23 +337,22 @@ Die lokale REST API muss direkt an der NIBE-Steuerung unter **Menü 7 → Servic
 
 ### HACS
 
-Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. Bei **v0.10.1** handelt es sich um ein **Prerelease/Beta**.
+Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.10.1 ist ein regulärer Release.**
 
 ### Einrichtungsablauf
 
 1. Host/IP-Adresse und Port eingeben.
-2. Authentifizierungsmethode wählen.
-3. Zugangsdaten eingeben.
-4. TLS-Zertifikatsprüfung festlegen.
-5. Polling-Einstellungen wählen.
-6. Verbindung prüfen.
-7. Verfügbare REST-Punkte laden.
-8. **Standard / Erweitert / Komplett / Individuell** auswählen.
-9. Automatisch erkannte Anlagenoptionen prüfen und bei Bedarf manuell korrigieren.
-10. Benennung auswählen.
-11. Bei **Individuell** die gewünschten Variable-IDs auswählen.
-12. Entitätsübersicht prüfen.
-13. Mit **OK** anwenden.
+2. Authentifizierungsmethode, TLS-Prüfung und Polling-Einstellungen wählen.
+3. Benutzername + Passwort oder den Authorization-Header eingeben.
+4. Verbindung und Zugangsdaten prüfen; erst danach `/device` und `/points` laden.
+5. Automatisch erkannte Anlagenhardware prüfen.
+6. **Standard / Erweitert / Komplett / Individuell** auswählen.
+7. Benennung auswählen.
+8. Bei **Individuell** die gewünschten Variable-IDs auswählen.
+9. Entitätsübersicht prüfen.
+10. Mit **OK** anwenden.
+
+Die Optionen einer bestehenden Anlage verwenden dieselbe Sicherheitsreihenfolge: Verbindungseinstellungen → Zugangsdaten → erfolgreicher authentifizierter Abruf → Hardware-/Profilauswahl → Vorschau.
 
 Die API-Geräte-ID wird intern fest als `0` verwendet.
 
@@ -392,7 +393,7 @@ Die tatsächlich verfügbaren Variablen hängen von Modell, angeschlossenen Modu
 
 Diese Integration ist ein **inoffizielles Community-Projekt** und steht in keiner Verbindung zu NIBE. Sie befindet sich weiterhin vor Version 1.0 und wird auf einer realen Anlage weiterentwickelt und getestet.
 
-**v0.10.1 ist eine Beta-/Prerelease-Version.** Insbesondere die Statistikmigration ist experimentell und bisher nicht praktisch auf einer realen Home-Assistant-Recorder-Datenbank verifiziert.
+**v0.10.1 ist ein regulärer Release.** Die Statistikmigration bleibt davon unabhängig ausdrücklich experimentell und ist bisher nicht praktisch auf einer realen Home-Assistant-Recorder-Datenbank verifiziert.
 
 Die Software wird ohne Gewährleistung oder Garantie bereitgestellt. Die Nutzung erfolgt auf eigene Gefahr. Bei sicherheitsrelevanten Funktionen sind im Zweifel die Anzeigen und Einstellungen am Gerät sowie die offizielle Herstellerdokumentation maßgeblich.
 
