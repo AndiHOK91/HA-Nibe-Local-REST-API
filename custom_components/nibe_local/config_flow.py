@@ -1066,9 +1066,53 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
     _detected_equipment: frozenset[str] = frozenset()
     _equipment_detection_available = False
 
+    def _authenticated_options_ready(self) -> bool:
+        return bool(
+            self._pending_options is not None
+            and self._pending_device is not None
+            and self._available_points is not None
+            and self._equipment_detection_available
+        )
+
     async def async_step_init(self, user_input=None):
-        """Collect connection settings before any authenticated discovery."""
+        """Show connection first, then profile/equipment after authenticated discovery."""
         current = {**self.config_entry.data, **self.config_entry.options}
+
+        if self._authenticated_options_ready():
+            if user_input is not None:
+                submitted = dict(user_input)
+                self._cleanup_inactive = bool(
+                    submitted.pop(CONF_REMOVE_INACTIVE_ENTITIES, False)
+                )
+                self._backup_before_cleanup = bool(
+                    submitted.pop(CONF_BACKUP_BEFORE_CLEANUP, True)
+                )
+                equipment_value = submitted.pop(_equipment_form_key(self.hass), None)
+                if equipment_value is not None:
+                    submitted[CONF_EQUIPMENT] = _ordered_equipment(equipment_value)
+                submitted[CONF_DETECTED_EQUIPMENT] = _ordered_equipment(
+                    self._detected_equipment
+                )
+                self._pending_options = {**self._pending_options, **submitted}
+                profile = str(
+                    self._pending_options.get(
+                        CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE
+                    )
+                )
+                if profile == PROFILE_INDIVIDUAL:
+                    return await self.async_step_entity_selection()
+                return await self.async_step_entity_preview()
+
+            return self.async_show_form(
+                step_id="init",
+                data_schema=_options_schema(
+                    self._pending_options,
+                    self.hass,
+                    detected=self._detected_equipment,
+                    detection_available=True,
+                ),
+            )
+
         if user_input is not None:
             self._detected_equipment = frozenset()
             self._equipment_detection_available = False
@@ -1102,7 +1146,7 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             self._pending_options = candidate
             self._available_points = points
             self._pending_device = device
-            return await self.async_step_configuration()
+            return await self.async_step_init()
 
         current = {**self.config_entry.data, **self.config_entry.options}
         schema = (
@@ -1130,48 +1174,6 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             return await self._async_finish_auth(dict(user_input), "auth_header")
         return self.async_show_form(
             step_id="auth_header", data_schema=_header_auth_schema(auth_header_default="")
-        )
-
-    async def async_step_configuration(self, user_input=None):
-        """Show profile/equipment choices only after authenticated discovery."""
-        if (
-            self._pending_options is None
-            or self._pending_device is None
-            or self._available_points is None
-            or not self._equipment_detection_available
-        ):
-            return self.async_abort(reason="setup_state_missing")
-
-        if user_input is not None:
-            submitted = dict(user_input)
-            self._cleanup_inactive = bool(
-                submitted.pop(CONF_REMOVE_INACTIVE_ENTITIES, False)
-            )
-            self._backup_before_cleanup = bool(
-                submitted.pop(CONF_BACKUP_BEFORE_CLEANUP, True)
-            )
-            equipment_value = submitted.pop(_equipment_form_key(self.hass), None)
-            if equipment_value is not None:
-                submitted[CONF_EQUIPMENT] = _ordered_equipment(equipment_value)
-            submitted[CONF_DETECTED_EQUIPMENT] = _ordered_equipment(
-                self._detected_equipment
-            )
-            self._pending_options = {**self._pending_options, **submitted}
-            profile = str(
-                self._pending_options.get(CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE)
-            )
-            if profile == PROFILE_INDIVIDUAL:
-                return await self.async_step_entity_selection()
-            return await self.async_step_entity_preview()
-
-        return self.async_show_form(
-            step_id="configuration",
-            data_schema=_options_schema(
-                self._pending_options,
-                self.hass,
-                detected=self._detected_equipment,
-                detection_available=True,
-            ),
         )
 
     async def async_step_entity_selection(self, user_input=None):
