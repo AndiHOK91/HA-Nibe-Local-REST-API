@@ -1,0 +1,14 @@
+export_extended_diagnostics:
+  name: Erweiterte Diagnosedaten exportieren
+  description: >-
+    Gibt bewusst erweiterte Diagnosedaten für eine NIBE-Instanz zurück. Diese
+    enthalten aktuelle Mess-/Einstellwerte und bis zu 24 Stunden Recorder-Historie.
+    Vor öffentlicher Weitergabe prüfen.
+  fields:
+    config_entry_id:
+      name: NIBE-Konfiguration
+      description: NIBE-Local-REST-API-Instanz für den erweiterten Diagnoseexport.
+      required: true
+      selector:
+        config_entry:
+          integration: nibe_local
