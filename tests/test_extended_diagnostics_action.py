@@ -9,10 +9,6 @@ from custom_components.nibe_local import (
     SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA,
 )
 
-# Import voluptuous only after Home Assistant/custom component initialization.
-# Newer Home Assistant versions install Probatio as the voluptuous implementation.
-import voluptuous as vol
-
 
 def test_extended_diagnostics_action_contract() -> None:
     """The extended export stays explicit and defaults to one day."""
@@ -35,7 +31,10 @@ def test_extended_diagnostics_action_accepts_only_supported_days() -> None:
         )
         assert validated[ATTR_HISTORY_DAYS] == history_days
 
-    with pytest.raises(vol.Invalid):
+    # Home Assistant may expose Voluptuous directly or through Probatio depending
+    # on the supported core version. Assert the validation behavior, not the
+    # implementation-specific exception class.
+    with pytest.raises(Exception, match="value must be one of"):
         SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA(
             {ATTR_CONFIG_ENTRY_ID: "test-entry", ATTR_HISTORY_DAYS: 2}
         )
