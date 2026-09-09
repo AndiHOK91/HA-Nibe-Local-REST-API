@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from json import JSONDecodeError, loads
+import logging
 import socket
 import ssl
 from typing import Any
@@ -13,6 +14,8 @@ from .const import AUTH_METHOD_BASIC, AUTH_METHOD_HEADER, NIBE_DEVICE_ID
 
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 MAX_NORMALIZE_DEPTH = 64
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_resolve_host_ip(host: str) -> str | None:
@@ -203,24 +206,69 @@ class NibeLocalApi:
 
         return result
 
+    @staticmethod
+    def _point_raw_value(point: Any) -> int | str | None:
+        """Return the raw value from one point response for write comparison."""
+        if not isinstance(point, dict):
+            return None
+        value = point.get("value") or point.get("datavalue") or {}
+        if not isinstance(value, dict):
+            return None
+        string_value = value.get("stringValue")
+        if string_value not in (None, ""):
+            return string_value
+        return value.get("integerValue")
+
     async def get_notifications(self) -> dict[str, Any]:
         return await self._request("GET", f"/devices/{self.device_id}/notifications")
 
     async def patch_point(self, variable_id: int, raw_value: int | str) -> Any:
+        """Write one point only when its freshly read raw value differs.
+
+        The pre-write GET and the optional PATCH share the same write lock. This
+        prevents duplicate writes when two identical commands arrive at nearly
+        the same time. If the pre-write GET fails, preserve the previous command
+        behaviour and attempt the requested PATCH instead of silently dropping it.
+        """
+        normalized_value: int | str
+        if isinstance(raw_value, str):
+            normalized_value = raw_value
+        else:
+            normalized_value = int(raw_value)
+
         value: dict[str, Any] = {
             "type": "datavalue",
             "isOk": True,
             "variableId": variable_id,
         }
-        if isinstance(raw_value, str):
-            value["stringValue"] = raw_value
+        if isinstance(normalized_value, str):
+            value["stringValue"] = normalized_value
             value["integerValue"] = 0
         else:
-            value["integerValue"] = int(raw_value)
+            value["integerValue"] = normalized_value
             value["stringValue"] = ""
-        return await self._write_request(
-            "PATCH", f"/devices/{self.device_id}/points", json=[value]
-        )
+
+        async with self._write_lock:
+            try:
+                current_point = await self.get_point(variable_id)
+            except NibeApiError as err:
+                _LOGGER.debug(
+                    "Pre-write read of NIBE point %s failed; proceeding with PATCH: %s",
+                    variable_id,
+                    err,
+                )
+            else:
+                if self._point_raw_value(current_point) == normalized_value:
+                    _LOGGER.debug(
+                        "Skipping redundant PATCH for NIBE point %s; raw value is already %r",
+                        variable_id,
+                        normalized_value,
+                    )
+                    return None
+
+            return await self._request(
+                "PATCH", f"/devices/{self.device_id}/points", json=[value]
+            )
 
     async def set_smart_mode(self, mode: str) -> Any:
         return await self._write_request(
