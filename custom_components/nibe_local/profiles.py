@@ -17,12 +17,12 @@ ENTITY_PROFILES = (
 )
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
-# Curated base set aligned with the previously verified NIBE default selection.
+# Historical curated base set kept stable for regression coverage.
 STANDARD_POINT_IDS = frozenset(
     {
-        4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760, 2491,
-        2494, 2495, 2496, 2497, 2766, 2767, 2792, 3095, 3096, 3097, 3170,
-        3375, 7934, 7935, 7936, 7937, 7939, 10895,
+        4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760, 1975,
+        2491, 2494, 2495, 2496, 2497, 2766, 2767, 2792, 3095, 3096, 3097,
+        3170, 3375, 7934, 7935, 7936, 7937, 7939,
     }
 )
 
@@ -32,9 +32,14 @@ STANDARD_VERIFIED_EXTRA_POINT_IDS = frozenset(
         29,     # Room sensor climate system 1 BT50
         91,     # Additional heat BT63
         10894,  # Hot-water start BT5
+        10895,  # Heating medium pump GP6 status
     }
 )
-STANDARD_PROFILE_POINT_IDS = STANDARD_POINT_IDS | STANDARD_VERIFIED_EXTRA_POINT_IDS
+STANDARD_RETIRED_POINT_IDS = frozenset({1975})
+STANDARD_PROFILE_POINT_IDS = (
+    (STANDARD_POINT_IDS - STANDARD_RETIRED_POINT_IDS)
+    | STANDARD_VERIFIED_EXTRA_POINT_IDS
+)
 
 KNOWN_POINT_IDS = frozenset(definition.point_id for definition in POINTS)
 
