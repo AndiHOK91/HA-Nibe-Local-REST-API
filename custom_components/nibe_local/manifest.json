@@ -1,7 +1,7 @@
 {
   "domain": "nibe_local",
   "name": "NIBE Local REST API",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "documentation": "https://github.com/AndiHOK91/HA-Nibe-Local-REST-API",
   "issue_tracker": "https://github.com/AndiHOK91/HA-Nibe-Local-REST-API/issues",
   "codeowners": [

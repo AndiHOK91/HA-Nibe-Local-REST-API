@@ -17,7 +17,7 @@ ENTITY_PROFILES = (
 )
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
-# Curated base set aligned with the previously verified NIBE default selection.
+# Historical curated base set kept stable for regression coverage.
 STANDARD_POINT_IDS = frozenset(
     {
         4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760, 1975,
@@ -32,17 +32,25 @@ STANDARD_VERIFIED_EXTRA_POINT_IDS = frozenset(
         29,     # Room sensor climate system 1 BT50
         91,     # Additional heat BT63
         10894,  # Hot-water start BT5
+        10895,  # Heating medium pump GP6 status
     }
 )
-STANDARD_PROFILE_POINT_IDS = STANDARD_POINT_IDS | STANDARD_VERIFIED_EXTRA_POINT_IDS
+STANDARD_RETIRED_POINT_IDS = frozenset({1975})
+STANDARD_PROFILE_POINT_IDS = (
+    (STANDARD_POINT_IDS - STANDARD_RETIRED_POINT_IDS)
+    | STANDARD_VERIFIED_EXTRA_POINT_IDS
+)
 
 KNOWN_POINT_IDS = frozenset(definition.point_id for definition in POINTS)
 
 
 def normalize_selected_ids(values: Iterable[object] | None) -> frozenset[int]:
-    """Normalize persisted point IDs while ignoring malformed values."""
+    """Normalize persisted point IDs; use curated points when selection is unset."""
+    if values is None:
+        return KNOWN_POINT_IDS
+
     result: set[int] = set()
-    for value in values or ():
+    for value in values:
         try:
             result.add(int(value))
         except (TypeError, ValueError):
