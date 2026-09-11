@@ -8,9 +8,15 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import POINTS
+from .const import ENTITY_NAMING_HOME_ASSISTANT, POINTS
 from .coordinator import NibeCoordinator
-from .entity import NibePointEntity, coordinator_device_info, entity_unique_id, raw_value
+from .entity import (
+    NibePointEntity,
+    coordinator_device_info,
+    entity_unique_id,
+    local_api_point_name,
+    raw_value,
+)
 
 PARALLEL_UPDATES = 0
 
@@ -36,11 +42,23 @@ async def async_setup_entry(
 
 
 class NibeBinarySensor(NibePointEntity, BinarySensorEntity):
+    def __init__(self, coordinator: NibeCoordinator, definition) -> None:
+        super().__init__(coordinator, definition)
+        if (
+            definition.point_id == 10895
+            and coordinator.entity_naming == ENTITY_NAMING_HOME_ASSISTANT
+        ):
+            self._attr_translation_key = None
+            self._attr_name = (
+                local_api_point_name(self.point or {})
+                or "Heating medium pump (GP6)"
+            )
+
     @property
     def device_class(self):
         if self.definition.point_id in {3097, 2683}:
             return BinarySensorDeviceClass.PROBLEM
-        if self.definition.point_id in {2657, 2729, 3138, 1829, 3098}:
+        if self.definition.point_id in {2657, 2729, 3138, 1829, 3098, 10895}:
             return BinarySensorDeviceClass.RUNNING
         return None
 
