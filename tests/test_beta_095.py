@@ -22,7 +22,6 @@ def test_standard_profile_matches_verified_default_rest_set() -> None:
         1708,
         1756,
         1760,
-        1975,
         2491,
         2494,
         2495,
@@ -42,12 +41,13 @@ def test_standard_profile_matches_verified_default_rest_set() -> None:
         7937,
         7939,
         10894,
+        10895,
     }
 
 
 def test_new_verified_standard_points_are_curated() -> None:
     point_ids = {definition.point_id for definition in POINTS}
-    assert {29, 91, 10894} <= point_ids
+    assert {29, 91, 10894, 10895} <= point_ids
 
 
 def test_hot_water_circulation_only_contains_verified_rest_points() -> None:
