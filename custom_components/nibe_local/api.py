@@ -14,6 +14,7 @@ from .const import AUTH_METHOD_BASIC, AUTH_METHOD_HEADER, NIBE_DEVICE_ID
 
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 MAX_NORMALIZE_DEPTH = 64
+TARGETED_POINT_FALLBACK_IDS = (10895,)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -143,8 +144,31 @@ class NibeLocalApi:
         return await self._request("GET", f"/devices/{self.device_id}")
 
     async def get_points(self) -> dict[str, Any]:
+        """Fetch bulk points and supplement known points omitted by the bulk endpoint."""
         payload = await self._request("GET", f"/devices/{self.device_id}/points")
-        return self._normalize_points(payload)
+        points = self._normalize_points(payload)
+
+        for variable_id in TARGETED_POINT_FALLBACK_IDS:
+            key = str(variable_id)
+            if key in points:
+                continue
+            try:
+                point = await self.get_point(variable_id)
+            except NibeAuthError:
+                raise
+            except NibeApiError as err:
+                _LOGGER.debug(
+                    "Optional targeted read of NIBE point %s failed: %s",
+                    variable_id,
+                    err,
+                )
+                continue
+
+            metadata = point.get("metadata") if isinstance(point, dict) else None
+            if isinstance(metadata, dict) and metadata.get("variableId") is not None:
+                points[str(metadata["variableId"])] = point
+
+        return points
 
     async def get_point(self, variable_id: int) -> dict[str, Any]:
         """Fetch one point only.
