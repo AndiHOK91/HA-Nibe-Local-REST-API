@@ -34,8 +34,8 @@ from .diagnostics import (
     DEFAULT_HISTORY_DAYS,
     async_get_extended_config_entry_diagnostics,
 )
-from .equipment import CONF_EQUIPMENT
-from .profiles import DEFAULT_ENTITY_PROFILE
+from .equipment import CONF_EQUIPMENT, point_allowed_by_equipment
+from .profiles import DEFAULT_ENTITY_PROFILE, PROFILE_INDIVIDUAL, point_enabled
 from .statistics_migration import (
     async_import_statistics_migration,
     async_preview_statistics_migration,
@@ -220,6 +220,44 @@ async def _async_migrate_entity_unique_ids(
         )
 
 
+def _individual_default_point_ids(data: dict, points: dict) -> list[int] | None:
+    """Return the currently active automatic-profile points for Individual defaults."""
+    profile = str(data.get(CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE))
+    if profile == PROFILE_INDIVIDUAL:
+        return None
+
+    equipment = data.get(CONF_EQUIPMENT)
+    selected_ids = data.get(CONF_SELECTED_POINT_IDS)
+    result: list[int] = []
+    for point_key, point in points.items():
+        try:
+            point_id = int(point_key)
+        except (TypeError, ValueError):
+            continue
+        if not point_enabled(profile, point_id, selected_ids):
+            continue
+        if not point_allowed_by_equipment(point_id, equipment, point):
+            continue
+        result.append(point_id)
+    return sorted(result)
+
+
+def _sync_individual_defaults(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    data: dict,
+    points: dict,
+) -> None:
+    """Persist current automatic-profile points for a later switch to Individual."""
+    selected = _individual_default_point_ids(data, points)
+    if selected is None or data.get(CONF_SELECTED_POINT_IDS) == selected:
+        return
+
+    new_options = dict(entry.options)
+    new_options[CONF_SELECTED_POINT_IDS] = selected
+    hass.config_entries.async_update_entry(entry, options=new_options)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     data = {**entry.data, **entry.options}
 
@@ -248,6 +286,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await coordinator.async_config_entry_first_refresh()
     await _async_migrate_entity_unique_ids(hass, entry)
+    _sync_individual_defaults(
+        hass,
+        entry,
+        data,
+        (coordinator.data or {}).get("points") or {},
+    )
 
     entry.runtime_data = coordinator
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
