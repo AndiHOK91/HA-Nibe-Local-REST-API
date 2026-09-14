@@ -1,32 +1,52 @@
 # GP1 / GP6 mapping notes
 
-## Verified VVM S320/S325 mapping
+## Verified VVM S320 mapping
 
-| Local REST point | Meaning | Integration status |
+| Local REST point | Meaning on the verified VVM S320 installation | Integration status |
 | ---: | --- | --- |
-| `2792` | Heating circulation pump **GP1 speed** (`%`) | curated `sensor` |
-| `1975` | Same GP1-labelled percentage value on another NIBE register set | not curated; still available through Complete/Individual discovery |
-| `10895` | Former GP6 status candidate | **not exposed**; current VVM S320 REST API returns `Point not found` |
+| `2792` | Heating circulation pump **GP1 speed** (`%`) | curated `sensor`; Standard + Extended |
+| `1975` | Heating-medium pump **GP6 running state** (`0 % = off`, `100 % = on`) | curated `binary_sensor`; Extended + Individual |
+| `10895` | Former GP6 status candidate | not exposed; current REST API returns `Point not found` |
+| `3138` | Former GP12 candidate | removed from curated catalogue |
 
-For VVM S320/S325 the integration therefore uses local REST point `2792` as the canonical GP1 speed value.
+For the verified VVM S320 installation the integration therefore uses local REST point `2792` for the variable GP1 speed and point `1975` as the GP6 running state.
 
-## Why both 1975 and 2792 exist
+## Runtime evidence
 
-NIBE uses product-specific register sets. The official S-series Modbus documentation lists a GP1-labelled speed at input register `1102`, while the VVM S320/S325 register set exposes the variable-speed GP1 value at input register `1636`. The local REST API maps these to points `1975` and `2792` respectively.
+The local REST metadata labels points `1975` and `2792` similarly as GP1-related percentage values, but repeated runtime correlation against the physical pumps separates them clearly:
 
-Historically this integration exposed point `1975` as `heating_circulation_pump_gp1` and point `2792` as an alternative GP1 sensor. On the VVM S320 installation, however, the useful variable-speed value is `2792`. Point `1975` was observed by the user to behave only like `0/100 %`, which makes it a candidate for further investigation against the physical GP6 state, but that relationship is **not yet proven** by the current REST metadata and must not be presented as a GP6 status.
+- GP1 off, GP6 off: `2792 = 0 %`, `1975 = 0 %`.
+- GP1 running at about 38 %, GP6 off: `2792 = 38 %`, `1975 = 0 %`.
+- GP1 running at 50 %, GP6 on: `2792 = 50 %`, `1975 = 100 %`.
+- GP1 running at 30 %, GP6 on: `2792 = 30 %`, `1975 = 100 %`.
+- GP1 running at 25 %, GP6 off: `2792 = 25 %`, `1975 = 0 %`.
 
-## GP6
+This correlation shows that `2792` follows the variable-speed GP1, while `1975` follows the physical GP6 state independently and behaves as a 0/100 % run indicator on this installation.
+
+The integration intentionally models point `1975` as a binary sensor and treats any non-zero value as running. This is robust if a future firmware ever reports a non-zero value other than 100.
+
+## Why NIBE labels point 1975 like GP1
+
+NIBE uses product-specific register sets and the local REST metadata is not always product-specific enough to describe the physical component correctly. The official S-series Modbus documentation contains multiple product-family mappings for similarly named GP1 values. On this VVM S320 installation, runtime measurements are the decisive source for distinguishing the two exposed values.
+
+## GP6 and obsolete point 10895
 
 An older API/data crawl contained point `10895` named `Pumpe: Heizungsmedium (GP6)` with values `0 = Aus` and `1 = Ein`. The current VVM S320 REST API no longer exposes that point: it is absent from the bulk `/points` response and a direct `/points/10895` request returns `Point not found`.
 
-The integration therefore does not create a GP6 entity from point `10895` and does not perform a targeted fallback request for it.
+The integration therefore does not create a GP6 entity from point `10895` and does not perform a targeted fallback request for it. GP6 is instead represented by the verified point `1975`.
 
-A separate service/forced-control variable for GP6 may exist in menu 7.5.3. Service/test controls are intentionally excluded and must not be used as a substitute for a normal running-state sensor.
+A separate service/forced-control variable for GP6 may exist in menu 7.5.3. Service/test controls remain intentionally excluded and are not used as a substitute for the normal running-state sensor.
 
-## Open investigation
+## Profile policy
 
-The historical point `1975` deserves a dedicated runtime correlation test because it was previously shown as GP1 but reportedly switched only between `0 %` and `100 %`. If its transitions consistently match the physical GP6 pump while point `2792` continues to show the true variable GP1 speed, we can document that behavior separately. Until that is demonstrated, `1975` remains uncurated rather than being relabelled as GP6.
+Both pump values are available in the **Extended** entity list during setup:
+
+- `2792` — GP1 speed
+- `1975` — GP6 running state
+
+GP1 remains part of the compact Standard profile. GP6 is kept in Extended/Individual because its physical mapping has been verified specifically on the VVM S320 installation despite the misleading NIBE REST label.
+
+The former GP12 point `3138` is no longer curated.
 
 ## References
 
