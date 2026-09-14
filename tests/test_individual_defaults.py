@@ -11,6 +11,7 @@ from custom_components.nibe_local.profiles import (
 
 def test_extended_profile_becomes_individual_default_selection() -> None:
     points = {
+        "1975": {"value": {"integerValue": 100}},
         "2792": {"value": {"integerValue": 21}},
         "10895": {"value": {"integerValue": 1}},
         "999999": {"value": {"integerValue": 1}},
@@ -21,12 +22,14 @@ def test_extended_profile_becomes_individual_default_selection() -> None:
         points,
     )
 
-    # 10895 is no longer curated even if an old/stale API dataset contains it.
-    assert selected == [2792]
+    # 1975 and 2792 are both curated for the VVM S320 Extended profile;
+    # obsolete point 10895 remains uncurated.
+    assert selected == [1975, 2792]
 
 
-def test_standard_profile_ignores_unavailable_gp6_candidate() -> None:
+def test_standard_profile_keeps_gp6_out_of_minimal_selection() -> None:
     points = {
+        "1975": {"value": {"integerValue": 100}},
         "2792": {"value": {"integerValue": 21}},
         "10895": {"value": {"integerValue": 1}},
     }
@@ -42,7 +45,7 @@ def test_standard_profile_ignores_unavailable_gp6_candidate() -> None:
 def test_existing_individual_selection_is_not_overwritten() -> None:
     selected = _individual_default_point_ids(
         {CONF_ENTITY_PROFILE: PROFILE_INDIVIDUAL},
-        {"2792": {}, "10895": {}},
+        {"1975": {}, "2792": {}, "10895": {}},
     )
 
     assert selected is None
