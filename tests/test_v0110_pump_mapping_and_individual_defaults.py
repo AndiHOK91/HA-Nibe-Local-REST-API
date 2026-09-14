@@ -25,7 +25,7 @@ def test_vvm_s320_gp1_gp6_gp12_curated_point_mapping() -> None:
 
 
 def test_standard_extended_and_individual_pump_profiles() -> None:
-    assert 1975 not in STANDARD_PROFILE_POINT_IDS
+    assert 1975 in STANDARD_PROFILE_POINT_IDS
     assert 1975 in EXTENDED_PROFILE_POINT_IDS
     assert 1975 in KNOWN_POINT_IDS
 
