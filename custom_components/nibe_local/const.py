@@ -130,7 +130,6 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(25165, "energy_log_current_power_consumption", "energy"),
     PointDef(25166, "energy_log_current_power_components", "energy"),
     PointDef(2792, "heating_circulation_pump_gp1", "hydraulics"),
-    PointDef(10895, "heating_medium_pump_gp6", "hydraulics", "binary_sensor"),
     PointDef(3138, "internal_charge_pump_gp12", "hydraulics", "binary_sensor"),
     PointDef(832, "outdoor_unit_alarm", "heat_pump", diagnostic=True),
     PointDef(834, "outdoor_unit_fan_speed", "heat_pump"),
