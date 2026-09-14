@@ -2,7 +2,10 @@
 
 from custom_components.nibe_local.const import POINTS
 from custom_components.nibe_local.equipment import HOT_WATER_CIRCULATION_POINT_IDS
-from custom_components.nibe_local.profiles import STANDARD_PROFILE_POINT_IDS
+from custom_components.nibe_local.profiles import (
+    EXTENDED_PROFILE_POINT_IDS,
+    STANDARD_PROFILE_POINT_IDS,
+)
 
 
 def test_standard_profile_matches_verified_default_rest_set() -> None:
@@ -22,6 +25,7 @@ def test_standard_profile_matches_verified_default_rest_set() -> None:
         1708,
         1756,
         1760,
+        1975,
         2491,
         2494,
         2495,
@@ -52,6 +56,14 @@ def test_verified_and_optional_pump_points_are_curated() -> None:
     assert definitions[3138].key == "internal_charge_pump_gp12"
     assert definitions[3138].platform == "binary_sensor"
     assert 10895 not in definitions
+
+
+def test_high_pressure_bp9_is_extended_only() -> None:
+    definitions = {definition.point_id: definition for definition in POINTS}
+    assert definitions[6588].key == "s2125_high_pressure_bp9"
+    assert definitions[6588].group == "heat_pump"
+    assert 6588 in EXTENDED_PROFILE_POINT_IDS
+    assert 6588 not in STANDARD_PROFILE_POINT_IDS
 
 
 def test_hot_water_circulation_only_contains_verified_rest_points() -> None:
