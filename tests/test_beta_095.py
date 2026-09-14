@@ -49,6 +49,8 @@ def test_verified_pump_points_are_curated_for_extended_profile() -> None:
     assert definitions[1975].key == "heating_medium_pump_gp6"
     assert definitions[1975].platform == "binary_sensor"
     assert definitions[2792].key == "heating_circulation_pump_gp1"
+    # GP12/3138 is not automatic, but remains available as a discovered point
+    # through the Individual/Complete profiles when the device exposes it.
     assert 3138 not in definitions
     assert 10895 not in definitions
 
