@@ -18,9 +18,9 @@ ENTITY_PROFILES = (
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
 # Curated standard set. Point 1975 is intentionally not included: NIBE exposes
-# another GP1 speed variable with that ID on some S-series product families,
-# while VVM S320/S325 uses local REST point 2792 for GP1 speed. The duplicate
-# 1975 remains available as a discovered point in Complete/Individual profiles.
+# another GP1-labelled speed variable with that ID, while VVM S320/S325 uses
+# local REST point 2792 for its actual variable-speed GP1 value. Point 1975
+# remains available as a discovered point in Complete/Individual profiles.
 STANDARD_POINT_IDS = frozenset(
     {
         4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760,
@@ -35,7 +35,6 @@ STANDARD_VERIFIED_EXTRA_POINT_IDS = frozenset(
         29,     # Room sensor climate system 1 BT50
         91,     # Additional heat BT63
         10894,  # Hot-water start BT5
-        10895,  # GP6 heating-medium pump running status (0=off, 1=on)
     }
 )
 STANDARD_PROFILE_POINT_IDS = STANDARD_POINT_IDS | STANDARD_VERIFIED_EXTRA_POINT_IDS
