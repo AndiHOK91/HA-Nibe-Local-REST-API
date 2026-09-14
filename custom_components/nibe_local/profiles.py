@@ -17,12 +17,13 @@ ENTITY_PROFILES = (
 )
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
-# Curated standard set for the commonly useful VVM S320/S325 values. GP6 point
-# 1975 is intentionally kept out of Standard and is available in Extended and
-# Individual profiles together with the variable-speed GP1 point 2792.
+# Curated standard set for the commonly useful VVM S320/S325 values. Both
+# verified pump values are kept in Standard: point 2792 is the variable-speed
+# GP1 value and point 1975 is the GP6 running-state indicator. Point 1975 also
+# corresponds to Modbus input register 1102 from NIBE's default Modbus list.
 STANDARD_POINT_IDS = frozenset(
     {
-        4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760,
+        4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760, 1975,
         2491, 2494, 2495, 2496, 2497, 2766, 2767, 2792, 3095, 3096, 3097,
         3170, 3375, 7934, 7935, 7936, 7937, 7939,
     }
