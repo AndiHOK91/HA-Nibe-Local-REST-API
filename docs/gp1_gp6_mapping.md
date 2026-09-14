@@ -5,7 +5,7 @@
 | Local REST point | Meaning on the verified VVM S320 installation | Integration status |
 | ---: | --- | --- |
 | `2792` | Heating circulation pump **GP1 speed** (`%`) | curated `sensor`; Standard + Extended |
-| `1975` | Heating-medium pump **GP6 running state** (`0 % = off`, `100 % = on`) | curated `binary_sensor`; Extended + Individual |
+| `1975` | Heating-medium pump **GP6 running state** (`0 % = off`, `100 % = on`) | curated `binary_sensor`; Standard + Extended + Individual |
 | `10895` | Former GP6 status candidate | not exposed; current REST API returns `Point not found` |
 | `3138` | Internal charge pump **GP12** | curated `binary_sensor`; Individual only (also available in Complete) |
 
@@ -27,7 +27,7 @@ The integration intentionally models point `1975` as a binary sensor and treats 
 
 ## Why NIBE labels point 1975 like GP1
 
-NIBE uses product-specific register sets and the local REST metadata is not always product-specific enough to describe the physical component correctly. The official S-series Modbus documentation contains multiple product-family mappings for similarly named GP1 values. On this VVM S320 installation, runtime measurements are the decisive source for distinguishing the two exposed values.
+NIBE uses product-specific register sets and the local REST metadata is not always product-specific enough to describe the physical component correctly. The official S-series Modbus documentation contains multiple product-family mappings for similarly named GP1 values. Point `1975` is exposed as Modbus input register `1102` and belongs to NIBE's default Modbus list, so it remains part of the Standard profile. On this VVM S320 installation, runtime measurements are the decisive source for distinguishing the two exposed values.
 
 ## GP6 and obsolete point 10895
 
@@ -39,12 +39,10 @@ A separate service/forced-control variable for GP6 may exist in menu 7.5.3. Serv
 
 ## Profile policy
 
-Both verified pump values are available in the **Extended** entity list during setup:
+Both verified pump values are available in the **Standard** and **Extended** entity lists during setup:
 
 - `2792` — GP1 speed
 - `1975` — GP6 running state
-
-GP1 remains part of the compact Standard profile. GP6 is kept in Extended/Individual because its physical mapping has been verified specifically on the VVM S320 installation despite the misleading NIBE REST label.
 
 GP12 point `3138` is intentionally **not** enabled by Standard or Extended. It remains a curated point so that, when selected explicitly in the **Individual** profile, Home Assistant creates the correct binary sensor **“Interne Ladepumpe (GP12)”** with running semantics instead of a generic discovered percentage/value sensor. The Complete profile also exposes it when the local REST API provides the point.
 
