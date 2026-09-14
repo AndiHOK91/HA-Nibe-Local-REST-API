@@ -1,30 +1,32 @@
 # GP1 / GP6 mapping notes
 
-This integration deliberately treats the VVM S320/S325 pump values as two different signals.
+## Verified VVM S320/S325 mapping
 
-| Local REST point | Meaning | Home Assistant entity |
+| Local REST point | Meaning | Integration status |
 | ---: | --- | --- |
-| `2792` | Heating circulation / heating-medium pump **GP1 speed** (`%`) | `sensor` |
-| `10895` | Heating-medium pump **GP6 running status** (`0 = off`, `1 = on`) | `binary_sensor` |
-| `1975` | Same-named GP1 speed point seen on other S-series product families / API datasets | not curated; available as a discovered point in Complete or Individual profiles |
+| `2792` | Heating circulation pump **GP1 speed** (`%`) | curated `sensor` |
+| `1975` | Same GP1-labelled percentage value on another NIBE register set | not curated; still available through Complete/Individual discovery |
+| `10895` | Former GP6 status candidate | **not exposed**; current VVM S320 REST API returns `Point not found` |
 
-## Why both 1975 and 2792 can exist
+For VVM S320/S325 the integration therefore uses local REST point `2792` as the canonical GP1 speed value.
 
-NIBE uses product-specific register sets. The official S-series Modbus documentation lists GP1 speed as input register `1102` for S1155/S1255-class products, while VVM S320/S325 uses input register `1636` for GP1 speed. Local REST datasets can therefore contain more than one variable carrying the same human-readable GP1 label.
+## Why both 1975 and 2792 exist
 
-For VVM S320/S325 the integration uses local REST point `2792` as the canonical GP1 speed value. Point `1975` is intentionally not placed in the curated `POINTS` catalogue or Standard profile, but the generic discovery path still allows it to be exposed explicitly when it is relevant to another system.
+NIBE uses product-specific register sets. The official S-series Modbus documentation lists a GP1-labelled speed at input register `1102`, while the VVM S320/S325 register set exposes the variable-speed GP1 value at input register `1636`. The local REST API maps these to points `1975` and `2792` respectively.
 
-## GP6 is not a second GP1 speed value
+Historically this integration exposed point `1975` as `heating_circulation_pump_gp1` and point `2792` as an alternative GP1 sensor. On the VVM S320 installation, however, the useful variable-speed value is `2792`. Point `1975` was observed by the user to behave only like `0/100 %`, which makes it a candidate for further investigation against the physical GP6 state, but that relationship is **not yet proven** by the current REST metadata and must not be presented as a GP6 status.
 
-Local REST point `10895` reports an unsigned 8-bit state with the observed values `0` and `1`. It is therefore represented as a running-state binary sensor, not as a percentage sensor.
+## GP6
 
-A separate menu/service variable can exist for forced GP6 control. Service/test controls must not be confused with the normal read-only running status and are intentionally not exposed as ordinary controls by this integration without dedicated write validation.
+An older API/data crawl contained point `10895` named `Pumpe: Heizungsmedium (GP6)` with values `0 = Aus` and `1 = Ein`. The current VVM S320 REST API no longer exposes that point: it is absent from the bulk `/points` response and a direct `/points/10895` request returns `Point not found`.
 
-## Firmware validation
+The integration therefore does not create a GP6 entity from point `10895` and does not perform a targeted fallback request for it.
 
-A firmware update must not be assumed to change these IDs merely because pump handling changed internally. Revalidate the mapping when a firmware release explicitly changes Local REST/Modbus variables or when a post-update variable crawl shows different point metadata.
+A separate service/forced-control variable for GP6 may exist in menu 7.5.3. Service/test controls are intentionally excluded and must not be used as a substitute for a normal running-state sensor.
 
-For firmware 4.13.12, the published release notes do not describe a GP1/GP6 Local REST mapping change. The mapping above should therefore remain unchanged unless a post-update device crawl demonstrates otherwise.
+## Open investigation
+
+The historical point `1975` deserves a dedicated runtime correlation test because it was previously shown as GP1 but reportedly switched only between `0 %` and `100 %`. If its transitions consistently match the physical GP6 pump while point `2792` continues to show the true variable GP1 speed, we can document that behavior separately. Until that is demonstrated, `1975` remains uncurated rather than being relabelled as GP6.
 
 ## References
 
