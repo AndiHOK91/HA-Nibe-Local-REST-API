@@ -223,7 +223,7 @@
       "defrost_index": {"name": "Abtauindex (EB101)"},
       "eev_superheat_reference": {"name": "EEV Überhitzung Referenz (EB101)"},
       "eev_superheat": {"name": "EEV Überhitzung (EB101)"},
-      "eev_ssh_error": {"name": "EEV SSH-Fehler (EB101)"},
+      "eev_ssh_error_average_open": {"name": "EEV SSH-Fehler Mittelwert Öffnung (EB101)"},
       "eev_superheat_temperature_reference": {"name": "EEV Überhitzung Temperaturreferenz (EB101)"},
       "eev_setpoint": {"name": "EEV Sollwert (EB101)"},
       "eev_process_value": {"name": "EEV Prozesswert (EB101)"},
