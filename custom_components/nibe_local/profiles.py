@@ -17,7 +17,10 @@ ENTITY_PROFILES = (
 )
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
-# Historical curated base set kept stable for regression coverage.
+# Curated standard set for the commonly useful VVM S320/S325 values. Both
+# verified pump values are kept in Standard: point 2792 is the variable-speed
+# GP1 value and point 1975 is the GP6 running-state indicator. Point 1975 also
+# corresponds to Modbus input register 1102 from NIBE's default Modbus list.
 STANDARD_POINT_IDS = frozenset(
     {
         4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760, 1975,
@@ -32,16 +35,16 @@ STANDARD_VERIFIED_EXTRA_POINT_IDS = frozenset(
         29,     # Room sensor climate system 1 BT50
         91,     # Additional heat BT63
         10894,  # Hot-water start BT5
-        10895,  # Heating medium pump GP6 status
     }
 )
-STANDARD_RETIRED_POINT_IDS = frozenset({1975})
-STANDARD_PROFILE_POINT_IDS = (
-    (STANDARD_POINT_IDS - STANDARD_RETIRED_POINT_IDS)
-    | STANDARD_VERIFIED_EXTRA_POINT_IDS
-)
+STANDARD_PROFILE_POINT_IDS = STANDARD_POINT_IDS | STANDARD_VERIFIED_EXTRA_POINT_IDS
 
 KNOWN_POINT_IDS = frozenset(definition.point_id for definition in POINTS)
+
+# Curated points that retain their proper entity platform/name when explicitly
+# selected, but are intentionally excluded from the automatic Extended profile.
+INDIVIDUAL_ONLY_POINT_IDS = frozenset({3138})
+EXTENDED_PROFILE_POINT_IDS = KNOWN_POINT_IDS - INDIVIDUAL_ONLY_POINT_IDS
 
 
 def normalize_selected_ids(values: Iterable[object] | None) -> frozenset[int]:
@@ -71,7 +74,7 @@ def point_enabled(
     if profile == PROFILE_STANDARD:
         return point_id in STANDARD_PROFILE_POINT_IDS
     # Extended is also the compatibility fallback for entries without a profile.
-    return point_id in KNOWN_POINT_IDS
+    return point_id in EXTENDED_PROFILE_POINT_IDS
 
 
 def profile_counts(available_ids: Iterable[object]) -> dict[str, int]:
@@ -79,7 +82,7 @@ def profile_counts(available_ids: Iterable[object]) -> dict[str, int]:
     available = normalize_selected_ids(available_ids)
     return {
         PROFILE_STANDARD: len(available & STANDARD_PROFILE_POINT_IDS),
-        PROFILE_EXTENDED: len(available & KNOWN_POINT_IDS),
+        PROFILE_EXTENDED: len(available & EXTENDED_PROFILE_POINT_IDS),
         PROFILE_COMPLETE: len(available),
         PROFILE_INDIVIDUAL: len(available),
     }

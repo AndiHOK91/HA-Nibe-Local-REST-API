@@ -11,7 +11,9 @@ from custom_components.nibe_local.profiles import (
 
 def test_extended_profile_becomes_individual_default_selection() -> None:
     points = {
+        "1975": {"value": {"integerValue": 100}},
         "2792": {"value": {"integerValue": 21}},
+        "3138": {"value": {"integerValue": 1}},
         "10895": {"value": {"integerValue": 1}},
         "999999": {"value": {"integerValue": 1}},
     }
@@ -21,12 +23,16 @@ def test_extended_profile_becomes_individual_default_selection() -> None:
         points,
     )
 
-    assert selected == [2792, 10895]
+    # GP1 and GP6 are curated for Extended. GP12/3138 remains available in the
+    # Individual list but is not preselected by the Extended profile.
+    assert selected == [1975, 2792]
 
 
-def test_standard_profile_includes_verified_gp6_default() -> None:
+def test_standard_profile_keeps_verified_gp1_and_gp6_selected() -> None:
     points = {
+        "1975": {"value": {"integerValue": 100}},
         "2792": {"value": {"integerValue": 21}},
+        "3138": {"value": {"integerValue": 1}},
         "10895": {"value": {"integerValue": 1}},
     }
 
@@ -35,13 +41,13 @@ def test_standard_profile_includes_verified_gp6_default() -> None:
         points,
     )
 
-    assert selected == [2792, 10895]
+    assert selected == [1975, 2792]
 
 
 def test_existing_individual_selection_is_not_overwritten() -> None:
     selected = _individual_default_point_ids(
         {CONF_ENTITY_PROFILE: PROFILE_INDIVIDUAL},
-        {"2792": {}, "10895": {}},
+        {"1975": {}, "2792": {}, "3138": {}, "10895": {}},
     )
 
     assert selected is None

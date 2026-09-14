@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lok
 
 Die Integration wurde im realen Betrieb mit **VVM S320, S2125 und ERS S40-400** entwickelt und getestet. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.10.1**
+Aktuelle Integrationsversion: **0.11.3**
 
 > [!WARNING]
 > Die mit v0.10.x eingeführte **Statistikmigration** ist **experimentell und noch nicht auf einer realen Home-Assistant-Installation getestet**. Vor einer Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein. Die integrierte Sicherungsfunktion ersetzt kein vollständiges Home-Assistant-Systembackup.
@@ -52,14 +52,24 @@ Nach erfolgreicher Verbindung liest die Integration die tatsächlich verfügbare
 
 | Profil | Zweck | Verhalten |
 |---|---|---|
-| **Standard** | Typische Home-Assistant-Nutzung | Kuratierter Kernumfang für Temperaturen, Brauchwasser, Energie, Verdichter und wichtige Betriebswerte |
-| **Erweitert** | Ausführliche Anlagenanalyse | Vollständig kuratierter, der Integration bekannter `POINTS`-Umfang einschließlich detaillierter Diagnose- und Servicewerte |
+| **Standard** | Typische Home-Assistant-Nutzung | Kuratierter Kernumfang für Temperaturen, Brauchwasser, Energie, Verdichter, GP1/GP6 und wichtige Betriebswerte |
+| **Erweitert** | Ausführliche Anlagenanalyse | Kuratierter technischer Umfang einschließlich detaillierter Diagnose-, Kältekreis- und Servicewerte; ausdrücklich als Individual-only markierte Punkte werden nicht automatisch aktiviert |
 | **Komplett** | Maximale Sichtbarkeit | Alle von der lokalen API gemeldeten Punkte; unbekannte Punkte ausschließlich als Read-only-Sensor |
-| **Individuell** | Volle Auswahlkontrolle | Der Nutzer wählt die gewünschten Variable-IDs selbst aus |
+| **Individuell** | Volle Auswahlkontrolle | Der Nutzer wählt die gewünschten Variable-IDs selbst aus; kuratierte Individual-only-Punkte behalten ihre korrekte Plattform und Benennung |
 
 Das frühere Profil **Minimal** ist nicht mehr Bestandteil der Integration.
 
 Unbekannte Punkte bleiben auch dann **Read-only**, wenn die lokale REST API `isWritable=true` meldet. Schreibfunktionen werden nur für verstandene und explizit abgesicherte Punkte angeboten.
+
+### Pumpenzuordnung auf der verifizierten VVM S320
+
+Für die getestete VVM S320 wurden die Pumpenwerte durch wiederholte Live-Messungen gegen den tatsächlichen Pumpenzustand verifiziert:
+
+- **Variable-ID 2792**: variable Drehzahl der Heizungsumwälzpumpe **GP1** in `%`
+- **Variable-ID 1975**: Betriebszustand der Heizungsmediumpumpe **GP6**; auf der getesteten Anlage `0 % = aus`, `100 % = ein`, in Home Assistant als Binary Sensor dargestellt
+- **Variable-ID 3138**: interne Ladepumpe **GP12**; kuratiert, aber bewusst nur über **Individuell** bzw. **Komplett** verfügbar
+
+GP1 und GP6 sind im **Standard**- und **Erweitert**-Profil enthalten. Punkt 1975 entspricht außerdem Modbus Input Register **1102** aus NIBEs Default-Modbus-Liste. Der ältere GP6-Kandidat **10895** wird von der aktuellen lokalen REST API der getesteten Anlage nicht mehr bereitgestellt.
 
 ### Automatische Hardware-Erkennung
 
@@ -107,6 +117,10 @@ Die Schalter **Heizung zulassen** und **Kühlung zulassen** werden unmittelbar v
 
 Der AUX-Schalter **Zusatzheizung im Heizbetrieb zulassen** ist davon unabhängig und wird nicht über diese Betriebsmodus-Sperre blockiert.
 
+### Sichere Grenzwerte für Punkt 3702
+
+Die aktuelle lokale REST API der getesteten VVM S320 liefert für **Variable-ID 3702 – Stopptemperatur BW periodische Erhöhung** inkonsistente Grenzmetadaten (`minValue=55`, `maxValue=700`, `divisor=10`). Eine rein generische Skalierung würde dadurch fälschlich **5,5 °C** als Minimalwert ergeben. Die Integration erzwingt für diesen bekannten Punkt deshalb den verifizierten sicheren Bereich **55,0 bis 70,0 °C**.
+
 ### Zeitwerte
 
 Bekannte NIBE-Zeitpunkte werden als `time`-Entitäten dargestellt, wenn ihre REST-Metadaten dies sinnvoll erlauben. Das Schreiben solcher Zeitwerte ist derzeit bewusst blockiert, weil sowohl die lokale REST API als auch die getestete Modbus-Schnittstelle entsprechende Schreibversuche nicht zuverlässig akzeptieren. Die Entität bleibt damit read-only, statt einen scheinbar erfolgreichen, tatsächlich aber nicht ausgeführten Schreibvorgang anzubieten.
@@ -141,7 +155,7 @@ Je nach Gerät und Profil stehen unter anderem zur Verfügung:
 - Rücklauf und Kondensatorvorlauf
 - Heißgas-, Flüssigkeits- und Sauggastemperaturen
 - Verdampfertemperaturen
-- Hoch-/Niederdruckwerte
+- Niederdruck **BP8** und im erweiterten Profil der aktuell über die REST API verfügbare Hochdruck **BP9** (Variable-ID `6588`)
 - Ventilatordrehzahl
 - Schutz- und Alarmzustände
 - Abtauzustände und Zeit bis Enteisung
@@ -337,7 +351,7 @@ Die lokale REST API muss direkt an der NIBE-Steuerung unter **Menü 7 → Servic
 
 ### HACS
 
-Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.10.1 ist ein regulärer Release.**
+Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.11.3 ist ein regulärer Release.**
 
 ### Einrichtungsablauf
 
@@ -366,7 +380,7 @@ GitHub Actions prüft die Integration gegen:
 - **Home Assistant 2026.9.1**
 - eine aktuelle Home-Assistant-Version (`latest`)
 
-Die Regressionstests decken unter anderem API-Normalisierung, Authentifizierung, Schreibschutz, Profile, Hardware-Erkennung, Diagnose-Datenschutz, Sentinelwerte, Abtau-Sonderzustände sowie die Schutzlogik für Statistikmigration, Backups und Restore-Vorschau ab.
+Die Regressionstests decken unter anderem API-Normalisierung, Authentifizierung, Schreibschutz, Profile, Hardware-Erkennung, Diagnose-Datenschutz, Sentinelwerte, Abtau-Sonderzustände, vollständige DE/EN-Texte für alle kuratierten Punktdefinitionen sowie die Schutzlogik für Statistikmigration, Backups und Restore-Vorschau ab.
 
 Die vorhandenen automatisierten Tests ersetzen ausdrücklich **keinen realen Migrationstest auf einer produktiven Recorder-Datenbank**.
 
@@ -393,7 +407,7 @@ Die tatsächlich verfügbaren Variablen hängen von Modell, angeschlossenen Modu
 
 Diese Integration ist ein **inoffizielles Community-Projekt** und steht in keiner Verbindung zu NIBE. Sie befindet sich weiterhin vor Version 1.0 und wird auf einer realen Anlage weiterentwickelt und getestet.
 
-**v0.10.1 ist ein regulärer Release.** Die Statistikmigration bleibt davon unabhängig ausdrücklich experimentell und ist bisher nicht praktisch auf einer realen Home-Assistant-Recorder-Datenbank verifiziert.
+**v0.11.3 ist ein regulärer Release.** Die Statistikmigration bleibt davon unabhängig ausdrücklich experimentell und ist bisher nicht praktisch auf einer realen Home-Assistant-Recorder-Datenbank verifiziert.
 
 Die Software wird ohne Gewährleistung oder Garantie bereitgestellt. Die Nutzung erfolgt auf eigene Gefahr. Bei sicherheitsrelevanten Funktionen sind im Zweifel die Anzeigen und Einstellungen am Gerät sowie die offizielle Herstellerdokumentation maßgeblich.
 
