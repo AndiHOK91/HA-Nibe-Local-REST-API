@@ -2,13 +2,15 @@
 from __future__ import annotations
 
 import asyncio
+from base64 import b64encode
+from dataclasses import dataclass
 from json import JSONDecodeError, loads
 import logging
 import socket
 import ssl
 from typing import Any
 
-from aiohttp import BasicAuth, ClientResponseError, ClientSession, ClientTimeout
+from aiohttp import ClientResponseError, ClientSession, ClientTimeout
 
 from .const import AUTH_METHOD_BASIC, AUTH_METHOD_HEADER, NIBE_DEVICE_ID
 
@@ -16,6 +18,14 @@ MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 MAX_NORMALIZE_DEPTH = 64
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class _BasicCredentials:
+    """Minimal Basic-Auth credential container without aiohttp.BasicAuth."""
+
+    login: str
+    password: str
 
 
 async def async_resolve_host_ip(host: str) -> str | None:
@@ -60,7 +70,7 @@ class NibeLocalApi:
         self.port = port
         self.device_id = NIBE_DEVICE_ID
         if auth_method == AUTH_METHOD_BASIC:
-            self._auth = BasicAuth(username, password or "") if username else None
+            self._auth = _BasicCredentials(username, password or "") if username else None
             self._auth_header = None
         elif auth_method == AUTH_METHOD_HEADER:
             self._auth = None
@@ -68,7 +78,7 @@ class NibeLocalApi:
         else:
             # Compatibility for config entries created before auth_method existed:
             # a stored header keeps its historical precedence over Basic Auth.
-            self._auth = BasicAuth(username, password or "") if username else None
+            self._auth = _BasicCredentials(username, password or "") if username else None
             self._auth_header = auth_header.strip() if auth_header else None
         self._ssl: bool | ssl.SSLContext = True if verify_ssl else False
         self._timeout = ClientTimeout(total=15)
@@ -82,6 +92,11 @@ class NibeLocalApi:
         headers = {"Accept": "application/json"}
         if self._auth_header:
             headers["Authorization"] = self._auth_header
+        elif self._auth:
+            token = b64encode(
+                f"{self._auth.login}:{self._auth.password}".encode("utf-8")
+            ).decode("ascii")
+            headers["Authorization"] = f"Basic {token}"
         return headers
 
     async def _request(self, method: str, path: str, *, json: Any | None = None) -> Any:
@@ -90,7 +105,7 @@ class NibeLocalApi:
                 method,
                 f"{self.base_url}{path}",
                 headers=self._headers(),
-                auth=None if self._auth_header else self._auth,
+                auth=None,
                 ssl=self._ssl,
                 timeout=self._timeout,
                 json=json,
