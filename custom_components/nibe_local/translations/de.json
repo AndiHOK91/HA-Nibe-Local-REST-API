@@ -262,7 +262,7 @@
       "hot_water_circulation_gp11": {"name": "Brauchwasserzirkulation (GP11)"},
       "more_hot_water_status": {"name": "Mehr Brauchwasser aktiv"},
       "hot_water_diverter_qn10": {"name": "Umschaltventil Brauchwasser (QN10)"},
-      "internal_charge_pump_gp12": {"name": "Interne Ladepumpe (GP12)"},
+      "heating_medium_pump_gp6": {"name": "Heizungsmediumpumpe (GP6)"},
       "compressor_requested": {"name": "Verdichter angefordert (EB101-EP14)"},
       "protection_mode": {"name": "Schutzmodus (EB101)"},
       "defrost": {"name": "Abtauung aktiv (EB101)"},
