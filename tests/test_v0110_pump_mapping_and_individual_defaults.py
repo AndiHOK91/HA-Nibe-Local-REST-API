@@ -8,29 +8,29 @@ from custom_components.nibe_local.profiles import (
 )
 
 
-def test_gp1_gp6_curated_point_mapping() -> None:
+def test_vvm_s320_gp1_curated_point_mapping() -> None:
     definitions = {definition.point_id: definition for definition in POINTS}
 
-    # VVM S320/S325: 2792 is the GP1 speed (%) and 10895 is the GP6
-    # running status. Point 1975 is a model-family duplicate and is therefore
-    # deliberately not part of the curated point catalogue.
+    # VVM S320/S325: 2792 is the verified variable-speed GP1 value. Point 1975
+    # is deliberately not curated, and the former GP6 candidate 10895 is not
+    # exposed because current device firmware returns "Point not found" for it.
     assert 1975 not in definitions
+    assert 10895 not in definitions
     assert definitions[2792].key == "heating_circulation_pump_gp1"
     assert definitions[2792].platform == "sensor"
-    assert definitions[10895].key == "heating_medium_pump_gp6"
-    assert definitions[10895].platform == "binary_sensor"
 
 
-def test_standard_profile_uses_vvm_s320_pump_points() -> None:
+def test_standard_profile_uses_verified_vvm_s320_gp1_point() -> None:
     assert 1975 not in STANDARD_PROFILE_POINT_IDS
     assert 1975 not in KNOWN_POINT_IDS
+    assert 10895 not in STANDARD_PROFILE_POINT_IDS
+    assert 10895 not in KNOWN_POINT_IDS
     assert 2792 in STANDARD_PROFILE_POINT_IDS
-    assert 10895 in STANDARD_PROFILE_POINT_IDS
 
 
-def test_model_specific_gp1_duplicate_can_still_be_selected_explicitly() -> None:
+def test_non_curated_discovered_point_can_still_be_selected_explicitly() -> None:
     # Unknown/discovered IDs are intentionally preserved for the Individual
-    # profile, so users of another NIBE product family can still expose 1975.
+    # profile, so model-specific REST points can still be exposed explicitly.
     assert normalize_selected_ids([1975]) == frozenset({1975})
 
 
