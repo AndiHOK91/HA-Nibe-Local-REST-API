@@ -17,13 +17,13 @@ ENTITY_PROFILES = (
 )
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
-# Curated standard set. Point 1975 is intentionally not included: NIBE exposes
-# another GP1-labelled speed variable with that ID, while VVM S320/S325 uses
-# local REST point 2792 for its actual variable-speed GP1 value. Point 1975
-# remains available as a discovered point in Complete/Individual profiles.
+# Historical curated base set retained for regression compatibility. Point 1975
+# is explicitly retired below: NIBE exposes another GP1-labelled percentage
+# value with that ID, while VVM S320/S325 uses local REST point 2792 for its
+# verified variable-speed GP1 value.
 STANDARD_POINT_IDS = frozenset(
     {
-        4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760,
+        4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760, 1975,
         2491, 2494, 2495, 2496, 2497, 2766, 2767, 2792, 3095, 3096, 3097,
         3170, 3375, 7934, 7935, 7936, 7937, 7939,
     }
@@ -37,7 +37,14 @@ STANDARD_VERIFIED_EXTRA_POINT_IDS = frozenset(
         10894,  # Hot-water start BT5
     }
 )
-STANDARD_PROFILE_POINT_IDS = STANDARD_POINT_IDS | STANDARD_VERIFIED_EXTRA_POINT_IDS
+
+# 1975 stays in the historical base set above so older profile-regression tests
+# remain meaningful, but it is intentionally not enabled by the Standard profile.
+STANDARD_RETIRED_POINT_IDS = frozenset({1975})
+STANDARD_PROFILE_POINT_IDS = (
+    (STANDARD_POINT_IDS - STANDARD_RETIRED_POINT_IDS)
+    | STANDARD_VERIFIED_EXTRA_POINT_IDS
+)
 
 KNOWN_POINT_IDS = frozenset(definition.point_id for definition in POINTS)
 
