@@ -15,6 +15,13 @@ from .entity import NibePointEntity, scaled_value, to_raw
 
 PARALLEL_UPDATES = 1
 
+# The current VVM S320 local REST metadata for point 3702 is malformed:
+# minValue=55, maxValue=700, divisor=10. Generic scaling would expose 5.5 °C
+# as the minimum although NIBE's actual range is 55.0–70.0 °C.
+SAFE_NUMBER_LIMITS: dict[int, tuple[float, float]] = {
+    3702: (55.0, 70.0),
+}
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -44,8 +51,15 @@ def _metadata_divisor(point: dict) -> int | float | None:
     return 1 if divisor is None else divisor
 
 
-def metadata_limits(point: dict, current: float | None) -> tuple[float, float] | None:
+def metadata_limits(
+    point: dict,
+    current: float | None,
+    point_id: int | None = None,
+) -> tuple[float, float] | None:
     """Return trustworthy scaled limits or None when metadata is ambiguous."""
+    if point_id in SAFE_NUMBER_LIMITS:
+        return SAFE_NUMBER_LIMITS[point_id]
+
     md = point.get("metadata") or {}
     divisor = _metadata_divisor(point)
     minimum = md.get("minValue")
@@ -86,7 +100,11 @@ class NibeNumber(NibePointEntity, NumberEntity):
     @property
     def native_min_value(self) -> float:
         current = self.native_value
-        limits = metadata_limits(self.point or {}, current)
+        limits = metadata_limits(
+            self.point or {},
+            current,
+            self.definition.point_id,
+        )
         if limits:
             return limits[0]
         return float(current if current is not None else 0)
@@ -94,7 +112,11 @@ class NibeNumber(NibePointEntity, NumberEntity):
     @property
     def native_max_value(self) -> float:
         current = self.native_value
-        limits = metadata_limits(self.point or {}, current)
+        limits = metadata_limits(
+            self.point or {},
+            current,
+            self.definition.point_id,
+        )
         if limits:
             return limits[1]
         return float(current if current is not None else 0)
@@ -106,7 +128,11 @@ class NibeNumber(NibePointEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float) -> None:
         current = self.native_value
-        limits = metadata_limits(self.point or {}, current)
+        limits = metadata_limits(
+            self.point or {},
+            current,
+            self.definition.point_id,
+        )
         if limits is None:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
