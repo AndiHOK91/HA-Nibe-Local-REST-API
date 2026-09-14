@@ -44,14 +44,13 @@ def test_standard_profile_matches_verified_default_rest_set() -> None:
     }
 
 
-def test_verified_pump_points_are_curated_for_extended_profile() -> None:
+def test_verified_and_optional_pump_points_are_curated() -> None:
     definitions = {definition.point_id: definition for definition in POINTS}
     assert definitions[1975].key == "heating_medium_pump_gp6"
     assert definitions[1975].platform == "binary_sensor"
     assert definitions[2792].key == "heating_circulation_pump_gp1"
-    # GP12/3138 is not automatic, but remains available as a discovered point
-    # through the Individual/Complete profiles when the device exposes it.
-    assert 3138 not in definitions
+    assert definitions[3138].key == "internal_charge_pump_gp12"
+    assert definitions[3138].platform == "binary_sensor"
     assert 10895 not in definitions
 
 
