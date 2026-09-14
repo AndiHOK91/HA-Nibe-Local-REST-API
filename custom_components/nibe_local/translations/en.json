@@ -109,6 +109,7 @@
       "eev_superheat_reference": {"name": "EEV superheat reference (EB101)"},
       "eev_superheat": {"name": "EEV superheat (EB101)"},
       "eev_ssh_error": {"name": "EEV SSH error (EB101)"},
+      "eev_ssh_error_average_open": {"name": "EEV SSH error average opening (EB101)"},
       "eev_superheat_temperature_reference": {"name": "EEV superheat temperature reference (EB101)"},
       "eev_setpoint": {"name": "EEV setpoint (EB101)"},
       "eev_process_value": {"name": "EEV process value (EB101)"},
