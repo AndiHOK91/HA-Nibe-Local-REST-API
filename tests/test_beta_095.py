@@ -44,10 +44,13 @@ def test_standard_profile_matches_verified_default_rest_set() -> None:
     }
 
 
-def test_new_verified_standard_points_are_curated() -> None:
-    point_ids = {definition.point_id for definition in POINTS}
-    assert {29, 91, 10894} <= point_ids
-    assert 10895 not in point_ids
+def test_verified_pump_points_are_curated_for_extended_profile() -> None:
+    definitions = {definition.point_id: definition for definition in POINTS}
+    assert definitions[1975].key == "heating_medium_pump_gp6"
+    assert definitions[1975].platform == "binary_sensor"
+    assert definitions[2792].key == "heating_circulation_pump_gp1"
+    assert 3138 not in definitions
+    assert 10895 not in definitions
 
 
 def test_hot_water_circulation_only_contains_verified_rest_points() -> None:
