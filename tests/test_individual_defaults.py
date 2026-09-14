@@ -28,7 +28,7 @@ def test_extended_profile_becomes_individual_default_selection() -> None:
     assert selected == [1975, 2792]
 
 
-def test_standard_profile_keeps_gp6_out_of_minimal_selection() -> None:
+def test_standard_profile_keeps_verified_gp1_and_gp6_selected() -> None:
     points = {
         "1975": {"value": {"integerValue": 100}},
         "2792": {"value": {"integerValue": 21}},
@@ -41,7 +41,7 @@ def test_standard_profile_keeps_gp6_out_of_minimal_selection() -> None:
         points,
     )
 
-    assert selected == [2792]
+    assert selected == [1975, 2792]
 
 
 def test_existing_individual_selection_is_not_overwritten() -> None:
