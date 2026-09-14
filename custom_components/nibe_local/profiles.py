@@ -40,6 +40,11 @@ STANDARD_PROFILE_POINT_IDS = STANDARD_POINT_IDS | STANDARD_VERIFIED_EXTRA_POINT_
 
 KNOWN_POINT_IDS = frozenset(definition.point_id for definition in POINTS)
 
+# Curated points that retain their proper entity platform/name when explicitly
+# selected, but are intentionally excluded from the automatic Extended profile.
+INDIVIDUAL_ONLY_POINT_IDS = frozenset({3138})
+EXTENDED_PROFILE_POINT_IDS = KNOWN_POINT_IDS - INDIVIDUAL_ONLY_POINT_IDS
+
 
 def normalize_selected_ids(values: Iterable[object] | None) -> frozenset[int]:
     """Normalize persisted point IDs; use curated points when selection is unset."""
@@ -68,7 +73,7 @@ def point_enabled(
     if profile == PROFILE_STANDARD:
         return point_id in STANDARD_PROFILE_POINT_IDS
     # Extended is also the compatibility fallback for entries without a profile.
-    return point_id in KNOWN_POINT_IDS
+    return point_id in EXTENDED_PROFILE_POINT_IDS
 
 
 def profile_counts(available_ids: Iterable[object]) -> dict[str, int]:
@@ -76,7 +81,7 @@ def profile_counts(available_ids: Iterable[object]) -> dict[str, int]:
     available = normalize_selected_ids(available_ids)
     return {
         PROFILE_STANDARD: len(available & STANDARD_PROFILE_POINT_IDS),
-        PROFILE_EXTENDED: len(available & KNOWN_POINT_IDS),
+        PROFILE_EXTENDED: len(available & EXTENDED_PROFILE_POINT_IDS),
         PROFILE_COMPLETE: len(available),
         PROFILE_INDIVIDUAL: len(available),
     }
