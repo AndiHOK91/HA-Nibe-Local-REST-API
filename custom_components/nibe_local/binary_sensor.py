@@ -40,7 +40,7 @@ class NibeBinarySensor(NibePointEntity, BinarySensorEntity):
     def device_class(self):
         if self.definition.point_id in {3097, 2683}:
             return BinarySensorDeviceClass.PROBLEM
-        if self.definition.point_id in {1975, 2657, 2729, 1829, 3098}:
+        if self.definition.point_id in {1975, 2657, 2729, 3138, 1829, 3098}:
             return BinarySensorDeviceClass.RUNNING
         return None
 
