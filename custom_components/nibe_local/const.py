@@ -151,6 +151,7 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(2766, "s2125_outdoor_bt28", "heat_pump"),
     PointDef(2767, "s2125_evaporator_bt16", "heat_pump"),
     PointDef(3095, "s2125_low_pressure_bp8", "heat_pump"),
+    PointDef(6588, "s2125_high_pressure_bp9", "heat_pump"),
     PointDef(3096, "compressor_frequency", "heat_pump"),
     PointDef(3097, "protection_mode", "heat_pump", "binary_sensor", diagnostic=True),
     PointDef(3098, "defrost", "heat_pump", "binary_sensor", diagnostic=True),
