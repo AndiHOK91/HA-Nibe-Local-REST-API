@@ -148,6 +148,7 @@
       "more_hot_water_status": {"name": "More hot water active"},
       "hot_water_diverter_qn10": {"name": "Hot water diverter valve (QN10)"},
       "heating_medium_pump_gp6": {"name": "Heating medium pump (GP6)"},
+      "internal_charge_pump_gp12": {"name": "Internal charge pump (GP12)"},
       "compressor_requested": {"name": "Compressor requested (EB101-EP14)"},
       "protection_mode": {"name": "Protection mode (EB101)"},
       "defrost": {"name": "Defrost active (EB101)"},
