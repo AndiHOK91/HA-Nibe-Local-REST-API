@@ -21,10 +21,11 @@ def test_extended_profile_becomes_individual_default_selection() -> None:
         points,
     )
 
-    assert selected == [2792, 10895]
+    # 10895 is no longer curated even if an old/stale API dataset contains it.
+    assert selected == [2792]
 
 
-def test_standard_profile_includes_verified_gp6_default() -> None:
+def test_standard_profile_ignores_unavailable_gp6_candidate() -> None:
     points = {
         "2792": {"value": {"integerValue": 21}},
         "10895": {"value": {"integerValue": 1}},
@@ -35,7 +36,7 @@ def test_standard_profile_includes_verified_gp6_default() -> None:
         points,
     )
 
-    assert selected == [2792, 10895]
+    assert selected == [2792]
 
 
 def test_existing_individual_selection_is_not_overwritten() -> None:
