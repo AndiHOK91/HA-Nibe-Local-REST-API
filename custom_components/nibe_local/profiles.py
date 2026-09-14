@@ -17,10 +17,13 @@ ENTITY_PROFILES = (
 )
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
-# Historical curated base set kept stable for regression coverage.
+# Curated standard set. Point 1975 is intentionally not included: NIBE exposes
+# another GP1 speed variable with that ID on some S-series product families,
+# while VVM S320/S325 uses local REST point 2792 for GP1 speed. The duplicate
+# 1975 remains available as a discovered point in Complete/Individual profiles.
 STANDARD_POINT_IDS = frozenset(
     {
-        4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760, 1975,
+        4, 8, 10, 11, 12, 54, 58, 781, 994, 997, 1708, 1756, 1760,
         2491, 2494, 2495, 2496, 2497, 2766, 2767, 2792, 3095, 3096, 3097,
         3170, 3375, 7934, 7935, 7936, 7937, 7939,
     }
@@ -32,14 +35,10 @@ STANDARD_VERIFIED_EXTRA_POINT_IDS = frozenset(
         29,     # Room sensor climate system 1 BT50
         91,     # Additional heat BT63
         10894,  # Hot-water start BT5
-        10895,  # Heating medium pump GP6 status
+        10895,  # GP6 heating-medium pump running status (0=off, 1=on)
     }
 )
-STANDARD_RETIRED_POINT_IDS = frozenset({1975})
-STANDARD_PROFILE_POINT_IDS = (
-    (STANDARD_POINT_IDS - STANDARD_RETIRED_POINT_IDS)
-    | STANDARD_VERIFIED_EXTRA_POINT_IDS
-)
+STANDARD_PROFILE_POINT_IDS = STANDARD_POINT_IDS | STANDARD_VERIFIED_EXTRA_POINT_IDS
 
 KNOWN_POINT_IDS = frozenset(definition.point_id for definition in POINTS)
 
