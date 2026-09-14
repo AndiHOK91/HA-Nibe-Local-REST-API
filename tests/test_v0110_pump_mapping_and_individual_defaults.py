@@ -1,4 +1,4 @@
-"""Regression tests for the v0.11.0 pump mapping and individual defaults."""
+"""Regression tests for the v0.11.x pump mapping and individual defaults."""
 
 from custom_components.nibe_local.const import POINTS
 from custom_components.nibe_local.profiles import (
@@ -8,29 +8,28 @@ from custom_components.nibe_local.profiles import (
 )
 
 
-def test_vvm_s320_gp1_curated_point_mapping() -> None:
+def test_vvm_s320_gp1_gp6_curated_point_mapping() -> None:
     definitions = {definition.point_id: definition for definition in POINTS}
 
-    # VVM S320/S325: 2792 is the verified variable-speed GP1 value. Point 1975
-    # is deliberately not curated, and the former GP6 candidate 10895 is not
-    # exposed because current device firmware returns "Point not found" for it.
-    assert 1975 not in definitions
-    assert 10895 not in definitions
     assert definitions[2792].key == "heating_circulation_pump_gp1"
     assert definitions[2792].platform == "sensor"
+    assert definitions[1975].key == "heating_medium_pump_gp6"
+    assert definitions[1975].platform == "binary_sensor"
+    assert 3138 not in definitions
+    assert 10895 not in definitions
 
 
-def test_standard_profile_uses_verified_vvm_s320_gp1_point() -> None:
+def test_standard_profile_uses_gp1_but_extended_knows_gp6() -> None:
     assert 1975 not in STANDARD_PROFILE_POINT_IDS
-    assert 1975 not in KNOWN_POINT_IDS
+    assert 1975 in KNOWN_POINT_IDS
+    assert 2792 in STANDARD_PROFILE_POINT_IDS
+    assert 2792 in KNOWN_POINT_IDS
+    assert 3138 not in KNOWN_POINT_IDS
     assert 10895 not in STANDARD_PROFILE_POINT_IDS
     assert 10895 not in KNOWN_POINT_IDS
-    assert 2792 in STANDARD_PROFILE_POINT_IDS
 
 
-def test_non_curated_discovered_point_can_still_be_selected_explicitly() -> None:
-    # Unknown/discovered IDs are intentionally preserved for the Individual
-    # profile, so model-specific REST points can still be exposed explicitly.
+def test_curated_gp6_can_be_selected_explicitly() -> None:
     assert normalize_selected_ids([1975]) == frozenset({1975})
 
 
