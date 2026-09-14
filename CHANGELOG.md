@@ -2,6 +2,43 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
+## 0.11.3
+
+- Pumpenzuordnung für die verifizierte VVM S320 korrigiert: **Variable-ID 2792** bleibt die variable Drehzahl der Heizungsumwälzpumpe **GP1**, während **Variable-ID 1975** anhand wiederholter Live-Messungen als Betriebszustand der Heizungsmediumpumpe **GP6** bestätigt wurde (`0 % = aus`, `100 % = ein`) und als Binary Sensor dargestellt wird.
+- Punkt **1975 / Modbus Input Register 1102** bleibt entsprechend der NIBE-Default-Modbus-Liste im Profil **Standard** und ist außerdem in **Erweitert** und **Individuell** verfügbar.
+- Der nicht mehr von der aktuellen lokalen REST API bereitgestellte frühere GP6-Kandidat **10895** sowie dessen gezielter Einzelpunkt-Fallback wurden entfernt. Eine automatische Registry-Migration wird bewusst nicht durchgeführt.
+- **GP12 / Variable-ID 3138** bleibt als korrekter Binary Sensor **Interne Ladepumpe (GP12)** kuratiert, wird aber nicht automatisch in Standard oder Erweitert aktiviert; der Punkt bleibt über **Individuell** und **Komplett** verfügbar.
+- **Variable-ID 6588 – Hochdruck (EB101-BP9)** als read-only Drucksensor im Profil **Erweitert** ergänzt. Die aktuelle REST API liefert den Wert in `bar` mit Divisor 10.
+- Schreibschutz für **Variable-ID 3702 – Stopptemperatur BW periodische Erhöhung** gehärtet: Wegen inkonsistenter REST-Grenzmetadaten wird der verifizierte sichere Bereich **55,0–70,0 °C** explizit verwendet.
+- Veraltete Verwendung von `aiohttp.BasicAuth` entfernt; Basic-Authentifizierung wird nun als normaler `Authorization: Basic ...`-Header erzeugt.
+- Deutsche und englische Texte für alle kuratierten Punktdefinitionen werden per Regressionstest auf Vollständigkeit geprüft. Der veraltete ungenutzte Translation-Key `heating_circulation_pump_gp1_2792` wurde entfernt; BP9 erhielt deutsche und englische Namen.
+- Kuratierte Punktliste gegen den aktuellen Live-`/points`-Dump der Testanlage abgeglichen: alle aktuell kuratierten Variable-IDs einschließlich 6588 sind vorhanden; die neu sichtbaren BT39-Punkte 28034–28042 bleiben vorerst bewusst unkuratiert.
+- README, Pumpen-Dokumentation, Tests und Manifest auf **0.11.3** aktualisiert.
+
+## 0.11.2
+
+- Für den damaligen GP6-Kandidaten **10895** wurde ein gezielter Einzelpunkt-REST-Abruf ergänzt, falls der Bulk-Endpunkt den Punkt nicht lieferte.
+- Authentifizierungsfehler blieben dabei sichtbar; normale Fehler des optionalen Abrufs wurden toleriert.
+- Regressionstests für Ergänzung, Dublettenvermeidung und Fehlerbehandlung ergänzt.
+
+## 0.11.1
+
+- Der aktuell aktive automatische Profilumfang wird als Standardauswahl für einen späteren Wechsel zu **Individuell** gespeichert.
+- Bereits bestehende individuelle Auswahlen werden nicht überschrieben.
+- Regressionstests für Standard/Erweitert → Individuell sowie den Erhalt vorhandener Auswahlen ergänzt.
+
+## 0.11.0
+
+- Erste Korrektur der GP1/GP6-Zuordnung auf Basis des damaligen Datenstands: 2792 wurde als GP1-Drehzahl eingeordnet und 10895 als GP6-Kandidat verwendet.
+- Die individuelle Entitätsauswahl wurde so verbessert, dass eine noch nicht gesetzte Auswahl mit verfügbaren kuratierten Punkten vorausgewählt wird, während eine ausdrücklich leere bzw. gespeicherte Auswahl erhalten bleibt.
+- Regressionstests für Pumpenzuordnung und Individual-Defaults ergänzt.
+
+## 0.9.9
+
+- CI um einen expliziten Test gegen **Home Assistant 2026.9.1 / Python 3.14** erweitert; zusätzlich bleibt ein echter `latest`-Job aktiv und die installierte Home-Assistant-Version wird ausgegeben.
+- Punkt **3098 – Abtauung** verwendet die Device Class `RUNNING`, damit ein inaktiver Zustand nicht als „OK“ dargestellt wird.
+- Punkt **22268 – Letzte Abtauung** erhält explizite deutsche/englische Zustandsübersetzungen für die von der lokalen REST API dokumentierten Enum-Werte.
+
 ## 0.9.8
 
 - Abtau-Sonderwerte bereinigt: Punkt **840 – Zeit bis Enteisung** zeigt `65535` nicht mehr als Minutenwert und setzt diesen Sonderzustand auch nicht künstlich auf `0 min`; die Entity bleibt erreichbar und der numerische Zustand bleibt in diesem Fall unbekannt.
