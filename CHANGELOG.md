@@ -2,6 +2,15 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
+## 0.12.0
+
+- Unterstützung für die in aktueller NIBE-Firmware verwendeten REST-Punktnamen erweitert: Das Feld `title` wird jetzt als bevorzugte menschenlesbare Bezeichnung ausgewertet; `metadata.title`, `description`, `name` und die bisherigen Metadaten-Fallbacks bleiben erhalten.
+- Dadurch erhalten insbesondere automatisch entdeckte, noch nicht kuratierte Punkte im Profil **Komplett** sinnvolle NIBE-Namen statt `Local API variable <ID>`. Davon profitieren auch die Benennungsmodi **Lokale API** und **Technisch**.
+- Die `services.yaml`-Definition der erweiterten Diagnosedaten an das aktuelle Home-Assistant-Selector-Schema angepasst: die auswählbaren Historienlängen `1`, `3`, `5` und `7` werden als Strings deklariert.
+- Die Service-Validierung konvertiert die Selector-Werte vor der Prüfung wieder zuverlässig in Integer (`vol.Coerce(int)`), sodass intern weiterhin die bestehenden numerischen Werte verwendet werden.
+- Regressionstests für REST-`title`, `metadata.title`, bestehende Namens-Fallbacks, String-Selectorwerte und die Integer-Konvertierung der Diagnoseservice-Parameter ergänzt.
+- README und Manifest auf **0.12.0** aktualisiert.
+
 ## 0.11.3
 
 - Pumpenzuordnung für die verifizierte VVM S320 korrigiert: **Variable-ID 2792** bleibt die variable Drehzahl der Heizungsumwälzpumpe **GP1**, während **Variable-ID 1975** anhand wiederholter Live-Messungen als Betriebszustand der Heizungsmediumpumpe **GP6** bestätigt wurde (`0 % = aus`, `100 % = ein`) und als Binary Sensor dargestellt wird.
