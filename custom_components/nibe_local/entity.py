@@ -93,8 +93,10 @@ def local_api_point_name(point: dict[str, Any]) -> str | None:
     """Return the human-readable name supplied by the local REST API."""
     metadata = point.get("metadata") or {}
     for value in (
+        point.get("title"),
         point.get("description"),
         point.get("name"),
+        metadata.get("title"),
         metadata.get("description"),
         metadata.get("name"),
     ):
