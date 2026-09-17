@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lok
 
 Die Integration wurde im realen Betrieb mit **VVM S320, S2125 und ERS S40-400** entwickelt und getestet. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.11.3**
+Aktuelle Integrationsversion: **0.12.0**
 
 > [!WARNING]
 > Die mit v0.10.x eingeführte **Statistikmigration** ist **experimentell und noch nicht auf einer realen Home-Assistant-Installation getestet**. Vor einer Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein. Die integrierte Sicherungsfunktion ersetzt kein vollständiges Home-Assistant-Systembackup.
@@ -351,7 +351,7 @@ Die lokale REST API muss direkt an der NIBE-Steuerung unter **Menü 7 → Servic
 
 ### HACS
 
-Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.11.3 ist ein regulärer Release.**
+Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.12.0 ist ein regulärer Release.**
 
 ### Einrichtungsablauf
 
@@ -407,7 +407,7 @@ Die tatsächlich verfügbaren Variablen hängen von Modell, angeschlossenen Modu
 
 Diese Integration ist ein **inoffizielles Community-Projekt** und steht in keiner Verbindung zu NIBE. Sie befindet sich weiterhin vor Version 1.0 und wird auf einer realen Anlage weiterentwickelt und getestet.
 
-**v0.11.3 ist ein regulärer Release.** Die Statistikmigration bleibt davon unabhängig ausdrücklich experimentell und ist bisher nicht praktisch auf einer realen Home-Assistant-Recorder-Datenbank verifiziert.
+**v0.12.0 ist ein regulärer Release.** Die Statistikmigration bleibt davon unabhängig ausdrücklich experimentell und ist bisher nicht praktisch auf einer realen Home-Assistant-Recorder-Datenbank verifiziert.
 
 Die Software wird ohne Gewährleistung oder Garantie bereitgestellt. Die Nutzung erfolgt auf eigene Gefahr. Bei sicherheitsrelevanten Funktionen sind im Zweifel die Anzeigen und Einstellungen am Gerät sowie die offizielle Herstellerdokumentation maßgeblich.
 
