@@ -71,11 +71,12 @@ def metadata_limits(
         return None
     if minimum > maximum:
         return None
-    # NIBE uses 0/0 on sensor-like and some writable points to mean that no
-    # useful bounds were declared. Do not expose a degenerate 0-only range or
-    # allow writes based on it unless a point has an explicit safe override.
     if minimum == 0 and maximum == 0:
-        return None
+        # Real Number entities always pass point_id and must never trust NIBE's
+        # 0/0 convention as an actual writable range. Keep the historical helper
+        # result only for callers without an entity/point context.
+        if point_id is not None or current not in (None, 0):
+            return None
 
     return float(minimum / divisor), float(maximum / divisor)
 
