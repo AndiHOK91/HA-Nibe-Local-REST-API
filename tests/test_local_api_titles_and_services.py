@@ -9,6 +9,7 @@ from custom_components.nibe_local import (
     ATTR_HISTORY_DAYS,
     SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA,
 )
+from custom_components.nibe_local.api import NibeLocalApi
 from custom_components.nibe_local.entity import local_api_point_name
 
 
@@ -32,6 +33,22 @@ def test_local_api_point_name_keeps_description_fallback() -> None:
     point = {"description": "Current outdoor temperature (BT1)", "metadata": {}}
 
     assert local_api_point_name(point) == "Current outdoor temperature (BT1)"
+
+
+def test_nibe_language_point_sets_accept_language_header() -> None:
+    api = NibeLocalApi(object(), host="192.0.2.1", port=8443)
+
+    api._update_language_from_point({"value": {"integerValue": 2}})
+
+    assert api._headers()["Accept-Language"] == "de"
+
+
+def test_unknown_nibe_language_does_not_force_a_locale() -> None:
+    api = NibeLocalApi(object(), host="192.0.2.1", port=8443)
+
+    api._update_language_from_point({"value": {"integerValue": 25}})
+
+    assert "Accept-Language" not in api._headers()
 
 
 def test_extended_diagnostics_schema_accepts_selector_strings() -> None:
