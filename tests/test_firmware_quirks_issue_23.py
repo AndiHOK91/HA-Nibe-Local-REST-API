@@ -99,11 +99,11 @@ def test_patch_full_point_object_with_is_ok_is_accepted() -> None:
     assert asyncio.run(api.patch_point(123, 1)) == response
 
 
-def test_zero_zero_number_limits_are_always_untrusted() -> None:
+def test_zero_zero_number_limits_are_untrusted_for_real_number_entities() -> None:
     point = _point(999, 0, divisor=1)
 
-    assert metadata_limits(point, current=0.0) is None
-    assert metadata_limits(point, current=5.0) is None
+    assert metadata_limits(point, current=0.0, point_id=999) is None
+    assert metadata_limits(point, current=5.0, point_id=999) is None
 
 
 def test_explicit_safe_number_limits_still_win_over_zero_zero_metadata() -> None:
