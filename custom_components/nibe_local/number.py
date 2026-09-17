@@ -71,8 +71,12 @@ def metadata_limits(
         return None
     if minimum > maximum:
         return None
-    if minimum == 0 and maximum == 0 and current not in (None, 0):
-        return None
+    if minimum == 0 and maximum == 0:
+        # Real Number entities always pass point_id and must never trust NIBE's
+        # 0/0 convention as an actual writable range. Keep the historical helper
+        # result only for callers without an entity/point context.
+        if point_id is not None or current not in (None, 0):
+            return None
 
     return float(minimum / divisor), float(maximum / divisor)
 
