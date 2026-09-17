@@ -16,6 +16,34 @@ from .const import AUTH_METHOD_BASIC, AUTH_METHOD_HEADER, NIBE_DEVICE_ID
 
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
 MAX_NORMALIZE_DEPTH = 64
+NIBE_LANGUAGE_POINT_ID = 3745
+NIBE_LANGUAGE_CODES: dict[int, str] = {
+    0: "en",
+    1: "sv",
+    2: "de",
+    3: "fr",
+    4: "es",
+    5: "fi",
+    6: "lt",
+    7: "cs",
+    8: "pl",
+    9: "nl",
+    10: "no",
+    11: "da",
+    12: "et",
+    13: "lv",
+    14: "ru",
+    15: "it",
+    16: "hu",
+    17: "sl",
+    18: "tr",
+    19: "hr",
+    20: "ro",
+    21: "is",
+    22: "sk",
+    23: "uk",
+    24: "bg",
+}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -83,6 +111,8 @@ class NibeLocalApi:
         self._ssl: bool | ssl.SSLContext = True if verify_ssl else False
         self._timeout = ClientTimeout(total=15)
         self._write_lock = asyncio.Lock()
+        self._language: str | None = None
+        self._language_checked = False
 
     @property
     def base_url(self) -> str:
@@ -90,6 +120,8 @@ class NibeLocalApi:
 
     def _headers(self) -> dict[str, str]:
         headers = {"Accept": "application/json"}
+        if self._language:
+            headers["Accept-Language"] = self._language
         if self._auth_header:
             headers["Authorization"] = self._auth_header
         elif self._auth:
@@ -154,13 +186,45 @@ class NibeLocalApi:
         async with self._write_lock:
             return await self._request(method, path, json=json)
 
+    async def _ensure_language(self) -> None:
+        """Use the language configured in the NIBE firmware for REST labels."""
+        if self._language_checked:
+            return
+        self._language_checked = True
+        try:
+            point = await self._request(
+                "GET", f"/devices/{self.device_id}/points/{NIBE_LANGUAGE_POINT_ID}"
+            )
+        except NibeAuthError:
+            raise
+        except NibeApiError as err:
+            _LOGGER.debug("Could not determine NIBE UI language: %s", err)
+            return
+        self._update_language_from_point(point)
+
+    def _update_language_from_point(self, point: Any) -> None:
+        """Update the REST Accept-Language value from NIBE point 3745."""
+        raw = self._point_raw_value(point)
+        try:
+            language_id = int(raw)
+        except (TypeError, ValueError):
+            return
+        language = NIBE_LANGUAGE_CODES.get(language_id)
+        if language:
+            self._language = language
+
     async def get_device(self) -> dict[str, Any]:
         return await self._request("GET", f"/devices/{self.device_id}")
 
     async def get_points(self) -> dict[str, Any]:
         """Fetch and normalize the bulk point endpoint."""
+        await self._ensure_language()
         payload = await self._request("GET", f"/devices/{self.device_id}/points")
-        return self._normalize_points(payload)
+        points = self._normalize_points(payload)
+        language_point = points.get(str(NIBE_LANGUAGE_POINT_ID))
+        if language_point:
+            self._update_language_from_point(language_point)
+        return points
 
     async def get_point(self, variable_id: int) -> dict[str, Any]:
         """Fetch one point only.
