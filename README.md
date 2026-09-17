@@ -351,6 +351,10 @@ Die lokale REST API muss direkt an der NIBE-Steuerung unter **Menü 7 → Servic
 
 ### HACS
 
+Direkt über **My Home Assistant** in HACS öffnen:
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AndiHOK91&repository=HA-Nibe-Local-REST-API&category=integration)
+
 Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.11.3 ist ein regulärer Release.**
 
 ### Einrichtungsablauf
