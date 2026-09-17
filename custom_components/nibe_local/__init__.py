@@ -59,8 +59,8 @@ ATTR_BACKUP_FILE = "backup_file"
 SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_CONFIG_ENTRY_ID): str,
-        vol.Optional(ATTR_HISTORY_DAYS, default=DEFAULT_HISTORY_DAYS): vol.In(
-            ALLOWED_HISTORY_DAYS
+        vol.Optional(ATTR_HISTORY_DAYS, default=DEFAULT_HISTORY_DAYS): vol.All(
+            vol.Coerce(int), vol.In(ALLOWED_HISTORY_DAYS)
         ),
     }
 )
