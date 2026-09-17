@@ -250,6 +250,10 @@ class NibeLocalApi:
     @classmethod
     def _validate_patch_response(cls, variable_id: int, response: Any) -> Any:
         """Reject HTTP-200 PATCH responses when NIBE refused the write."""
+        # A real HTTP 204 response is represented as None by _request(). There
+        # is no per-point body to inspect in that case, so retain compatibility.
+        if response is None:
+            return None
         if not isinstance(response, dict):
             raise NibeApiError(
                 f"NIBE API returned unexpected PATCH response for point {variable_id}"
