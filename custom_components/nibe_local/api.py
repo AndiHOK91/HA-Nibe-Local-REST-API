@@ -45,6 +45,18 @@ NIBE_LANGUAGE_CODES: dict[int, str] = {
     24: "bg",
 }
 
+# Confirmed NIBE firmware metadata defects. Keep these corrections close to the
+# API boundary so every consumer sees the corrected metadata consistently.
+FIRMWARE_METADATA_OVERRIDES: dict[int, dict[str, Any]] = {
+    # Production (PV Power): firmware reports kW/divisor 1 although one raw
+    # step equals 10 W, so kW scaling requires divisor 100.
+    29258: {"divisor": 100},
+    # Older firmware reported these power values as kWh. Current firmware has
+    # corrected them, but forcing kW keeps older installations safe as well.
+    25165: {"unit": "kW", "shortUnit": "kW"},
+    25166: {"unit": "kW", "shortUnit": "kW"},
+}
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -213,6 +225,60 @@ class NibeLocalApi:
         if language:
             self._language = language
 
+    @staticmethod
+    def _apply_firmware_metadata_override(variable_id: int, point: Any) -> Any:
+        """Apply confirmed firmware metadata corrections to one point."""
+        if not isinstance(point, dict):
+            return point
+        override = FIRMWARE_METADATA_OVERRIDES.get(variable_id)
+        if not override:
+            return point
+        metadata = point.get("metadata")
+        if not isinstance(metadata, dict):
+            return point
+        metadata.update(override)
+        return point
+
+    @classmethod
+    def _apply_firmware_metadata_overrides(cls, points: dict[str, Any]) -> None:
+        """Apply confirmed firmware metadata corrections to a bulk response."""
+        for variable_id in FIRMWARE_METADATA_OVERRIDES:
+            point = points.get(str(variable_id))
+            if point is not None:
+                cls._apply_firmware_metadata_override(variable_id, point)
+
+    @classmethod
+    def _validate_patch_response(cls, variable_id: int, response: Any) -> Any:
+        """Reject HTTP-200 PATCH responses when NIBE refused the write."""
+        if not isinstance(response, dict):
+            raise NibeApiError(
+                f"NIBE API returned unexpected PATCH response for point {variable_id}"
+            )
+
+        point_response = response.get(str(variable_id))
+        if point_response == "modified":
+            return response
+
+        # Some firmware returns the full point object instead of the documented
+        # string. Treat it as success only when the embedded data value is OK.
+        if isinstance(point_response, dict):
+            value = point_response.get("value") or point_response.get("datavalue") or {}
+            if isinstance(value, dict) and value.get("isOk") is True:
+                return response
+            raise NibeApiError(
+                f"NIBE rejected write for point {variable_id}: point response is not OK"
+            )
+
+        if isinstance(point_response, str) and point_response.lower().startswith("error"):
+            raise NibeApiError(
+                f"NIBE rejected write for point {variable_id}: {point_response}"
+            )
+
+        raise NibeApiError(
+            f"NIBE API returned unexpected PATCH result for point {variable_id}: "
+            f"{point_response!r}"
+        )
+
     async def get_device(self) -> dict[str, Any]:
         return await self._request("GET", f"/devices/{self.device_id}")
 
@@ -221,6 +287,7 @@ class NibeLocalApi:
         await self._ensure_language()
         payload = await self._request("GET", f"/devices/{self.device_id}/points")
         points = self._normalize_points(payload)
+        self._apply_firmware_metadata_overrides(points)
         language_point = points.get(str(NIBE_LANGUAGE_POINT_ID))
         if language_point:
             self._update_language_from_point(language_point)
@@ -233,9 +300,10 @@ class NibeLocalApi:
         Assistant does not need to wait for a complete /points + device +
         notifications coordinator refresh.
         """
-        return await self._request(
+        point = await self._request(
             "GET", f"/devices/{self.device_id}/points/{variable_id}"
         )
+        return self._apply_firmware_metadata_override(variable_id, point)
 
     @staticmethod
     def _normalize_points(payload: Any) -> dict[str, Any]:
@@ -346,9 +414,10 @@ class NibeLocalApi:
                     )
                     return None
 
-            return await self._request(
+            response = await self._request(
                 "PATCH", f"/devices/{self.device_id}/points", json=[value]
             )
+            return self._validate_patch_response(variable_id, response)
 
     async def set_smart_mode(self, mode: str) -> Any:
         return await self._write_request(
