@@ -88,6 +88,20 @@ def test_write_step_defaults_preserve_existing_behavior_and_explicit_choices() -
     assert validated[CONF_SELECTED_WRITABLE_POINT_IDS] == ["3920"]
 
 
+def test_generic_writable_points_are_never_preselected_without_explicit_choice() -> None:
+    points = {
+        "3667": _point(writable=True),
+        "999997": _point(writable=True, maximum=1),
+        "999998": _point(writable=True, minimum=-50, maximum=500, divisor=10),
+    }
+    selected = [3667, 999997, 999998]
+
+    # Legacy entries keep the curated write behavior, but newly inferred generic
+    # write entities always require an explicit persisted opt-in.
+    assert _selected_writable_options(points, selected, None) == ["3667"]
+    assert _selected_writable_options(points, selected, [999997]) == ["999997"]
+
+
 def test_write_permission_only_applies_to_individual_profile() -> None:
     assert write_enabled(PROFILE_EXTENDED, 3667, []) is True
 
