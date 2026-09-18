@@ -115,11 +115,13 @@ Zusätzlich gilt:
 
 ---
 
-## 🚨 Diagnose
+## 🚨 Alarme und Diagnose
 
-Home Assistant stellt Diagnoseinformationen wie API-Erreichbarkeit, Fallback-Status, Verbindungsfehler und aktive Meldungen bereit.
+Aktive NIBE-Alarme werden über den lokalen REST-Endpunkt `/notifications` eingelesen. Alarmnummer, von NIBE gelieferter Titel/Beschreibung, Schweregrad, Zeit und Quelle stehen am Sensor **Aktive Meldungen** zur Verfügung. Bei einem neu auftretenden Alarm erzeugt die Integration zusätzlich eine **persistente Home-Assistant-Benachrichtigung** mit diesen Angaben.
 
-Über `nibe_local.export_extended_diagnostics` können bei Bedarf erweiterte Punktinformationen und optional **1, 3, 5 oder 7 Tage** Recorder-Historie exportiert werden. Zugangsdaten werden dabei nicht ausgegeben; Mess- und Einstellwerte können jedoch enthalten sein.
+Ab dem Profil **Erweitert** steht außerdem die Taste **Alarme zurücksetzen** zur Verfügung. Sie verwendet den von NIBE dokumentierten REST-Aufruf `DELETE /api/v1/devices/{deviceId}/notifications`, der alle zurücksetzbaren aktiven Alarme/Meldungen quittiert. Bei **HTTP 405** unterstützt die Anlage den Reset nicht oder die Funktion ist am Gerät nicht freigegeben.
+
+Zusätzlich stellt Home Assistant Diagnoseinformationen wie API-Erreichbarkeit, Fallback-Status und Verbindungsfehler bereit. Über `nibe_local.export_extended_diagnostics` können bei Bedarf erweiterte Punktinformationen und optional **1, 3, 5 oder 7 Tage** Recorder-Historie exportiert werden.
 
 ---
 
