@@ -573,8 +573,10 @@ def _point_label(
     )
     description = (
         translated_name
+        or point.get("title")
         or point.get("description")
         or point.get("name")
+        or metadata.get("title")
         or metadata.get("description")
         or metadata.get("name")
         or _known_point_fallback_name(point_id)
