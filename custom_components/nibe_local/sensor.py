@@ -103,7 +103,8 @@ async def async_setup_entry(
         and coordinator.entity_enabled(definition.point_id)
         and coordinator.point(definition.point_id)
         and not (
-            coordinator.write_enabled(definition.point_id)
+            coordinator.selected_writable_point_ids is not None
+            and coordinator.write_enabled(definition.point_id)
             and writable_platform_for_point(
                 definition.point_id,
                 coordinator.point(definition.point_id),
@@ -133,7 +134,8 @@ async def async_setup_entry(
     generic_writable_ids = {
         point_id
         for point_id in coordinator.enabled_point_ids
-        if coordinator.write_enabled(point_id)
+        if coordinator.selected_writable_point_ids is not None
+        and coordinator.write_enabled(point_id)
         and writable_platform_for_point(point_id, coordinator.point(point_id)) is not None
     }
     read_only_sensor_ids = (
