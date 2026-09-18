@@ -701,7 +701,12 @@ def _selected_writable_options(
     """Return the safe preselection for the per-point write step."""
     eligible = _supported_writable_point_ids(points, selected_ids)
     if configured_writable_ids is None:
-        selected = eligible
+        curated = {
+            definition.point_id
+            for definition in POINTS
+            if definition.platform in _WRITABLE_POINT_PLATFORMS
+        }
+        selected = eligible & curated
     else:
         selected = eligible & normalize_selected_ids(configured_writable_ids)
     return [str(point_id) for point_id in sorted(selected)]
