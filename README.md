@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lok
 
 Entwickelt und im realen Betrieb getestet mit **VVM S320, S2125 und ERS S40-400**. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.13.1**
+Aktuelle Integrationsversion: **0.13.2**
 
 > [!WARNING]
 > Die **Statistikmigration** ist experimentell und noch nicht auf einer produktiven Home-Assistant-Recorder-Datenbank praktisch erprobt. Vor der Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein.
@@ -35,7 +35,7 @@ Unterstützt werden unter anderem:
 - Standard- und erweiterte Diagnosedaten
 - experimentelle Migration vorhandener Home-Assistant-Langzeitstatistiken
 
-Unbekannte Punkte bleiben **read-only**, auch wenn die lokale REST API sie als schreibbar meldet. Schreibfunktionen werden nur für verstandene und gezielt abgesicherte Variablen angeboten.
+Unbekannte Punkte bleiben standardmäßig **read-only**. Im Profil **Individuell** können zusätzlich ausgewählte REST-Punkte mit `isWritable=true` experimentell schreibbar freigegeben werden, wenn ihre Metadaten ein eindeutiges 0/1-, Zahlenbereich- oder Enum-Schema liefern. Zeitwerte und nicht eindeutig klassifizierbare Punkte bleiben gesperrt.
 
 ---
 
@@ -48,7 +48,7 @@ Unbekannte Punkte bleiben **read-only**, auch wenn die lokale REST API sie als s
 | **Komplett** | Alle von der lokalen REST API gemeldeten Punkte; unbekannte Punkte read-only |
 | **Individuell** | Freie Auswahl der gewünschten Variable-IDs; unterstützte Schreibzugriffe werden anschließend je Variable separat freigegeben |
 
-Im Profil **Individuell** folgt nach der Variablenauswahl ein eigener Schritt für Schreibrechte. Abgewählte schreibbare Punkte bleiben lesbar; unbekannte oder nicht ausdrücklich unterstützte Punkte bleiben grundsätzlich read-only.
+Im Profil **Individuell** folgt nach der Variablenauswahl ein eigener Schritt für Schreibrechte. Dort werden alle ausgewählten Punkte berücksichtigt, die NIBE mit `isWritable=true` meldet. Kuratierte Schreibpunkte behalten ihre verifizierte Sonderlogik. Nicht kuratierte Integer-Punkte werden nur dann experimentell angeboten, wenn sie anhand der REST-Metadaten eindeutig als 0/1-Schalter, Zahl mit belastbarem Wertebereich oder Enum klassifiziert werden können. Abgewählte Punkte bleiben lesbar; Zeitwerte und nicht eindeutig klassifizierbare Punkte bleiben gesperrt.
 
 Die Benennung kann zwischen **Home-Assistant-Standard**, **Lokale API** und **Technisch** gewählt werden.
 
@@ -108,7 +108,8 @@ Zusätzlich gilt:
 
 - NIBEs Antwort auf einen Schreibzugriff wird ausgewertet; **HTTP 200 allein gilt nicht als Erfolg**
 - fehlerhafte NIBE-Metadaten werden bei bestätigten Punkten gezielt korrigiert
-- unbekannte schreibbare REST-Punkte bleiben read-only
+- zusätzliche nicht kuratierte REST-Punkte sind nur im Profil **Individuell** und nach ausdrücklicher Schreibfreigabe beschreibbar; Voraussetzung ist ein eindeutig ableitbarer Integer-Typ (0/1, Zahlenbereich oder Enum)
+- Zeitwerte bleiben trotz möglichem `isWritable=true` read-only, solange NIBE dafür keinen funktionierenden öffentlichen Schreibweg bereitstellt
 - bekannte Zeitwerte bleiben read-only, solange deren Schreiben nicht zuverlässig verifiziert ist
 - **Heizung zulassen** und **Kühlung zulassen** werden abhängig vom aktuellen Betriebsmodus geschützt
 - für **Variable-ID 3702** wird wegen fehlerhafter REST-Metadaten der verifizierte Bereich **55,0–70,0 °C** verwendet
@@ -162,7 +163,7 @@ Direkt über **My Home Assistant** in HACS öffnen:
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AndiHOK91&repository=HA-Nibe-Local-REST-API&category=integration)
 
-Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.13.0 ist ein regulärer Release.**
+Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.13.2 ist ein regulärer Release.**
 
 ### Manuell
 
