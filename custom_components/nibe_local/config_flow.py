@@ -33,6 +33,7 @@ from .const import (
     CONF_ENTITY_PROFILE,
     CONF_SCAN_INTERVAL,
     CONF_SELECTED_POINT_IDS,
+    CONF_SELECTED_WRITABLE_POINT_IDS,
     CONF_VERIFY_SSL,
     DEFAULT_COMMAND_POLL_DELAY_MS,
     DEFAULT_ENTITY_NAMING,
@@ -80,6 +81,7 @@ _AUTO_DETECTABLE_EQUIPMENT = frozenset(
     }
 )
 PREVIEW_LIST_LIMIT = 50
+_WRITABLE_POINT_PLATFORMS = frozenset({"number", "select", "switch"})
 
 
 def _secret_selector(*, autocomplete: str | None = None) -> TextSelector:
@@ -644,6 +646,94 @@ def _entity_selection_schema(
     )
 
 
+def _supported_writable_point_ids(
+    points: dict[str, Any],
+    selected_ids,
+) -> frozenset[int]:
+    """Return selected points that are safe write-capable integration entities."""
+    selected = normalize_selected_ids(selected_ids)
+    definitions = {
+        definition.point_id: definition
+        for definition in POINTS
+        if definition.platform in _WRITABLE_POINT_PLATFORMS
+    }
+    return frozenset(
+        point_id
+        for point_id in selected
+        if point_id in definitions
+        and bool(
+            ((points.get(str(point_id)) or {}).get("metadata") or {}).get(
+                "isWritable", False
+            )
+        )
+    )
+
+
+def _writable_point_options(
+    points: dict[str, Any],
+    selected_ids,
+    point_names: dict[int, str] | None = None,
+) -> list[dict[str, str]]:
+    """Return selector options for supported writable selected points."""
+    return [
+        {
+            "value": str(point_id),
+            "label": _point_label(
+                str(point_id),
+                points.get(str(point_id), {}),
+                point_names,
+            ),
+        }
+        for point_id in sorted(_supported_writable_point_ids(points, selected_ids))
+    ]
+
+
+def _selected_writable_options(
+    points: dict[str, Any],
+    selected_ids,
+    configured_writable_ids,
+) -> list[str]:
+    """Return the safe preselection for the per-point write step."""
+    eligible = _supported_writable_point_ids(points, selected_ids)
+    if configured_writable_ids is None:
+        selected = eligible
+    else:
+        selected = eligible & normalize_selected_ids(configured_writable_ids)
+    return [str(point_id) for point_id in sorted(selected)]
+
+
+def _write_selection_schema(
+    points: dict[str, Any],
+    selected_ids,
+    configured_writable_ids=None,
+    *,
+    point_names: dict[int, str] | None = None,
+) -> vol.Schema:
+    """Build the Individual-profile per-point write selector."""
+    return vol.Schema(
+        {
+            vol.Optional(
+                CONF_SELECTED_WRITABLE_POINT_IDS,
+                default=_selected_writable_options(
+                    points,
+                    selected_ids,
+                    configured_writable_ids,
+                ),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=_writable_point_options(
+                        points,
+                        selected_ids,
+                        point_names,
+                    ),
+                    multiple=True,
+                    mode=SelectSelectorMode.LIST,
+                )
+            )
+        }
+    )
+
+
 def _registered_point_ids(hass, entry: ConfigEntry | None) -> frozenset[int]:
     """Return numeric point IDs currently present in this entry's registry."""
     if entry is None:
@@ -969,12 +1059,47 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._pending_data[CONF_SELECTED_POINT_IDS] = _parse_selected_options(
                 user_input.get(CONF_SELECTED_POINT_IDS)
             )
-            return await self.async_step_entity_preview()
+            return await self.async_step_write_selection()
 
         return self.async_show_form(
             step_id="entity_selection",
             data_schema=_entity_selection_schema(points, point_names=point_names),
             description_placeholders={"count": str(len(points))},
+        )
+
+    async def async_step_write_selection(self, user_input=None):
+        """Choose write access independently for selected Individual points."""
+        if self._pending_data is None:
+            return self.async_abort(reason="setup_state_missing")
+        equipment = self._pending_data.get(CONF_EQUIPMENT, ())
+        points = filter_points_for_equipment(self._available_points or {}, equipment)
+        selected_ids = self._pending_data.get(CONF_SELECTED_POINT_IDS, ())
+        eligible = _supported_writable_point_ids(points, selected_ids)
+        if not eligible:
+            self._pending_data[CONF_SELECTED_WRITABLE_POINT_IDS] = []
+            return await self.async_step_entity_preview()
+
+        point_names = await _async_translated_point_names(self.hass)
+        if user_input is not None:
+            requested = normalize_selected_ids(
+                _parse_selected_options(
+                    user_input.get(CONF_SELECTED_WRITABLE_POINT_IDS)
+                )
+            )
+            self._pending_data[CONF_SELECTED_WRITABLE_POINT_IDS] = sorted(
+                eligible & requested
+            )
+            return await self.async_step_entity_preview()
+
+        return self.async_show_form(
+            step_id="write_selection",
+            data_schema=_write_selection_schema(
+                points,
+                selected_ids,
+                self._pending_data.get(CONF_SELECTED_WRITABLE_POINT_IDS),
+                point_names=point_names,
+            ),
+            description_placeholders={"count": str(len(eligible))},
         )
 
     async def async_step_entity_preview(self, user_input=None):
@@ -1186,7 +1311,7 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
             self._pending_options[CONF_SELECTED_POINT_IDS] = _parse_selected_options(
                 user_input.get(CONF_SELECTED_POINT_IDS)
             )
-            return await self.async_step_entity_preview()
+            return await self.async_step_write_selection()
 
         return self.async_show_form(
             step_id="entity_selection",
@@ -1196,6 +1321,41 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
                 point_names=point_names,
             ),
             description_placeholders={"count": str(len(points))},
+        )
+
+    async def async_step_write_selection(self, user_input=None):
+        """Choose write access independently for selected Individual points."""
+        if self._pending_options is None:
+            return self.async_abort(reason="setup_state_missing")
+        equipment = self._pending_options.get(CONF_EQUIPMENT)
+        points = filter_points_for_equipment(self._available_points or {}, equipment)
+        selected_ids = self._pending_options.get(CONF_SELECTED_POINT_IDS, ())
+        eligible = _supported_writable_point_ids(points, selected_ids)
+        if not eligible:
+            self._pending_options[CONF_SELECTED_WRITABLE_POINT_IDS] = []
+            return await self.async_step_entity_preview()
+
+        point_names = await _async_translated_point_names(self.hass)
+        if user_input is not None:
+            requested = normalize_selected_ids(
+                _parse_selected_options(
+                    user_input.get(CONF_SELECTED_WRITABLE_POINT_IDS)
+                )
+            )
+            self._pending_options[CONF_SELECTED_WRITABLE_POINT_IDS] = sorted(
+                eligible & requested
+            )
+            return await self.async_step_entity_preview()
+
+        return self.async_show_form(
+            step_id="write_selection",
+            data_schema=_write_selection_schema(
+                points,
+                selected_ids,
+                self._pending_options.get(CONF_SELECTED_WRITABLE_POINT_IDS),
+                point_names=point_names,
+            ),
+            description_placeholders={"count": str(len(eligible))},
         )
 
     async def async_step_entity_preview(self, user_input=None):
