@@ -62,6 +62,7 @@ from .profiles import (
     DEFAULT_ENTITY_PROFILE,
     ENTITY_PROFILES,
     PROFILE_INDIVIDUAL,
+    alarm_reset_enabled,
     normalize_selected_ids,
     point_enabled,
     profile_counts,
@@ -894,6 +895,9 @@ def _preview_special_entities(
 
     if isinstance(device, dict) and "smartMode" in device:
         result.append("Smart Mode")
+
+    if alarm_reset_enabled(profile):
+        result.append("Alarme zurücksetzen" if german else "Reset alarms")
 
     ventilation = points.get(str(POINT_VENTILATION_MODE)) or {}
     ventilation_metadata = ventilation.get("metadata") or {}
