@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.2
+
+- Die individuelle Schreibauswahl berücksichtigt jetzt alle ausgewählten Punkte, die die öffentliche NIBE Local REST API mit `isWritable=true` meldet, statt zusätzlich auf die statische kuratierte `POINTS`-Liste begrenzt zu sein.
+- Kuratierte Schreibpunkte behalten ihre bestehende verifizierte Sonderlogik. Zusätzliche, nicht kuratierte Integer-Punkte können im Profil **Individuell** nach ausdrücklicher Freigabe experimentell als Switch (0/1), Number (eindeutiger Wertebereich) oder Select (eindeutig beschriebene Enum-Werte) angelegt werden.
+- Punkte, die NIBE als schreibbar meldet, deren Typ aber nicht sicher ableitbar ist, werden im Schreibschritt mit Name und Variable-ID sichtbar aufgeführt, bleiben jedoch read-only.
+- REST-Zeitwerte bleiben trotz `isWritable=true` bewusst gesperrt, da reale Schreibtests auf der Referenzanlage weiterhin HTTP 400 ergeben.
+- Beim Wechsel zwischen read-only Sensor und generischer Schreibentität werden bestehende Registry-Einträge passend zur neuen Plattform bereinigt.
+- Regressionstests für generisch klassifizierte Switch-/Number-/Select-Punkte, nicht unterstützte Zeitwerte und die vollständige `isWritable`-Erfassung ergänzt.
+
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
 ## 0.13.1
