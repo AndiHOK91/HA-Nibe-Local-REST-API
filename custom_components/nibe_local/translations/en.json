@@ -56,7 +56,7 @@
       "aux_heat_power": {"name": "Internal auxiliary heat power"},
       "operating_priority": {"name": "Operating priority", "state": {"off": "Off", "hot_water": "Hot water", "heating": "Heating", "pool": "Pool", "cooling": "Cooling"}},
       "aux_heat_mode": {"name": "Internal auxiliary heat operating mode"},
-      "current_status": {"name": "Current system status"},
+      "current_status": {"name": "Current system status", "state": {"standby": "Standby", "active": "Active", "heating": "Heating", "hot_water": "Hot water", "cooling": "Cooling", "multiple_demands": "Multiple demands", "unknown": "Unknown"}},
       "operating_mode_status": {"name": "Operating mode", "state": {"auto": "Auto", "manual": "Manual", "auxiliary_heat_only": "Auxiliary heat only"}},
       "alarm_number": {"name": "Alarm number"},
       "outdoor_temperature_bt1": {"name": "Outdoor temperature (BT1)"},

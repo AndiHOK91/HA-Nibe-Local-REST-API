@@ -183,7 +183,7 @@
       "aux_heat_power": {"name": "Leistung interne Zusatzheizung"},
       "operating_priority": {"name": "Betriebspriorität", "state": {"off": "Aus", "hot_water": "Brauchwasser", "heating": "Heizung", "pool": "Pool", "cooling": "Kühlung"}},
       "aux_heat_mode": {"name": "Betriebsmodus interne Zusatzheizung"},
-      "current_status": {"name": "Aktueller Anlagenstatus"},
+      "current_status": {"name": "Aktueller Anlagenstatus", "state": {"standby": "Bereit", "active": "Aktiv", "heating": "Heizung", "hot_water": "Brauchwasser", "cooling": "Kühlung", "multiple_demands": "Mehrere Anforderungen", "unknown": "Unbekannt"}},
       "operating_mode_status": {"name": "Betriebsmodus", "state": {"auto": "Auto", "manual": "Manuell", "auxiliary_heat_only": "Nur Zusatzheizung"}},
       "alarm_number": {"name": "Alarmnummer"},
       "outdoor_temperature_bt1": {"name": "Außentemperatur (BT1)"},

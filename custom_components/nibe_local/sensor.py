@@ -14,6 +14,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .alarms import normalize_alarms
 from .const import (
     POINTS,
+    POINT_CURRENT_STATUS,
     POINT_DEFROST_REQUESTED,
     POINT_OPERATING_MODE_STATUS,
     POINT_OPERATING_PRIORITY,
@@ -31,6 +32,11 @@ from .entity import (
     raw_value,
     raw_value_is_sentinel,
     scaled_value,
+)
+from .system_status import (
+    CURRENT_STATUS_STATE_OPTIONS,
+    current_status_attributes,
+    decode_current_status,
 )
 from .writable import description_enum_map, writable_platform_for_point
 
@@ -198,6 +204,9 @@ class NibeSensor(NibePointEntity, SensorEntity):
             value = raw_value(point)
             return OPERATING_PRIORITY_MAP.get(value, value)
 
+        if self.definition.point_id == POINT_CURRENT_STATUS:
+            return decode_current_status(raw_value(point))
+
         if self.definition.point_id == POINT_OPERATING_MODE_STATUS:
             value = raw_value(point)
             try:
@@ -234,7 +243,10 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def native_unit_of_measurement(self) -> str | None:
-        if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
+        if self.definition.point_id in {
+            POINT_CURRENT_STATUS,
+            POINT_PERIODIC_HOT_WATER_DATE,
+        }:
             return None
         if self.definition.point_id == 781:
             return "GM"
@@ -248,6 +260,8 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def device_class(self):
+        if self.definition.point_id == POINT_CURRENT_STATUS:
+            return SensorDeviceClass.ENUM
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return None
         if self.definition.point_id == 829:
@@ -270,6 +284,12 @@ class NibeSensor(NibePointEntity, SensorEntity):
             return SensorDeviceClass.PRESSURE
         if unit in {"h", "min", "s"}:
             return SensorDeviceClass.DURATION
+        return None
+
+    @property
+    def options(self) -> list[str] | None:
+        if self.definition.point_id == POINT_CURRENT_STATUS:
+            return list(CURRENT_STATUS_STATE_OPTIONS)
         return None
 
     @property
@@ -309,6 +329,9 @@ class NibeSensor(NibePointEntity, SensorEntity):
                 label = description_enum_map(point).get(65535)
                 if label:
                     attributes["nibe_special_state"] = label
+
+        if self.definition.point_id == POINT_CURRENT_STATUS:
+            attributes.update(current_status_attributes(raw_value(point)))
 
         return attributes
 
