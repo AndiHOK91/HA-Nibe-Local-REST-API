@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.4
+
+- `nibe_local.export_extended_diagnostics` bietet das erzeugte Ergebnis jetzt zusätzlich als echte **JSON-Datei zum Download** an.
+- Der Service liefert im Antwortobjekt unter `download` Dateiname, signierte Download-URL und Gültigkeitsdauer zurück; die bisherigen Diagnosedaten bleiben weiterhin im Service-Ergebnis enthalten.
+- Der Download wird ausschließlich temporär im Arbeitsspeicher gehalten, nicht unter `/config/www` gespeichert, mit `Cache-Control: no-store` ausgeliefert und ist über einen von Home Assistant signierten Pfad für 10 Minuten erreichbar.
+- Der HTTP-Endpunkt liefert `application/json; charset=utf-8` mit `Content-Disposition: attachment`, sodass Browser die Datei als JSON-Download behandeln.
+- Regressionstests für UTF-8/JSON-Serialisierung und den signierten Download-Metadatenpfad ergänzt.
+
 ## 0.13.3
 
 - Namen im Einrichtungs- und Optionsdialog für **Individuell** korrigiert: `title` und `metadata.title` der lokalen NIBE REST API werden jetzt wie bei den späteren Entitäten als bevorzugte menschenlesbare Bezeichnung verwendet.
