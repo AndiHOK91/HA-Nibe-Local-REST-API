@@ -77,6 +77,24 @@ def point_enabled(
     return point_id in EXTENDED_PROFILE_POINT_IDS
 
 
+def write_enabled(
+    profile: str,
+    point_id: int,
+    selected_writable_ids: Iterable[object] | None = None,
+) -> bool:
+    """Return whether a selected point may expose a write-capable entity.
+
+    The per-point write selection only applies to the Individual profile.
+    Existing Individual entries created before this option existed keep their
+    previous behavior when the setting is absent (None).
+    """
+    if profile != PROFILE_INDIVIDUAL:
+        return True
+    if selected_writable_ids is None:
+        return True
+    return point_id in normalize_selected_ids(selected_writable_ids)
+
+
 def profile_counts(available_ids: Iterable[object]) -> dict[str, int]:
     """Return how many discovered variables are active in each automatic profile."""
     available = normalize_selected_ids(available_ids)
