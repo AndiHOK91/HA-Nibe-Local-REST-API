@@ -82,6 +82,8 @@ Der Schalter **Mehr Brauchwasser** bildet die Funktion **„Einmalige Erhöhung�
 
 Damit verhält sich der Home-Assistant-Schalter wie die entsprechende **„Einmalige Erhöhung“** in myUplink und ist nicht mit einer dauerhaften Änderung des normalen Brauchwassermodus zu verwechseln.
 
+Die in **myUplink** zusätzlich angebotene Funktion **Schnellheizen mit Zusatzheizung** ist davon getrennt. Für diese Funktion ist in der derzeit bekannten lokalen REST API **kein verlässlich bestätigter REST-Punkt bekannt**. Die Integration bietet deshalb aktuell bewusst keine entsprechende Schnellheiz-Funktion an.
+
 ---
 
 ## 💧 Brauchwasserzirkulation
