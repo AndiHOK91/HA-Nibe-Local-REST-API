@@ -47,7 +47,7 @@ POINT_PERIODIC_HOT_WATER_DATE = 2685
 POINT_TIME_TO_DEFROST = 840
 POINT_DEFROST_REQUESTED = 8060
 
-PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "select", "time"]
+PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "select", "time", "button"]
 
 Platform = Literal["sensor", "binary_sensor", "number", "switch", "select", "time"]
 

@@ -17,6 +17,11 @@ ENTITY_PROFILES = (
 )
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
+ALARM_RESET_PROFILES = frozenset(
+    {PROFILE_EXTENDED, PROFILE_COMPLETE, PROFILE_INDIVIDUAL}
+)
+
+
 # Curated standard set for the commonly useful VVM S320/S325 values. Both
 # verified pump values are kept in Standard: point 2792 is the variable-speed
 # GP1 value and point 1975 is the GP6 running-state indicator. Point 1975 also
@@ -104,3 +109,8 @@ def profile_counts(available_ids: Iterable[object]) -> dict[str, int]:
         PROFILE_COMPLETE: len(available),
         PROFILE_INDIVIDUAL: len(available),
     }
+
+
+def alarm_reset_enabled(profile: str) -> bool:
+    """Return whether the alarm-reset control belongs to this entity profile."""
+    return profile in ALARM_RESET_PROFILES

@@ -204,6 +204,9 @@
       "hot_water_circulation_period_1_stop": {"name": "Hot water circulation period 1 stop time"},
       "hot_water_circulation_period_2_stop": {"name": "Hot water circulation period 2 stop time"},
       "hot_water_circulation_period_3_stop": {"name": "Hot water circulation period 3 stop time"}
+    },
+    "button": {
+      "reset_alarms": {"name": "Reset alarms"}
     }
   },
   "exceptions": {
@@ -215,6 +218,8 @@
     "select_invalid_option": {"message": "The option “{option}” is invalid for this NIBE setting."},
     "auth_rejected": {"message": "The NIBE REST API rejected the configured credentials."},
     "auth_rejected_notification": {"message": "{label}: The stored credentials were rejected by the REST API. Please update the integration credentials."},
-    "connection_unreachable_notification": {"message": "{label}: The local REST API has been unreachable for at least 2 minutes. Please check the network, NIBE device, and REST API."}
+    "connection_unreachable_notification": {"message": "{label}: The local REST API has been unreachable for at least 2 minutes. Please check the network, NIBE device, and REST API."},
+    "alarm_reset_not_supported": {"message": "Alarm reset is not supported by this NIBE system or is not enabled on the device."},
+    "alarm_reset_failed": {"message": "The NIBE alarms could not be reset: {error}"}
   }
 }
