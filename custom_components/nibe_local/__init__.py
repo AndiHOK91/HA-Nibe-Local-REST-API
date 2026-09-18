@@ -35,6 +35,10 @@ from .diagnostics import (
     DEFAULT_HISTORY_DAYS,
     async_get_extended_config_entry_diagnostics,
 )
+from .diagnostics_download import (
+    ExtendedDiagnosticsDownloadView,
+    create_extended_diagnostics_download,
+)
 from .equipment import CONF_EQUIPMENT, point_allowed_by_equipment
 from .profiles import DEFAULT_ENTITY_PROFILE, PROFILE_INDIVIDUAL, point_enabled
 from .statistics_migration import (
@@ -88,6 +92,7 @@ SERVICE_PREVIEW_STATISTICS_RESTORE_SCHEMA = vol.Schema(
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up integration-level actions."""
+    hass.http.register_view(ExtendedDiagnosticsDownloadView())
 
     async def async_export_extended_diagnostics(call: ServiceCall) -> ServiceResponse:
         """Return explicitly requested diagnostics with current values and history."""
@@ -96,11 +101,18 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             raise ServiceValidationError("NIBE Local REST API config entry not found")
         if entry.state is not ConfigEntryState.LOADED:
             raise ServiceValidationError("NIBE Local REST API config entry is not loaded")
-        return await async_get_extended_config_entry_diagnostics(
+        diagnostics = await async_get_extended_config_entry_diagnostics(
             hass,
             entry,
             history_days=call.data[ATTR_HISTORY_DAYS],
         )
+        response = dict(diagnostics)
+        response["download"] = create_extended_diagnostics_download(
+            hass,
+            entry,
+            diagnostics,
+        )
+        return response
 
     def validate_migration_entities(call: ServiceCall) -> tuple[str, str]:
         """Validate one source/target entity pair for a migration action."""
