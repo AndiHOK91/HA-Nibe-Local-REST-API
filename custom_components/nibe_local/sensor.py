@@ -390,9 +390,16 @@ class NibeNotificationSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
             else str(alarm.get("text") or "Alarm")
             for alarm in alarms
         ]
+        latest = alarms[0] if alarms else {}
         return {
             "alarm_ids": alarm_ids,
             "alarm_summary": summary,
+            "latest_alarm_id": latest.get("alarm_id"),
+            "latest_alarm_text": latest.get("text"),
+            "latest_alarm_description": latest.get("description"),
+            "latest_alarm_severity": latest.get("severity"),
+            "latest_alarm_time": latest.get("time"),
+            "latest_alarm_equipment": latest.get("equipment"),
             "alarms": alarms,
         }
 
