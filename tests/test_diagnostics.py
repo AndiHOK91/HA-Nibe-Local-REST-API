@@ -224,3 +224,23 @@ def test_categorical_history_preserves_state_transitions() -> None:
         "last": "heating",
         "states": ["off", "hot_water", "heating"],
     }
+
+
+def test_numeric_and_categorical_history_can_coexist_during_state_migration() -> None:
+    """A representation change must not discard either side of recorder history."""
+    states = [
+        SimpleNamespace(
+            state="2170893",
+            last_updated=datetime(2026, 9, 18, 7, 59, 50, tzinfo=UTC),
+        ),
+        SimpleNamespace(
+            state="hot_water",
+            last_updated=datetime(2026, 9, 18, 8, 0, 10, tzinfo=UTC),
+        ),
+    ]
+
+    numeric_rows = _minute_buckets(states)
+    state_rows = _minute_state_buckets(states)
+
+    assert numeric_rows[0]["last"] == 2170893.0
+    assert state_rows[0]["last"] == "hot_water"
