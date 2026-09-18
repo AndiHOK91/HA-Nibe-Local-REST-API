@@ -34,6 +34,7 @@ AUTH_METHOD_BASIC = "basic"
 AUTH_METHOD_HEADER = "header"
 
 POINT_OPERATING_PRIORITY = 1758
+POINT_CURRENT_STATUS = 2022
 POINT_OPERATING_MODE_SETTING = 3751
 POINT_OPERATING_MODE_STATUS = 4064
 POINT_AUX_HEAT_ALLOWED_HEATING = 3919
@@ -70,7 +71,7 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(1760, "aux_heat_mode", "system"),
     PointDef(1820, "external_blocking", "system", "binary_sensor"),
     PointDef(1827, "step_controlled_aux_heat_blocking", "system", "binary_sensor"),
-    PointDef(2022, "current_status", "system", diagnostic=True),
+    PointDef(POINT_CURRENT_STATUS, "current_status", "system", diagnostic=True),
     PointDef(3751, "operating_mode_setting", "system", "select"),
     PointDef(3919, "aux_heat_allowed_heating", "heating", "switch"),
     PointDef(4064, "operating_mode_status", "system"),
