@@ -9,6 +9,8 @@ from custom_components.nibe_local.diagnostics import (
     DEFAULT_HISTORY_DAYS,
     _history_summary,
     _minute_buckets,
+    _minute_state_buckets,
+    _state_history_summary,
     async_get_config_entry_diagnostics,
     async_get_extended_config_entry_diagnostics,
 )
@@ -173,3 +175,52 @@ def test_minute_buckets_preserve_short_negative_spikes() -> None:
     assert summary["max"] == 22.0
     assert summary["first"] == 21.5
     assert summary["last"] == 22.0
+
+
+def test_categorical_history_preserves_state_transitions() -> None:
+    """Enum/text recorder states must survive extended diagnostics."""
+    states = [
+        SimpleNamespace(
+            state="off",
+            last_updated=datetime(2026, 9, 18, 8, 0, 5, tzinfo=UTC),
+        ),
+        SimpleNamespace(
+            state="hot_water",
+            last_updated=datetime(2026, 9, 18, 8, 0, 20, tzinfo=UTC),
+        ),
+        SimpleNamespace(
+            state="hot_water",
+            last_updated=datetime(2026, 9, 18, 8, 0, 50, tzinfo=UTC),
+        ),
+        SimpleNamespace(
+            state="heating",
+            last_updated=datetime(2026, 9, 18, 8, 1, 10, tzinfo=UTC),
+        ),
+    ]
+
+    rows = _minute_state_buckets(states)
+    summary = _state_history_summary(rows)
+
+    assert rows == [
+        {
+            "minute": "2026-09-18T08:00:00+00:00",
+            "first": "off",
+            "last": "hot_water",
+            "states": ["off", "hot_water"],
+            "samples": 3,
+        },
+        {
+            "minute": "2026-09-18T08:01:00+00:00",
+            "first": "heating",
+            "last": "heating",
+            "states": ["heating"],
+            "samples": 1,
+        },
+    ]
+    assert summary == {
+        "minute_count": 2,
+        "sample_count": 4,
+        "first": "off",
+        "last": "heating",
+        "states": ["off", "hot_water", "heating"],
+    }
