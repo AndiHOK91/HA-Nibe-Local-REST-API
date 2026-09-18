@@ -8,6 +8,7 @@ from custom_components.nibe_local.alarms import (
     alarm_notification_id,
     alarm_notification_message,
     alarm_notification_title,
+    alarm_severity_label,
     normalize_alarm,
 )
 from custom_components.nibe_local.api import NibeLocalApi
@@ -56,6 +57,14 @@ def test_alarm_text_uses_header_then_description() -> None:
     assert second["text"] == "Von der NIBE gelieferte Beschreibung 271"
 
 
+def test_alarm_severity_label_is_readable_without_guessing_numeric_meaning() -> None:
+    assert alarm_severity_label(2, german=True) == "NIBE-Stufe 2"
+    assert alarm_severity_label("2", german=False) == "NIBE level 2"
+    assert alarm_severity_label("warning", german=True) == "Warnung"
+    assert alarm_severity_label("critical", german=False) == "Critical"
+    assert alarm_severity_label(None, german=True) is None
+
+
 def test_alarm_notification_contains_rest_details() -> None:
     alarm = normalize_alarm(_alarm_payload()["alarms"][0], "de")
 
@@ -63,11 +72,25 @@ def test_alarm_notification_contains_rest_details() -> None:
     message = alarm_notification_message(alarm, german=True)
 
     assert title == "NIBE Alarm 270 - Alarmkopf 270"
+    assert message.startswith("**Alarm 270**\n\n**Alarmkopf 270**")
     assert "Von der NIBE gelieferte Beschreibung 270" in message
-    assert "Schweregrad" in message
+    assert "**Schweregrad:** NIBE-Stufe 2" in message
     assert "EB101" in message
     assert "2026-09-17 21:10:00" in message
+    assert "**Aktion:**" in message
+    assert "Alarme zurücksetzen" in message
     assert alarm_notification_id("entry-1", alarm).endswith("_alarm_270")
+
+
+def test_alarm_notification_english_reset_hint() -> None:
+    alarm = normalize_alarm(_alarm_payload()["alarms"][0], "en")
+
+    message = alarm_notification_message(alarm, german=False)
+
+    assert "**Alarm 270**" in message
+    assert "**Severity:** NIBE level 2" in message
+    assert "**Action:**" in message
+    assert "Reset alarms" in message
 
 
 def test_alarm_reset_profile_scope() -> None:
@@ -133,6 +156,8 @@ def test_coordinator_creates_and_dismisses_alarm_notifications(monkeypatch) -> N
         "nibe_local_entry-1_alarm_270",
         "nibe_local_entry-1_alarm_271",
     }
+    assert "**Alarm 270**" in created[0]["message"]
+    assert "Alarme zurücksetzen" in created[0]["message"]
 
     # Repeated polling must not recreate an already acknowledged HA notification.
     coordinator._sync_alarm_notifications(_alarm_payload())
