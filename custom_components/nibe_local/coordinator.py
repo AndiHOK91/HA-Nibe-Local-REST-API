@@ -21,7 +21,7 @@ from .equipment import (
     normalize_equipment,
     point_allowed_by_equipment,
 )
-from .profiles import DEFAULT_ENTITY_PROFILE, point_enabled
+from .profiles import DEFAULT_ENTITY_PROFILE, point_enabled, write_enabled
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -86,6 +86,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         instance_id: str | None = None,
         entity_profile: str = DEFAULT_ENTITY_PROFILE,
         selected_point_ids=None,
+        selected_writable_point_ids=None,
         entity_naming: str = "home_assistant",
         equipment=None,
     ) -> None:
@@ -101,6 +102,11 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.instance_id = instance_id or api.device_id
         self.entity_profile = entity_profile
         self.selected_point_ids = tuple(selected_point_ids or ())
+        self.selected_writable_point_ids = (
+            None
+            if selected_writable_point_ids is None
+            else tuple(selected_writable_point_ids)
+        )
         self.entity_naming = entity_naming
         self.equipment = tuple(normalize_equipment(equipment))
         self._fallback_failure_streak = 0
@@ -298,6 +304,14 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             point_id,
             self.equipment,
             self.point(point_id),
+        )
+
+    def write_enabled(self, point_id: int) -> bool:
+        """Return whether this point may expose a write-capable entity."""
+        return write_enabled(
+            self.entity_profile,
+            point_id,
+            self.selected_writable_point_ids,
         )
 
     @property

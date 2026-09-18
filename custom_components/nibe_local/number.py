@@ -35,6 +35,8 @@ async def async_setup_entry(
             continue
         if not coordinator.entity_enabled(definition.point_id):
             continue
+        if not coordinator.write_enabled(definition.point_id):
+            continue
         point = coordinator.point(definition.point_id)
         if not point:
             continue

@@ -122,9 +122,27 @@ async def async_setup_entry(
         NibeSensor(coordinator, definition) for definition in definitions
     ]
     known_ids = {definition.point_id for definition in POINTS}
+    write_platform_ids = {
+        definition.point_id
+        for definition in POINTS
+        if definition.platform in {"number", "select", "switch"}
+    }
+    read_only_known_write_ids = {
+        point_id
+        for point_id in coordinator.enabled_point_ids & write_platform_ids
+        if not coordinator.write_enabled(point_id)
+        or not bool(
+            ((coordinator.point(point_id) or {}).get("metadata") or {}).get(
+                "isWritable", False
+            )
+        )
+    }
+    read_only_sensor_ids = (
+        coordinator.enabled_point_ids - known_ids
+    ) | read_only_known_write_ids
     entities.extend(
         NibeDiscoveredSensor(coordinator, point_id)
-        for point_id in sorted(coordinator.enabled_point_ids - known_ids)
+        for point_id in sorted(read_only_sensor_ids)
     )
     entities.extend(
         [

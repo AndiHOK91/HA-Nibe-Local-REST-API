@@ -17,6 +17,7 @@ CONF_SCAN_INTERVAL = "scan_interval"
 CONF_COMMAND_POLL_DELAY_MS = "command_poll_delay_ms"
 CONF_ENTITY_PROFILE = "entity_profile"
 CONF_SELECTED_POINT_IDS = "selected_point_ids"
+CONF_SELECTED_WRITABLE_POINT_IDS = "selected_writable_point_ids"
 CONF_ENTITY_NAMING = "entity_naming"
 
 ENTITY_NAMING_HOME_ASSISTANT = "home_assistant"

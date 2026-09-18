@@ -50,6 +50,13 @@
           "selected_point_ids": "NIBE-Variablen"
         }
       },
+      "write_selection": {
+        "title": "Schreibzugriffe individuell auswählen",
+        "description": "Für die ausgewählten Variablen sind {count} von der Integration unterstützte Schreibzugriffe verfügbar. Wähle einzeln aus, welche davon in Home Assistant schreibbar sein dürfen. Nicht ausgewählte Punkte bleiben als Nur-Lesen-Sensor verfügbar. Unbekannte oder nicht ausdrücklich unterstützte schreibbare REST-Punkte bleiben aus Sicherheitsgründen immer nur lesbar.",
+        "data": {
+          "selected_writable_point_ids": "Schreiben erlauben für"
+        }
+      },
       "auth_basic": {
         "title": "Benutzername + Passwort",
         "description": "Gib die Zugangsdaten für die lokale REST API ein.",
@@ -111,6 +118,13 @@
         "description": "{count} Variablen wurden von der NIBE erkannt. Setze oder entferne die Häkchen für die gewünschten Entitäten. Bekannte Punkte werden mit Name, Variable-ID und Einheit angezeigt.",
         "data": {
           "selected_point_ids": "NIBE-Variablen"
+        }
+      },
+      "write_selection": {
+        "title": "Schreibzugriffe individuell auswählen",
+        "description": "Für die ausgewählten Variablen sind {count} von der Integration unterstützte Schreibzugriffe verfügbar. Aktiviere nur die Punkte, die Home Assistant tatsächlich verändern dürfen. Abgewählte Punkte bleiben lesbar.",
+        "data": {
+          "selected_writable_point_ids": "Schreiben erlauben für"
         }
       },
       "auth_basic": {
