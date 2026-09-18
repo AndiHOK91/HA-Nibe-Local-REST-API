@@ -11,7 +11,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, POINTS
 from .coordinator import NibeCoordinator
-from .entity import NibePointEntity, scaled_value, to_raw
+from .entity import NibeDiscoveredPointEntity, NibePointEntity, scaled_value, to_raw
+from .writable import writable_platform_for_point
 
 PARALLEL_UPDATES = 1
 
@@ -43,6 +44,18 @@ async def async_setup_entry(
         if not (point.get("metadata") or {}).get("isWritable", False):
             continue
         entities.append(NibeNumber(coordinator, definition))
+
+    curated_number_ids = {
+        definition.point_id for definition in POINTS if definition.platform == "number"
+    }
+    for point_id in sorted(coordinator.enabled_point_ids):
+        if point_id in curated_number_ids or not coordinator.write_enabled(point_id):
+            continue
+        point = coordinator.point(point_id)
+        if writable_platform_for_point(point_id, point) != "number":
+            continue
+        entities.append(NibeDiscoveredNumber(coordinator, point_id))
+
     async_add_entities(entities)
 
 
@@ -172,3 +185,68 @@ class NibeNumber(NibePointEntity, NumberEntity):
             to_raw(self.point or {}, value),
         )
         await self.coordinator.async_refresh_point(self.definition.point_id)
+
+
+class NibeDiscoveredNumber(NibeDiscoveredPointEntity, NumberEntity):
+    """Generic numeric write entity selected explicitly in Individual mode."""
+
+    @property
+    def native_value(self) -> float | None:
+        value = scaled_value(self.point or {})
+        return float(value) if isinstance(value, (int, float)) else None
+
+    @property
+    def native_unit_of_measurement(self) -> str | None:
+        md = (self.point or {}).get("metadata") or {}
+        return md.get("shortUnit") or md.get("unit") or None
+
+    @property
+    def native_min_value(self) -> float:
+        limits = metadata_limits(self.point or {}, self.native_value, self.point_id)
+        return limits[0] if limits else float(self.native_value or 0)
+
+    @property
+    def native_max_value(self) -> float:
+        limits = metadata_limits(self.point or {}, self.native_value, self.point_id)
+        return limits[1] if limits else float(self.native_value or 0)
+
+    @property
+    def native_step(self) -> float:
+        divisor = _metadata_divisor(self.point or {})
+        return 1 / divisor if isinstance(divisor, (int, float)) and divisor > 0 else 1
+
+    async def async_set_native_value(self, value: float) -> None:
+        limits = metadata_limits(self.point or {}, self.native_value, self.point_id)
+        if limits is None:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="number_limits_unavailable",
+            )
+
+        minimum, maximum = limits
+        if not minimum <= value <= maximum:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="number_out_of_range",
+                translation_placeholders={
+                    "value": str(value),
+                    "minimum": str(minimum),
+                    "maximum": str(maximum),
+                },
+            )
+
+        if not value_is_representable(self.point or {}, value):
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="number_invalid_step",
+                translation_placeholders={
+                    "value": str(value),
+                    "step": str(self.native_step),
+                },
+            )
+
+        await self.coordinator.api.patch_point(
+            self.point_id,
+            to_raw(self.point or {}, value),
+        )
+        await self.coordinator.async_refresh_point(self.point_id)
