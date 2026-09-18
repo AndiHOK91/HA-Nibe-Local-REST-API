@@ -10,6 +10,7 @@ from custom_components.nibe_local import (
     SERVICE_EXPORT_EXTENDED_DIAGNOSTICS_SCHEMA,
 )
 from custom_components.nibe_local.api import NibeLocalApi
+from custom_components.nibe_local.config_flow import _point_label
 from custom_components.nibe_local.entity import local_api_point_name
 
 
@@ -33,6 +34,23 @@ def test_local_api_point_name_keeps_description_fallback() -> None:
     point = {"description": "Current outdoor temperature (BT1)", "metadata": {}}
 
     assert local_api_point_name(point) == "Current outdoor temperature (BT1)"
+
+
+def test_config_flow_point_label_uses_rest_title() -> None:
+    point = {
+        "title": "Außen-Flüss.leit.-Fühler (EB101-BT39)",
+        "metadata": {"shortUnit": "°C"},
+    }
+
+    assert _point_label("28034", point) == (
+        "Außen-Flüss.leit.-Fühler (EB101-BT39) · Variable ID 28034 [°C]"
+    )
+
+
+def test_config_flow_point_label_uses_metadata_title() -> None:
+    point = {"metadata": {"title": "Metadata title"}}
+
+    assert _point_label("999999", point) == "Metadata title · Variable ID 999999"
 
 
 def test_nibe_language_point_sets_accept_language_header() -> None:
