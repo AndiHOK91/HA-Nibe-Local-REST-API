@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
-import re
 from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
@@ -23,6 +22,7 @@ from .const import (
 )
 from .coordinator import NibeCoordinator
 from .entity import (
+    NibeDiscoveredPointEntity,
     NibePointEntity,
     coordinator_device_info,
     local_api_point_name,
@@ -32,6 +32,7 @@ from .entity import (
     raw_value_is_sentinel,
     scaled_value,
 )
+from .writable import description_enum_map, writable_platform_for_point
 
 PARALLEL_UPDATES = 0
 
@@ -61,8 +62,6 @@ UNIT_NORMALIZATIONS = {
     "%RH": "%",
     "l/min": "L/min",
 }
-_DESCRIPTION_ENUM_RE = re.compile(r"^\s*(-?\d+)\s*(?:=|:)\s*(.+?)\s*$")
-
 
 def normalize_unit(unit: str | None) -> str | None:
     """Normalize NIBE unit strings to Home Assistant canonical units."""
@@ -76,20 +75,6 @@ def is_relative_humidity(point: dict[str, Any]) -> bool:
     metadata = point.get("metadata") or {}
     return "%RH" in {metadata.get("unit"), metadata.get("shortUnit")}
 
-
-def description_enum_map(point: dict[str, Any]) -> dict[int, str]:
-    """Parse numeric enum labels supplied by the local REST point description."""
-    description = str(point.get("description") or "").replace("\u00ad", "").strip()
-    if not description:
-        return {}
-
-    result: dict[int, str] = {}
-    for part in description.split(","):
-        match = _DESCRIPTION_ENUM_RE.match(part)
-        if not match:
-            continue
-        result[int(match.group(1))] = match.group(2).strip()
-    return result
 
 
 def periodic_hot_water_date(raw: int | str | None) -> str | None:
@@ -117,6 +102,14 @@ async def async_setup_entry(
         if definition.platform == "sensor"
         and coordinator.entity_enabled(definition.point_id)
         and coordinator.point(definition.point_id)
+        and not (
+            coordinator.write_enabled(definition.point_id)
+            and writable_platform_for_point(
+                definition.point_id,
+                coordinator.point(definition.point_id),
+            )
+            is not None
+        )
     ]
     entities: list[SensorEntity] = [
         NibeSensor(coordinator, definition) for definition in definitions
@@ -137,9 +130,15 @@ async def async_setup_entry(
             )
         )
     }
+    generic_writable_ids = {
+        point_id
+        for point_id in coordinator.enabled_point_ids
+        if coordinator.write_enabled(point_id)
+        and writable_platform_for_point(point_id, coordinator.point(point_id)) is not None
+    }
     read_only_sensor_ids = (
-        coordinator.enabled_point_ids - known_ids
-    ) | read_only_known_write_ids
+        (coordinator.enabled_point_ids - known_ids) | read_only_known_write_ids
+    ) - generic_writable_ids
     entities.extend(
         NibeDiscoveredSensor(coordinator, point_id)
         for point_id in sorted(read_only_sensor_ids)
@@ -153,58 +152,17 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class NibeDiscoveredSensor(CoordinatorEntity[NibeCoordinator], SensorEntity):
-    """Read-only sensor for a NIBE point not yet curated by the integration."""
-
-    _attr_has_entity_name = True
-
-    def __init__(self, coordinator: NibeCoordinator, point_id: int) -> None:
-        super().__init__(coordinator)
-        self.point_id = point_id
-        self._attr_unique_id = entity_unique_id(coordinator, point_id)
-
-    @property
-    def point(self) -> dict[str, Any]:
-        return self.coordinator.point(self.point_id) or {}
-
-    @property
-    def name(self) -> str:
-        base = local_api_point_name(self.point) or f"Local API variable {self.point_id}"
-        if self.coordinator.entity_naming == "technical":
-            return f"{base} [ID {self.point_id}]"
-        return base
+class NibeDiscoveredSensor(NibeDiscoveredPointEntity, SensorEntity):
+    """Read-only sensor for a NIBE point not exposed through another platform."""
 
     @property
     def native_value(self):
-        return scaled_value(self.point)
+        return scaled_value(self.point or {})
 
     @property
     def native_unit_of_measurement(self) -> str | None:
-        metadata = self.point.get("metadata") or {}
+        metadata = (self.point or {}).get("metadata") or {}
         return normalize_unit(metadata.get("shortUnit") or metadata.get("unit"))
-
-    @property
-    def available(self) -> bool:
-        if not self.coordinator.last_update_success or not self.point:
-            return False
-        if raw_value_is_sentinel(self.point):
-            return False
-        return bool((self.point.get("value") or self.point.get("datavalue") or {}).get("isOk", True))
-
-    @property
-    def device_info(self):
-        return coordinator_device_info(self.coordinator)
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        metadata = self.point.get("metadata") or {}
-        return {
-            "point_id": self.point_id,
-            "description": str(self.point.get("description") or "").replace("\u00ad", "").strip(),
-            "variable_type": metadata.get("variableType"),
-            "is_writable": metadata.get("isWritable"),
-            "discovered": True,
-        }
 
 
 class NibeSensor(NibePointEntity, SensorEntity):
