@@ -46,7 +46,9 @@ Unbekannte Punkte bleiben **read-only**, auch wenn die lokale REST API sie als s
 | **Standard** | Kuratierter Kernumfang für den normalen Home-Assistant-Betrieb |
 | **Erweitert** | Zusätzliche technische Diagnose-, Kältekreis- und Servicewerte |
 | **Komplett** | Alle von der lokalen REST API gemeldeten Punkte; unbekannte Punkte read-only |
-| **Individuell** | Freie Auswahl der gewünschten Variable-IDs |
+| **Individuell** | Freie Auswahl der gewünschten Variable-IDs; unterstützte Schreibzugriffe werden anschließend je Variable separat freigegeben |
+
+Im Profil **Individuell** folgt nach der Variablenauswahl ein eigener Schritt für Schreibrechte. Abgewählte schreibbare Punkte bleiben lesbar; unbekannte oder nicht ausdrücklich unterstützte Punkte bleiben grundsätzlich read-only.
 
 Die Benennung kann zwischen **Home-Assistant-Standard**, **Lokale API** und **Technisch** gewählt werden.
 
