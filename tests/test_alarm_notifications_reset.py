@@ -1,9 +1,8 @@
 """Regression tests for NIBE alarm notifications and reset support."""
 from __future__ import annotations
 
+import asyncio
 from types import MethodType, SimpleNamespace
-
-import pytest
 
 from custom_components.nibe_local.alarms import (
     alarm_notification_id,
@@ -78,8 +77,7 @@ def test_alarm_reset_profile_scope() -> None:
     assert alarm_reset_enabled(PROFILE_INDIVIDUAL) is True
 
 
-@pytest.mark.asyncio
-async def test_reset_notifications_uses_documented_delete_endpoint() -> None:
+def test_reset_notifications_uses_documented_delete_endpoint() -> None:
     api = object.__new__(NibeLocalApi)
     api.device_id = "0"
     calls: list[tuple[str, str, object]] = []
@@ -90,7 +88,7 @@ async def test_reset_notifications_uses_documented_delete_endpoint() -> None:
 
     api._write_request = MethodType(fake_write_request, api)
 
-    await api.reset_notifications()
+    asyncio.run(api.reset_notifications())
 
     assert calls == [("DELETE", "/devices/0/notifications", None)]
 
