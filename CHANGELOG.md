@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.13.5
+
+- **Variable-ID 2022 – Aktueller Status** wird nicht mehr als rohe u32-Zahl dargestellt, sondern als übersetzbarer Anlagenzustand (`Bereit`, `Aktiv`, `Heizung`, `Brauchwasser`, `Kühlung`, `Mehrere Anforderungen` oder `Unbekannt`).
+- Die Dekodierung verwendet nur belastbar zugeordnete Statusbits. Rohwert, Hexdarstellung, alle aktiven Bits sowie noch unbekannte aktive Bits bleiben als Entity-Attribute sichtbar.
+- Zusätzlich werden die bestätigten Komponentenflags für Verdichter und interne Zusatzheizung sowie die bestätigten Bedarfsflags für Heizung, Brauchwasser und Kühlung als Attribute ausgegeben. Ungeklärte Bits (u. a. aus den beobachteten Positionen 0, 3, 16 und 21) erhalten bewusst keine erfundene Bedeutung.
+- Der erweiterte Diagnoseexport bewahrt jetzt auch kategoriale Home-Assistant-Recorder-Zustände minutenweise auf. Dadurch gehen Zustände wie `off`, `hot_water`, `heating`, `auto` oder Binärsensor-Zustände nicht mehr verloren, nur weil sie sich nicht in `float` umwandeln lassen.
+- Numerische Diagnosehistorien behalten ihr bisheriges Min/Max/Mean/Last-Format; kategoriale Historien erhalten pro Minute First/Last/Transitions sowie eine zustandsbasierte Zusammenfassung.
+- Regressionstests verwenden reale 2022-Statuswerte aus der VVM-S320-Diagnose mit Firmware 4.13.12 und prüfen kategoriale Zustandsübergänge.
+
 ## 0.13.4
 
 - `nibe_local.export_extended_diagnostics` bietet das erzeugte Ergebnis jetzt zusätzlich als echte **JSON-Datei zum Download** an.
