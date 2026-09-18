@@ -229,9 +229,11 @@ def test_registry_cleanup_is_deferred_to_final_preview() -> None:
 def test_setup_waits_for_preview_before_creating_entry() -> None:
     profile_source = inspect.getsource(NibeLocalConfigFlow.async_step_entity_profile)
     selection_source = inspect.getsource(NibeLocalConfigFlow.async_step_entity_selection)
+    write_source = inspect.getsource(NibeLocalConfigFlow.async_step_write_selection)
     preview_source = inspect.getsource(NibeLocalConfigFlow.async_step_entity_preview)
     assert "async_step_entity_preview" in profile_source
-    assert "async_step_entity_preview" in selection_source
+    assert "async_step_write_selection" in selection_source
+    assert "async_step_entity_preview" in write_source
     assert "_create_pending_entry()" in preview_source
 
 
