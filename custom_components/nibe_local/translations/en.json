@@ -220,6 +220,7 @@
     "auth_rejected_notification": {"message": "{label}: The stored credentials were rejected by the REST API. Please update the integration credentials."},
     "connection_unreachable_notification": {"message": "{label}: The local REST API has been unreachable for at least 2 minutes. Please check the network, NIBE device, and REST API."},
     "alarm_reset_not_supported": {"message": "Alarm reset is not supported by this NIBE system or is not enabled on the device."},
+    "alarm_reset_no_active_alarms": {"message": "There is currently no active NIBE alarm. Alarm reset is therefore unavailable."},
     "alarm_reset_failed": {"message": "The NIBE alarms could not be reset: {error}"}
   }
 }

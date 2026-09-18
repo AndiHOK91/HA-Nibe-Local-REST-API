@@ -346,6 +346,7 @@
     "auth_rejected_notification": {"message": "{label}: Die gespeicherten Zugangsdaten wurden von der REST API abgelehnt. Bitte die Zugangsdaten der Integration aktualisieren."},
     "connection_unreachable_notification": {"message": "{label}: Die lokale REST API ist seit mindestens 2 Minuten nicht erreichbar. Bitte Netzwerk, NIBE-Gerät und REST API prüfen."},
     "alarm_reset_not_supported": {"message": "Das Zurücksetzen von Alarmen wird von dieser NIBE-Anlage nicht unterstützt oder ist am Gerät nicht freigegeben."},
+    "alarm_reset_no_active_alarms": {"message": "Es liegt derzeit kein aktiver NIBE-Alarm vor. Das Zurücksetzen von Alarmen ist deshalb gesperrt."},
     "alarm_reset_failed": {"message": "Die NIBE-Alarme konnten nicht zurückgesetzt werden: {error}"}
   }
 }
