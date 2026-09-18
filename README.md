@@ -123,24 +123,12 @@ Home Assistant stellt Diagnoseinformationen wie API-Erreichbarkeit, Fallback-Sta
 
 ## 🧪 Experimentelle Statistikmigration
 
-Vorhandene Langzeitstatistiken eines bisherigen Sensors – beispielsweise aus einer Modbus-Integration – können experimentell auf einen REST-Sensor übertragen werden.
+> [!CAUTION]
+> **Noch nicht praktisch getestet.** Die Funktion wurde bisher nur durch automatisierte Tests abgesichert und noch nicht auf einer produktiven Home-Assistant-Recorder-Datenbank erprobt.
 
-Die Migration arbeitet vorsichtig:
+Die Integration enthält eine experimentelle Vorschau, einen Import fehlender Langzeitstatistiken sowie Backup- und Restore-Vorschau-Funktionen. Eine automatische Wiederherstellung ist derzeit nicht implementiert.
 
-- zunächst Vorschau
-- Import nur fehlender Stundenwerte
-- vorhandene Zielwerte werden nicht überschrieben
-- auf Wunsch bzw. standardmäßig Sicherung vor dem Import
-- kein direkter SQL-Zugriff durch die Integration
-
-Verfügbare Aktionen:
-
-- `nibe_local.preview_statistics_migration`
-- `nibe_local.import_statistics_migration`
-- `nibe_local.list_statistics_backups`
-- `nibe_local.preview_statistics_restore`
-
-Eine automatische Wiederherstellung ist derzeit bewusst nicht implementiert.
+Die Statistikmigration soll später gezielt weiter getestet und bewertet werden. Bis dahin ist sie als **experimentell / nicht verifiziert** zu betrachten.
 
 ---
 
