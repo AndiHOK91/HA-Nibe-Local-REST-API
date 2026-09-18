@@ -20,6 +20,7 @@ from .const import (
     CONF_ENTITY_NAMING,
     CONF_SCAN_INTERVAL,
     CONF_SELECTED_POINT_IDS,
+    CONF_SELECTED_WRITABLE_POINT_IDS,
     CONF_VERIFY_SSL,
     DEFAULT_COMMAND_POLL_DELAY_MS,
     DEFAULT_ENTITY_NAMING,
@@ -281,6 +282,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         instance_id=entry.entry_id,
         entity_profile=data.get(CONF_ENTITY_PROFILE, DEFAULT_ENTITY_PROFILE),
         selected_point_ids=data.get(CONF_SELECTED_POINT_IDS, ()),
+        selected_writable_point_ids=data.get(CONF_SELECTED_WRITABLE_POINT_IDS),
         entity_naming=data.get(CONF_ENTITY_NAMING, DEFAULT_ENTITY_NAMING),
         equipment=data.get(CONF_EQUIPMENT),
     )
