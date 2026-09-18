@@ -12,7 +12,10 @@ from custom_components.nibe_local.alarms import (
     normalize_alarm,
 )
 from custom_components.nibe_local.api import NibeLocalApi
+from custom_components.nibe_local.button import NibeAlarmResetButton, alarm_reset_available
 from custom_components.nibe_local.coordinator import NibeCoordinator
+from homeassistant.exceptions import HomeAssistantError
+import pytest
 from custom_components.nibe_local.profiles import (
     PROFILE_COMPLETE,
     PROFILE_EXTENDED,
@@ -168,3 +171,41 @@ def test_coordinator_creates_and_dismisses_alarm_notifications(monkeypatch) -> N
         "nibe_local_entry-1_alarm_270",
         "nibe_local_entry-1_alarm_271",
     }
+
+
+def test_alarm_reset_available_only_with_active_alarm() -> None:
+    coordinator = SimpleNamespace(
+        last_update_success=True,
+        data={"notifications": {"alarms": []}},
+    )
+
+    assert alarm_reset_available(coordinator) is False
+
+    coordinator.data = {"notifications": _alarm_payload()}
+    assert alarm_reset_available(coordinator) is True
+
+    coordinator.last_update_success = False
+    assert alarm_reset_available(coordinator) is False
+
+
+def test_alarm_reset_button_blocks_direct_press_without_alarm() -> None:
+    class FakeApi:
+        def __init__(self) -> None:
+            self.called = False
+
+        async def reset_notifications(self) -> None:
+            self.called = True
+
+    api = FakeApi()
+    coordinator = SimpleNamespace(
+        last_update_success=True,
+        data={"notifications": {"alarms": []}},
+        api=api,
+    )
+    button = object.__new__(NibeAlarmResetButton)
+    button.coordinator = coordinator
+
+    with pytest.raises(HomeAssistantError):
+        asyncio.run(button.async_press())
+
+    assert api.called is False
