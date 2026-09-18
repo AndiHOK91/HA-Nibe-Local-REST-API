@@ -4,6 +4,9 @@ from __future__ import annotations
 import asyncio
 from types import MethodType, SimpleNamespace
 
+import pytest
+from homeassistant.exceptions import HomeAssistantError
+
 from custom_components.nibe_local.alarms import (
     alarm_notification_id,
     alarm_notification_message,
@@ -14,8 +17,6 @@ from custom_components.nibe_local.alarms import (
 from custom_components.nibe_local.api import NibeLocalApi
 from custom_components.nibe_local.button import NibeAlarmResetButton, alarm_reset_available
 from custom_components.nibe_local.coordinator import NibeCoordinator
-from homeassistant.exceptions import HomeAssistantError
-import pytest
 from custom_components.nibe_local.profiles import (
     PROFILE_COMPLETE,
     PROFILE_EXTENDED,
