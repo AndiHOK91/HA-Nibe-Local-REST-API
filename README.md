@@ -87,9 +87,14 @@ Die Integration stellt – abhängig von Anlage und Firmware – unter anderem b
 Die Zeitwerte werden derzeit bewusst **read-only** dargestellt.
 
 > [!NOTE]
-> Auf der Referenzanlage erfolgt das **Ein- bzw. Ausschalten der Brauchwasserzirkulation in Home Assistant derzeit über Modbus**. Die lokale REST API stellt zwar die Start- und Stoppzeiten der drei Perioden bereit, bislang ist jedoch **kein verlässlich bestätigter REST-Punkt bekannt, mit dem die einzelnen Perioden aktiviert oder deaktiviert werden können**.
+> Auf der Referenzanlage erfolgt das **Ein- bzw. Ausschalten der Brauchwasserzirkulation in Home Assistant derzeit über Modbus**, indem **Periode 1** aktiviert bzw. deaktiviert wird. Verwendet wird das **Modbus Holding Register 5241** (`u8`, Wertebereich `0–1`):
 >
-> Deshalb wird diese Funktion von der REST-Integration nicht künstlich ergänzt. Die verwendete Modbus-Steuerung ist eine separate Home-Assistant-Lösung und nicht Bestandteil dieser Integration.
+> - `1` = **Periode 1 aktivieren**
+> - `0` = **Periode 1 deaktivieren**
+>
+> Der Home-Assistant-Schalter steuert damit **nicht die Pumpe GP11 direkt**, sondern die Freigabe der ersten BWZ-Zeitperiode. Für Periode 2 und 3 sind in der NIBE-Modbus-Liste entsprechend die Holding Register **5242** und **5243** hinterlegt, ebenfalls mit `0/1`.
+>
+> Die lokale REST API stellt zwar die Start- und Stoppzeiten der drei Perioden bereit, auf der aktuell getesteten Anlage ist jedoch **kein verlässlich nutzbarer REST-Punkt zum Aktivieren bzw. Deaktivieren dieser Perioden bekannt**. Deshalb wird diese Funktion von der REST-Integration nicht künstlich ergänzt. Die Modbus-Steuerung ist eine separate Home-Assistant-Lösung und nicht Bestandteil dieser Integration.
 
 ---
 
