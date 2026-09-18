@@ -146,7 +146,7 @@ Unterstützt werden:
 
 - Benutzername + Passwort
 - vollständiger Authorization-Header
-- optionale Deaktivierung der TLS-Zertifikatsprüfung bei selbstsigniertem Zertifikat
+- TLS-Zertifikatsprüfung ist standardmäßig deaktiviert und kann optional aktiviert werden, wenn eine vertrauenswürdige Zertifikatskette vorhanden ist
 
 ---
 
