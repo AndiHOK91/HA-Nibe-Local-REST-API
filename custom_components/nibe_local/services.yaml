@@ -3,7 +3,9 @@ export_extended_diagnostics:
   description: >-
     Gibt bewusst erweiterte Diagnosedaten für eine NIBE-Instanz zurück. Diese
     enthalten aktuelle Mess-/Einstellwerte und die ausgewählte Recorder-Historie.
-    Vor öffentlicher Weitergabe prüfen.
+    Zusätzlich wird ein signierter Link zum Herunterladen derselben Daten als
+    JSON-Datei zurückgegeben. Der Link ist 10 Minuten gültig. Vor öffentlicher
+    Weitergabe prüfen.
   fields:
     config_entry_id:
       name: NIBE-Konfiguration
