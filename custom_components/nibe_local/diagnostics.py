@@ -135,9 +135,14 @@ def _point_entity_ids(
     return result
 
 
+def _history_state_raw(state: Any) -> Any:
+    """Return the raw recorder state value."""
+    return state.get("state") if isinstance(state, dict) else getattr(state, "state", None)
+
+
 def _history_state_value(state: Any) -> float | None:
     """Return a recorder state as a finite numeric value when possible."""
-    value = state.get("state") if isinstance(state, dict) else getattr(state, "state", None)
+    value = _history_state_raw(state)
     try:
         numeric = float(value)
     except (TypeError, ValueError):
@@ -145,6 +150,15 @@ def _history_state_value(state: Any) -> float | None:
     if numeric != numeric or numeric in (float("inf"), float("-inf")):
         return None
     return numeric
+
+
+def _history_state_text(state: Any) -> str | None:
+    """Return a non-empty categorical recorder state."""
+    value = _history_state_raw(state)
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
 
 
 def _history_state_time(state: Any) -> datetime | None:
@@ -184,6 +198,62 @@ def _minute_buckets(states: list[Any]) -> list[dict[str, Any]]:
                 "samples": len(values),
             }
         )
+    return result
+
+
+def _minute_state_buckets(states: list[Any]) -> list[dict[str, Any]]:
+    """Aggregate categorical recorder states into compact minute rows."""
+    buckets: dict[datetime, list[str]] = {}
+    for state in states:
+        value = _history_state_text(state)
+        timestamp = _history_state_time(state)
+        if value is None or timestamp is None:
+            continue
+        # Numeric states are already represented by _minute_buckets.
+        if _history_state_value(state) is not None:
+            continue
+        minute = timestamp.replace(second=0, microsecond=0)
+        buckets.setdefault(minute, []).append(value)
+
+    result: list[dict[str, Any]] = []
+    for minute, values in sorted(buckets.items()):
+        transitions: list[str] = []
+        for value in values:
+            if not transitions or transitions[-1] != value:
+                transitions.append(value)
+        result.append(
+            {
+                "minute": minute.isoformat(),
+                "first": values[0],
+                "last": values[-1],
+                "states": transitions,
+                "samples": len(values),
+            }
+        )
+    return result
+
+
+def _state_history_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize categorical minute rows without inventing numeric statistics."""
+    result: dict[str, Any] = {"minute_count": len(rows)}
+    if not rows:
+        return result
+
+    sample_count = sum(int(row.get("samples", 0)) for row in rows)
+    states: list[str] = []
+    for row in rows:
+        for value in row.get("states", []):
+            if value not in states:
+                states.append(value)
+
+    result.update(
+        {
+            "sample_count": sample_count,
+            "first": rows[0]["first"],
+            "last": rows[-1]["last"],
+            "states": states,
+        }
+    )
     return result
 
 
@@ -276,11 +346,23 @@ async def _async_get_history(
 
     history_points: dict[str, Any] = {}
     for point_id, entity_id in sorted(point_entities.items()):
-        rows = _minute_buckets(recorded_states.get(entity_id) or [])
+        states = recorded_states.get(entity_id) or []
+        rows = _minute_buckets(states)
+        if rows:
+            history_points[str(point_id)] = {
+                "history_available": True,
+                "history_type": "numeric",
+                "summary": _history_summary(rows),
+                "minutes": rows,
+            }
+            continue
+
+        state_rows = _minute_state_buckets(states)
         history_points[str(point_id)] = {
-            "history_available": bool(rows),
-            "summary": _history_summary(rows),
-            "minutes": rows,
+            "history_available": bool(state_rows),
+            "history_type": "state" if state_rows else None,
+            "summary": _state_history_summary(state_rows),
+            "minutes": state_rows,
         }
 
     return {
