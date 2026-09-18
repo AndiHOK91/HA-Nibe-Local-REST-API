@@ -65,6 +65,7 @@ from .profiles import (
     normalize_selected_ids,
     point_enabled,
     profile_counts,
+    write_enabled,
 )
 
 _AUTH_KEYS = (CONF_AUTH_METHOD, CONF_USERNAME, CONF_PASSWORD, CONF_AUTH_HEADER)
@@ -751,6 +752,64 @@ def _registered_point_ids(hass, entry: ConfigEntry | None) -> frozenset[int]:
     return frozenset(result)
 
 
+def _remove_write_mode_registry_conflicts(
+    hass,
+    entry: ConfigEntry,
+    *,
+    profile: str,
+    selected_ids,
+    selected_writable_ids,
+    equipment,
+    points: dict[str, Any],
+) -> int:
+    """Remove stale point entities when Individual write mode changes platform."""
+    registry = er.async_get(hass)
+    prefix = f"{entry.entry_id}_"
+    definitions = {
+        definition.point_id: definition
+        for definition in POINTS
+        if definition.platform in _WRITABLE_POINT_PLATFORMS
+    }
+    removed = 0
+
+    for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        unique_id = registry_entry.unique_id
+        if not unique_id.startswith(prefix):
+            continue
+        suffix = unique_id[len(prefix):]
+        if not suffix.isdigit():
+            continue
+
+        point_id = int(suffix)
+        definition = definitions.get(point_id)
+        if definition is None:
+            continue
+        if not _point_is_enabled(
+            points,
+            profile,
+            point_id,
+            selected_ids,
+            equipment,
+        ):
+            continue
+
+        point = points.get(str(point_id)) or {}
+        api_writable = bool((point.get("metadata") or {}).get("isWritable", False))
+        writable = api_writable and write_enabled(
+            profile,
+            point_id,
+            selected_writable_ids,
+        )
+        expected_domain = definition.platform if writable else "sensor"
+        if registry_entry.domain == expected_domain:
+            continue
+
+        registry.async_remove(registry_entry.entity_id)
+        removed += 1
+
+    return removed
+
+
 def _preview_point_groups(
     points: dict[str, Any],
     profile: str,
@@ -1399,6 +1458,18 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
                     equipment,
                     points,
                 )
+
+            _remove_write_mode_registry_conflicts(
+                self.hass,
+                self.config_entry,
+                profile=profile,
+                selected_ids=self._pending_options.get(CONF_SELECTED_POINT_IDS, ()),
+                selected_writable_ids=self._pending_options.get(
+                    CONF_SELECTED_WRITABLE_POINT_IDS
+                ),
+                equipment=equipment,
+                points=points,
+            )
             return self.async_create_entry(title="", data=self._pending_options)
 
         return self.async_show_form(
