@@ -83,7 +83,11 @@ async def async_setup_entry(
         definition.point_id for definition in POINTS if definition.platform == "switch"
     }
     for point_id in sorted(coordinator.enabled_point_ids):
-        if point_id in curated_switch_ids or not coordinator.write_enabled(point_id):
+        if (
+            point_id in curated_switch_ids
+            or coordinator.selected_writable_point_ids is None
+            or not coordinator.write_enabled(point_id)
+        ):
             continue
         point = coordinator.point(point_id)
         if writable_platform_for_point(point_id, point) != "switch":
