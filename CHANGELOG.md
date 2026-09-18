@@ -2,6 +2,29 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
+## 0.12.2
+
+- Firmware-/REST-Eigenheiten aus Issue #23 abgesichert: Schreibantworten von `PATCH /points` werden nun pro Variable ausgewertet, statt HTTP 200 allein als Erfolg zu behandeln. `modified` und bestätigte vollständige Punktobjekte gelten als Erfolg; `error: read only value`, `error: no such param` und unerwartete Ergebnisse werden als API-Fehler behandelt.
+- **Variable-ID 29258 – Production (PV Power)** erhält wegen fehlerhafter NIBE-Metadaten einen korrigierten Divisor von **100**, sodass die Leistung korrekt in kW skaliert wird.
+- **Variable-IDs 25165 und 25166** werden für ältere Firmwarestände auf die korrekte Einheit **kW** normalisiert, falls NIBE fälschlich `kWh` meldet.
+- Für schreibbare Number-Entitäten wird `minValue=0` / `maxValue=0` als nicht belastbare Grenzangabe behandelt. Explizit verifizierte Sicherheitsgrenzen wie **3702 = 55,0–70,0 °C** bleiben vorrangig.
+- Regressionstests für die Firmware-Metadatenkorrekturen, abgelehnte Schreibzugriffe und die 0/0-Grenzlogik ergänzt.
+
+## 0.12.1
+
+- Die Integration liest die an der NIBE konfigurierte Sprache über **Variable-ID 3745** und verwendet sie als `Accept-Language` für die lokale REST API.
+- Dadurch können automatisch entdeckte Punkte die von NIBE selbst gelieferten lokalisierten Titel verwenden, statt bei deutscher Gerätesprache überwiegend englische REST-Namen anzuzeigen.
+- Bekannte Sprachwerte werden explizit zugeordnet; unbekannte zukünftige Werte erzwingen keine möglicherweise falsche Sprache.
+- Regressionstests für die Sprachauflösung und die REST-Header ergänzt.
+
+## 0.12.0
+
+- Unterstützung für die in aktueller NIBE-Firmware verwendeten REST-Punktnamen erweitert: Das Feld `title` wird jetzt als bevorzugte menschenlesbare Bezeichnung ausgewertet; `metadata.title`, `description`, `name` und die bisherigen Metadaten-Fallbacks bleiben erhalten.
+- Dadurch erhalten insbesondere automatisch entdeckte, noch nicht kuratierte Punkte im Profil **Komplett** sinnvolle NIBE-Namen statt `Local API variable <ID>`. Davon profitieren auch die Benennungsmodi **Lokale API** und **Technisch**.
+- Die `services.yaml`-Definition der erweiterten Diagnosedaten an das aktuelle Home-Assistant-Selector-Schema angepasst: die auswählbaren Historienlängen `1`, `3`, `5` und `7` werden als Strings deklariert und intern wieder in Integer konvertiert.
+- Offiziellen **My Home Assistant / HACS**-Button zur README ergänzt, damit das Custom Repository direkt in HACS geöffnet werden kann.
+- Regressionstests für REST-`title`, bestehende Namens-Fallbacks und die Diagnoseservice-Parameter ergänzt.
+
 ## 0.11.3
 
 - Pumpenzuordnung für die verifizierte VVM S320 korrigiert: **Variable-ID 2792** bleibt die variable Drehzahl der Heizungsumwälzpumpe **GP1**, während **Variable-ID 1975** anhand wiederholter Live-Messungen als Betriebszustand der Heizungsmediumpumpe **GP6** bestätigt wurde (`0 % = aus`, `100 % = ein`) und als Binary Sensor dargestellt wird.
