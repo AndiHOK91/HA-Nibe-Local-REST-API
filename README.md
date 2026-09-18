@@ -50,16 +50,6 @@ Unbekannte Punkte bleiben **read-only**, auch wenn die lokale REST API sie als s
 
 Die Benennung kann zwischen **Home-Assistant-Standard**, **Lokale API** und **Technisch** gewählt werden.
 
-### Verifizierte Pumpenpunkte
-
-Auf der Referenzanlage wurden folgende Zuordnungen durch Live-Messungen bestätigt:
-
-- **2792** – Drehzahl Heizungsumwälzpumpe **GP1**
-- **1975** – Betriebszustand Heizungsmediumpumpe **GP6**
-- **3138** – interne Ladepumpe **GP12**
-
----
-
 ## 🎛️ Bedienfunktionen
 
 ### Lüftung +
