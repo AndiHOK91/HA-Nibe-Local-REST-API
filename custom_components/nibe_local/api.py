@@ -374,6 +374,13 @@ class NibeLocalApi:
     async def get_notifications(self) -> dict[str, Any]:
         return await self._request("GET", f"/devices/{self.device_id}/notifications")
 
+    async def reset_notifications(self) -> None:
+        """Reset all active alarms/notifications using the documented Local REST API."""
+        await self._write_request(
+            "DELETE",
+            f"/devices/{self.device_id}/notifications",
+        )
+
     async def patch_point(self, variable_id: int, raw_value: int | str) -> Any:
         """Write one point only when its freshly read raw value differs.
 
