@@ -2,6 +2,17 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
+## 0.13.0
+
+- Das Profil **Individuell** erhält eine separate Schreibfreigabe pro ausgewähltem Punkt. Nur von NIBE als schreibbar gemeldete und von der Integration ausdrücklich unterstützte Punkte können freigegeben werden; nicht freigegebene unterstützte Punkte bleiben weiterhin lesbar, unbekannte schreibbare REST-Punkte bleiben grundsätzlich read-only.
+- Beim Wechsel zwischen schreibbarer Entität und read-only Sensor werden veraltete Registry-Einträge gezielt bereinigt, damit keine doppelten bzw. verwaisten Entitäten zurückbleiben.
+- Aktive NIBE-Alarme werden über den lokalen REST-Endpunkt `/notifications` eingelesen und als eigene persistente Home-Assistant-Benachrichtigungen ausgegeben. Alarmnummer, NIBE-Titel/-Beschreibung, Schweregrad, Zeitpunkt und Gerät/Quelle werden übernommen; verschwindet ein Alarm, wird die zugehörige Benachrichtigung wieder geschlossen.
+- Der Sensor **Aktive Meldungen** stellt zusätzlich Details des neuesten Alarms als eigene Attribute bereit. Bei einem vorübergehend nicht erreichbaren Notifications-Endpunkt wird der zuletzt bekannte Alarmzustand beibehalten, um falsche Entwarnungen zu vermeiden.
+- Ab Profil **Erweitert** steht die Taste **Alarme zurücksetzen** zur Verfügung. Sie verwendet den dokumentierten Local-REST-Aufruf `DELETE /api/v1/devices/{deviceId}/notifications`; HTTP 405 wird als nicht unterstützte bzw. nicht freigegebene Reset-Funktion behandelt.
+- Alarmbenachrichtigungen wurden lesbarer gestaltet: Alarmnummer und Klartext stehen prominent oben, bekannte textuelle Schweregrade werden lokalisiert und numerische NIBE-Werte bleiben ohne erfundene Bedeutungszuordnung als **NIBE-Stufe <Wert>** sichtbar. Zusätzlich weist die Meldung auf die Reset-Taste hin.
+- README-Dokumentation zu TLS-Verifikation, **Mehr Brauchwasser**, **Lüftung +**, Brauchwasserzirkulation und der experimentellen Statistikmigration überarbeitet.
+- Regressionstests für individuelle Schreibfreigaben, Alarmbenachrichtigungen, Alarm-Reset und Release-Konsistenz ergänzt.
+
 ## 0.12.2
 
 - Firmware-/REST-Eigenheiten aus Issue #23 abgesichert: Schreibantworten von `PATCH /points` werden nun pro Variable ausgewertet, statt HTTP 200 allein als Erfolg zu behandeln. `modified` und bestätigte vollständige Punktobjekte gelten als Erfolg; `error: read only value`, `error: no such param` und unerwartete Ergebnisse werden als API-Fehler behandelt.
