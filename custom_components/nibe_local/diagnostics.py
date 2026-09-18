@@ -347,23 +347,34 @@ async def _async_get_history(
     history_points: dict[str, Any] = {}
     for point_id, entity_id in sorted(point_entities.items()):
         states = recorded_states.get(entity_id) or []
-        rows = _minute_buckets(states)
-        if rows:
+        numeric_rows = _minute_buckets(states)
+        state_rows = _minute_state_buckets(states)
+
+        if numeric_rows and state_rows:
+            history_points[str(point_id)] = {
+                "history_available": True,
+                "history_type": "mixed",
+                "summary": {
+                    "numeric": _history_summary(numeric_rows),
+                    "state": _state_history_summary(state_rows),
+                },
+                "minutes": numeric_rows,
+                "state_minutes": state_rows,
+            }
+        elif numeric_rows:
             history_points[str(point_id)] = {
                 "history_available": True,
                 "history_type": "numeric",
-                "summary": _history_summary(rows),
-                "minutes": rows,
+                "summary": _history_summary(numeric_rows),
+                "minutes": numeric_rows,
             }
-            continue
-
-        state_rows = _minute_state_buckets(states)
-        history_points[str(point_id)] = {
-            "history_available": bool(state_rows),
-            "history_type": "state" if state_rows else None,
-            "summary": _state_history_summary(state_rows),
-            "minutes": state_rows,
-        }
+        else:
+            history_points[str(point_id)] = {
+                "history_available": bool(state_rows),
+                "history_type": "state" if state_rows else None,
+                "summary": _state_history_summary(state_rows),
+                "minutes": state_rows,
+            }
 
     return {
         "available": True,
