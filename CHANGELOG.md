@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.3
+
+- Namen im Einrichtungs- und Optionsdialog für **Individuell** korrigiert: `title` und `metadata.title` der lokalen NIBE REST API werden jetzt wie bei den späteren Entitäten als bevorzugte menschenlesbare Bezeichnung verwendet.
+- Dadurch erscheinen automatisch entdeckte Punkte im Auswahl- und Schreibdialog nicht mehr unnötig nur als `Variable ID <ID>`, wenn die REST API bereits einen Titel liefert.
+- Regressionstests für direkte REST-`title`- und `metadata.title`-Labels ergänzt.
+
 ## 0.13.2
 
 - Die individuelle Schreibauswahl berücksichtigt jetzt alle ausgewählten Punkte, die die öffentliche NIBE Local REST API mit `isWritable=true` meldet, statt zusätzlich auf die statische kuratierte `POINTS`-Liste begrenzt zu sein.
