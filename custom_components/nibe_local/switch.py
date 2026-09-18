@@ -20,7 +20,8 @@ from .const import (
     POINT_VENTILATION_MODE,
 )
 from .coordinator import NibeCoordinator
-from .entity import NibePointEntity, entity_unique_id, raw_value
+from .entity import NibeDiscoveredPointEntity, NibePointEntity, entity_unique_id, raw_value
+from .writable import writable_platform_for_point
 
 PARALLEL_UPDATES = 1
 
@@ -78,6 +79,17 @@ async def async_setup_entry(
         else:
             entities.append(NibeSwitch(coordinator, definition))
 
+    curated_switch_ids = {
+        definition.point_id for definition in POINTS if definition.platform == "switch"
+    }
+    for point_id in sorted(coordinator.enabled_point_ids):
+        if point_id in curated_switch_ids or not coordinator.write_enabled(point_id):
+            continue
+        point = coordinator.point(point_id)
+        if writable_platform_for_point(point_id, point) != "switch":
+            continue
+        entities.append(NibeDiscoveredSwitch(coordinator, point_id))
+
     ventilation_point = coordinator.point(POINT_VENTILATION_MODE)
     if (
         coordinator.entity_enabled(POINT_VENTILATION_MODE)
@@ -101,6 +113,24 @@ def write_allowed_for_mode(point_id: int, mode: int | None) -> bool:
     if mode == 2:
         return point_id == POINT_HEATING_ALLOWED
     return False
+
+
+class NibeDiscoveredSwitch(NibeDiscoveredPointEntity, SwitchEntity):
+    """Generic 0/1 write entity selected explicitly in Individual mode."""
+
+    @property
+    def is_on(self) -> bool | None:
+        return _switch_state(self.point)
+
+    async def _set_state(self, state: bool) -> None:
+        await self.coordinator.api.patch_point(self.point_id, 1 if state else 0)
+        await self.coordinator.async_refresh_point(self.point_id)
+
+    async def async_turn_on(self, **kwargs) -> None:
+        await self._set_state(True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        await self._set_state(False)
 
 
 class NibeSwitch(NibePointEntity, SwitchEntity):
