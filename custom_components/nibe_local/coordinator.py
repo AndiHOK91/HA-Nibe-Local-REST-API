@@ -14,6 +14,12 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import NibeApiError, NibeAuthError, NibeLocalApi, async_resolve_host_ip
+from .alarms import (
+    alarm_notification_id,
+    alarm_notification_message,
+    alarm_notification_title,
+    normalize_alarms,
+)
 from .const import DOMAIN, POINTS
 from .equipment import (
     ALL_EQUIPMENT,
@@ -114,6 +120,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._connection_failure_started_at: float | None = None
         self._connection_notification_active = False
         self._auth_notification_active = False
+        self._active_alarm_notification_ids: set[str] = set()
         self.bulk_fallback_active = False
         self.last_successful_poll: datetime | None = None
         self.last_connection_error: datetime | None = None
@@ -205,6 +212,32 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         persistent_notification.async_dismiss(self.hass, self._auth_notification_id)
 
+    def _sync_alarm_notifications(self, payload: Any) -> None:
+        """Create/dismiss Home Assistant persistent notifications for active alarms."""
+        alarms = normalize_alarms(payload, self.hass.config.language)
+        german = str(self.hass.config.language).lower().startswith("de")
+        current_ids: set[str] = set()
+
+        for alarm in alarms:
+            notification_id = alarm_notification_id(self.instance_id, alarm)
+            current_ids.add(notification_id)
+            if notification_id in self._active_alarm_notification_ids:
+                continue
+            persistent_notification.async_create(
+                self.hass,
+                alarm_notification_message(alarm, german=german),
+                title=alarm_notification_title(
+                    alarm,
+                    device_name=self.device_name,
+                ),
+                notification_id=notification_id,
+            )
+
+        for notification_id in self._active_alarm_notification_ids - current_ids:
+            persistent_notification.async_dismiss(self.hass, notification_id)
+
+        self._active_alarm_notification_ids = current_ids
+
     async def _async_update_data(self) -> dict[str, Any]:
         try:
             points = await self.api.get_points()
@@ -228,7 +261,12 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 raise
             except NibeApiError as err:
                 _LOGGER.debug("Notifications endpoint unavailable: %s", err)
-                notifications = {"alarms": []}
+                notifications = (
+                    (self.data or {}).get("notifications")
+                    or {"alarms": []}
+                )
+            else:
+                self._sync_alarm_notifications(notifications)
 
             self._record_success()
             return {"points": points, "device": device, "notifications": notifications}
