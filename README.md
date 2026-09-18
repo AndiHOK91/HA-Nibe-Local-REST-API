@@ -10,14 +10,14 @@
 
 > 🏠 **Lokal** · 🔒 **Sicherheitsorientiert** · ☁️ **ohne Cloud-Zwang** · 🌡️ **Heizung** · ❄️ **Kühlung** · 💧 **Brauchwasser** · 🌬️ **Lüftung**
 
-Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lokale REST API** in Home Assistant ein. Für normales Auslesen und die ausdrücklich unterstützten Steuerfunktionen ist keine Verbindung zu myUplink erforderlich.
+Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lokale REST API** in Home Assistant ein. Für das normale Auslesen und die ausdrücklich unterstützten Steuerfunktionen ist keine Verbindung zu myUplink erforderlich.
 
-Die Integration wurde im realen Betrieb mit **VVM S320, S2125 und ERS S40-400** entwickelt und getestet. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
+Entwickelt und im realen Betrieb getestet mit **VVM S320, S2125 und ERS S40-400**. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
 Aktuelle Integrationsversion: **0.12.2**
 
 > [!WARNING]
-> Die mit v0.10.x eingeführte **Statistikmigration** ist **experimentell und noch nicht auf einer realen Home-Assistant-Installation getestet**. Vor einer Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein. Die integrierte Sicherungsfunktion ersetzt kein vollständiges Home-Assistant-Systembackup.
+> Die **Statistikmigration** ist experimentell und noch nicht auf einer produktiven Home-Assistant-Recorder-Datenbank praktisch erprobt. Vor der Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein.
 
 ---
 
@@ -25,306 +25,119 @@ Aktuelle Integrationsversion: **0.12.2**
 
 Unterstützt werden unter anderem:
 
-- Außen-, Vorlauf-, Rücklauf-, Raum-, Brauchwasser- und Lüftungstemperaturen
-- Heizungswerte, Gradminuten und berechnete Vorlauftemperaturen
-- Kühlstatus, Kühlgradminuten und Kühlfreigabe
-- Brauchwasserwerte, Mehr Brauchwasser und Brauchwasserzirkulation
-- Verdichterstatus, Frequenz, Laufzeiten, Leistung und Kältekreiswerte
-- Pumpen-, Hydraulik- und Ventilatorwerte
-- Lüftungsmodus, Luftfeuchtigkeit und Lüftungstemperaturen
-- EEV-/EVI-, Kältekreis- und Abtauwerte
+- Heizungs-, Kühlungs-, Brauchwasser- und Lüftungswerte
+- Temperaturen, Gradminuten, Volumenstrom sowie Pumpen- und Ventilatorwerte
+- Verdichter-, Kältekreis-, EEV-/EVI- und Abtauwerte
 - Energie- und Leistungswerte
-- Alarm- und Meldungsinformationen
-- ausdrücklich freigegebene Schreibfunktionen über `switch`, `select` und `number`
-- read-only `time`-Entitäten für bekannte Zeitpunkte, deren Schreiben durch die NIBE-Firmware/API nicht zuverlässig unterstützt wird
-- Diagnoseinformationen für API-Erreichbarkeit, Fallback und Verbindungsfehler
-- datenschutzorientierte Standarddiagnose sowie explizit anforderbare erweiterte Diagnosedaten
-- automatische Erkennung optionaler Anlagenhardware in Einrichtung und Optionen
-- experimentelle Vorschau und Migration vorhandener Home-Assistant-Langzeitstatistiken auf REST-Sensoren
-- automatische, standardmäßig aktivierte Statistik-Sicherung vor einem Import
-- Auflistung älterer Statistik-Backups und read-only Restore-Vorschau
+- Alarme und Meldungen
+- ausdrücklich freigegebene Steuerungen über `switch`, `select` und `number`
+- automatische Erkennung optionaler Hardware wie ERS, BE6/BE7 und Brauchwasserzirkulation
+- Standard- und erweiterte Diagnosedaten
+- experimentelle Migration vorhandener Home-Assistant-Langzeitstatistiken
+
+Unbekannte Punkte bleiben **read-only**, auch wenn die lokale REST API sie als schreibbar meldet. Schreibfunktionen werden nur für verstandene und gezielt abgesicherte Variablen angeboten.
 
 ---
 
 ## 🧩 Entitätsprofile
 
-Nach erfolgreicher Verbindung liest die Integration die tatsächlich verfügbaren REST-Punkte des Geräts ein.
+| Profil | Zweck |
+|---|---|
+| **Standard** | Kuratierter Kernumfang für den normalen Home-Assistant-Betrieb |
+| **Erweitert** | Zusätzliche technische Diagnose-, Kältekreis- und Servicewerte |
+| **Komplett** | Alle von der lokalen REST API gemeldeten Punkte; unbekannte Punkte read-only |
+| **Individuell** | Freie Auswahl der gewünschten Variable-IDs |
 
-| Profil | Zweck | Verhalten |
-|---|---|---|
-| **Standard** | Typische Home-Assistant-Nutzung | Kuratierter Kernumfang für Temperaturen, Brauchwasser, Energie, Verdichter, GP1/GP6 und wichtige Betriebswerte |
-| **Erweitert** | Ausführliche Anlagenanalyse | Kuratierter technischer Umfang einschließlich detaillierter Diagnose-, Kältekreis- und Servicewerte; ausdrücklich als Individual-only markierte Punkte werden nicht automatisch aktiviert |
-| **Komplett** | Maximale Sichtbarkeit | Alle von der lokalen API gemeldeten Punkte; unbekannte Punkte ausschließlich als Read-only-Sensor |
-| **Individuell** | Volle Auswahlkontrolle | Der Nutzer wählt die gewünschten Variable-IDs selbst aus; kuratierte Individual-only-Punkte behalten ihre korrekte Plattform und Benennung |
+Die Benennung kann zwischen **Home-Assistant-Standard**, **Lokale API** und **Technisch** gewählt werden.
 
-Das frühere Profil **Minimal** ist nicht mehr Bestandteil der Integration.
+### Verifizierte Pumpenpunkte
 
-Unbekannte Punkte bleiben auch dann **Read-only**, wenn die lokale REST API `isWritable=true` meldet. Schreibfunktionen werden nur für verstandene und explizit abgesicherte Punkte angeboten.
+Auf der Referenzanlage wurden folgende Zuordnungen durch Live-Messungen bestätigt:
 
-### Pumpenzuordnung auf der verifizierten VVM S320
-
-Für die getestete VVM S320 wurden die Pumpenwerte durch wiederholte Live-Messungen gegen den tatsächlichen Pumpenzustand verifiziert:
-
-- **Variable-ID 2792**: variable Drehzahl der Heizungsumwälzpumpe **GP1** in `%`
-- **Variable-ID 1975**: Betriebszustand der Heizungsmediumpumpe **GP6**; auf der getesteten Anlage `0 % = aus`, `100 % = ein`, in Home Assistant als Binary Sensor dargestellt
-- **Variable-ID 3138**: interne Ladepumpe **GP12**; kuratiert, aber bewusst nur über **Individuell** bzw. **Komplett** verfügbar
-
-GP1 und GP6 sind im **Standard**- und **Erweitert**-Profil enthalten. Punkt 1975 entspricht außerdem Modbus Input Register **1102** aus NIBEs Default-Modbus-Liste. Der ältere GP6-Kandidat **10895** wird von der aktuellen lokalen REST API der getesteten Anlage nicht mehr bereitgestellt.
-
-### Automatische Hardware-Erkennung
-
-Optionale Ausstattung wird soweit zuverlässig möglich aus den normalen lokalen REST-Punkten erkannt. Dazu gehören derzeit insbesondere:
-
-- Energiezähler BE6
-- Energiezähler BE7
-- Lüftungsanlage / ERS
-- Brauchwasserzirkulation
-
-Die **priorisierte externe Zusatzheizung** wird bewusst nicht automatisch allein aus Punkt 1186 abgeleitet, weil dessen Vorhandensein keine sichere Aussage über tatsächlich installierte Hardware erlaubt.
-
-Bei der ersten Einrichtung wird erkannte Hardware mit **„(erkannt)“** gekennzeichnet und vorausgewählt.
-
-Im späteren Optionen-Dialog wird zusätzlich mit dem zuletzt gespeicherten Erkennungsstand verglichen:
-
-- **(erkannt – bereits hinzugefügt)**: aktuell erkannt und bereits aktiviert
-- **(erkannt – neu hinzugefügt)**: seit der letzten Prüfung neu erkannt; wird automatisch vorausgewählt
-- **(erkannt – nicht hinzugefügt)**: aktuell erkannt, aber zuvor bewusst nicht aktiviert; wird nicht erneut automatisch aktiviert
-- **(nicht mehr erkannt – weiterhin hinzugefügt)**: aktuell nicht mehr erkannt, bleibt aus Sicherheitsgründen aber aktiviert, bis der Nutzer es bewusst abwählt
-- **(erkannt)**: aktueller Fund ohne ausreichend sichere frühere Vergleichsbasis
-
-Die Hardware-Erkennung in den Optionen läuft **erst nach erfolgreicher Authentifizierung mit den im Dialog bestätigten Zugangsdaten**. Veraltete gespeicherte Passwörter oder Authorization-Header können dadurch keinen falschen Status wie „nicht mehr erkannt“ erzeugen.
-
-Dadurch kann beispielsweise ein später eingebauter BE7 beim nächsten Konfigurationsdurchlauf automatisch erkannt und vorausgewählt werden, ohne bewusst abgewählte Hardware bei jedem Öffnen wieder zu aktivieren.
+- **2792** – Drehzahl Heizungsumwälzpumpe **GP1**
+- **1975** – Betriebszustand Heizungsmediumpumpe **GP6**
+- **3138** – interne Ladepumpe **GP12**
 
 ---
 
-## 🛡️ Schreibzugriffe und Sicherheitsmodell
+## 🎛️ Bedienfunktionen
 
-Die Integration verwendet ein Allowlist-Prinzip. Schreibbar sind nur Punkte, deren Bedeutung und zulässige Werte bekannt und ausdrücklich implementiert sind.
+### Lüftung +
 
-Alle schreibenden REST-Aufrufe werden integrationsweit serialisiert. Nach einem Schreibbefehl wird der betroffene Punkt gezielt neu gelesen. Für einzelne bekannte Schalter, bei denen die REST API unmittelbar nach einem erfolgreichen Schreibvorgang noch einen alten Wert liefern kann, wird zusätzlich mit einem verzögerten gezielten Kontrollabruf gearbeitet.
+**Lüftung +** ist ein Komfortschalter für den normalen Dashboard-Betrieb und verwendet denselben NIBE-Punkt wie der Select **Lüftungsmodus** (Variable-ID **3830**).
 
-### Heizung und Kühlung
+- **Einschalten** setzt den Lüftungsmodus auf **Erhöht** (Rohwert `3`).
+- Der Schalter wird als **Ein** angezeigt, wenn die Anlage auf **Erhöht** (`3`) oder **Maximal** (`4`) steht.
+- **Ausschalten** setzt den Lüftungsmodus auf **Normal** (Rohwert `0`).
 
-Die Schalter **Heizung zulassen** und **Kühlung zulassen** werden unmittelbar vor dem Schreiben gegen den aktuellen Betriebsmodus geprüft.
+Der Schalter bildet also **keinen zusätzlichen NIBE-Betriebsmodus** ab, sondern ist eine vereinfachte Bedienung des vorhandenen Lüftungsmodus. Beim Ausschalten wird immer auf **Normal** zurückgeschaltet, nicht auf den zuvor verwendeten Modus.
 
-| Betriebsmodus | Heizung zulassen | Kühlung zulassen |
-|---|---:|---:|
-| Auto | blockiert | blockiert |
-| Manuell | schreiben erlaubt | schreiben erlaubt |
-| Nur Zusatzheizung | schreiben erlaubt | blockiert |
-| unbekannt / nicht sicher lesbar | blockiert | blockiert |
+### Mehr Brauchwasser
 
-Der AUX-Schalter **Zusatzheizung im Heizbetrieb zulassen** ist davon unabhängig und wird nicht über diese Betriebsmodus-Sperre blockiert.
-
-### Sichere Grenzwerte für Punkt 3702
-
-Die aktuelle lokale REST API der getesteten VVM S320 liefert für **Variable-ID 3702 – Stopptemperatur BW periodische Erhöhung** inkonsistente Grenzmetadaten (`minValue=55`, `maxValue=700`, `divisor=10`). Eine rein generische Skalierung würde dadurch fälschlich **5,5 °C** als Minimalwert ergeben. Die Integration erzwingt für diesen bekannten Punkt deshalb den verifizierten sicheren Bereich **55,0 bis 70,0 °C**.
-
-### Zeitwerte
-
-Bekannte NIBE-Zeitpunkte werden als `time`-Entitäten dargestellt, wenn ihre REST-Metadaten dies sinnvoll erlauben. Das Schreiben solcher Zeitwerte ist derzeit bewusst blockiert, weil sowohl die lokale REST API als auch die getestete Modbus-Schnittstelle entsprechende Schreibversuche nicht zuverlässig akzeptieren. Die Entität bleibt damit read-only, statt einen scheinbar erfolgreichen, tatsächlich aber nicht ausgeführten Schreibvorgang anzubieten.
+Der Schalter **Mehr Brauchwasser** aktiviert die einmalige Brauchwassererhöhung. Der Zustand wird über die von NIBE gemeldete Restzeit überprüft.
 
 ---
 
-## 💧 Brauchwasser und Brauchwasserzirkulation
+## 💧 Brauchwasserzirkulation
 
-Unterstützt werden – abhängig von Gerät und Profil – unter anderem:
+Die Integration stellt – abhängig von Anlage und Firmware – unter anderem bereit:
 
-- Brauchwasser oben BT7
-- Brauchwasserbereitung BT6
-- Brauchwasserstart BT5
-- Brauchwasseraustritt BT70
-- Brauchwasserbedarf
-- Mehr Brauchwasser
-- periodische Brauchwassererhöhung
-- Brauchwasserzirkulation GP11
-- Betriebs- und Stillstandszeit der Brauchwasserzirkulation
-- drei über die lokale REST API verfügbare BWZ-Zeitperioden mit Start- und Stoppzeit
+- Betriebszustand der Zirkulationspumpe **GP11**
+- Betriebs- und Stillstandszeit
+- drei über die lokale REST API sichtbare Zeitperioden mit Start- und Stoppzeit
 
-Nicht über die lokale REST API exponierte BWZ-Punkte werden nicht künstlich ergänzt.
+Die Zeitwerte werden derzeit bewusst **read-only** dargestellt.
+
+> [!NOTE]
+> Auf der Referenzanlage erfolgt das **Ein- bzw. Ausschalten der Brauchwasserzirkulation in Home Assistant derzeit über Modbus**. Die lokale REST API stellt zwar die Start- und Stoppzeiten der drei Perioden bereit, bislang ist jedoch **kein verlässlich bestätigter REST-Punkt bekannt, mit dem die einzelnen Perioden aktiviert oder deaktiviert werden können**.
+>
+> Deshalb wird diese Funktion von der REST-Integration nicht künstlich ergänzt. Die verwendete Modbus-Steuerung ist eine separate Home-Assistant-Lösung und nicht Bestandteil dieser Integration.
 
 ---
 
-## ⚙️ Verdichter, Außeneinheit und Abtauung
+## 🛡️ Schreibzugriffe und Sicherheit
 
-Je nach Gerät und Profil stehen unter anderem zur Verfügung:
+Die Integration verwendet ein Allowlist-Prinzip. Schreibzugriffe werden nur für bekannte Punkte angeboten und integrationsweit serialisiert.
 
-- Verdichterstatus und Verdichterfrequenz
-- Verdichterstarts und Laufzeiten
-- Rücklauf und Kondensatorvorlauf
-- Heißgas-, Flüssigkeits- und Sauggastemperaturen
-- Verdampfertemperaturen
-- Niederdruck **BP8** und im erweiterten Profil der aktuell über die REST API verfügbare Hochdruck **BP9** (Variable-ID `6588`)
-- Ventilatordrehzahl
-- Schutz- und Alarmzustände
-- Abtauzustände und Zeit bis Enteisung
-- EEV-/EVI-Überhitzung, Sollwerte und Öffnungsgrade
+Zusätzlich gilt:
 
-### Sonderwerte
-
-NIBE kann bei einzelnen Integer-Punkten Grenzwerte des zugrunde liegenden Datentyps als Sonderzustand liefern.
-
-- erkannte ungültige Grenzwerte wie `-32768` bei `s16` werden nicht als reale Messwerte veröffentlicht
-- bei **Punkt 840 – Zeit bis Enteisung** wird `65535` nicht als `65535 min` und auch nicht künstlich als `0 min` dargestellt; die Entity bleibt erreichbar und der numerische Zustand bleibt für diesen Sonderfall unbekannt
-- die frühere Heuristik `>720 min → 0` wurde vollständig entfernt
-- **Punkt 2022 – Current status** wird wegen seines kodierten `u32`-Charakters als Diagnoseentity behandelt
-- **Punkt 22268 – Letzte Enteisung** verwendet Enum-Bezeichnungen nur dann, wenn die lokale REST API diese in der Punktbeschreibung liefert; unbekannte Bedeutungen werden nicht geraten
-- EEV-Öffnungswerte wie Punkt 849 werden unverändert entsprechend den REST-Metadaten dargestellt und nicht willkürlich als Prozentwert umgerechnet
+- NIBEs Antwort auf einen Schreibzugriff wird ausgewertet; **HTTP 200 allein gilt nicht als Erfolg**
+- fehlerhafte NIBE-Metadaten werden bei bestätigten Punkten gezielt korrigiert
+- unbekannte schreibbare REST-Punkte bleiben read-only
+- bekannte Zeitwerte bleiben read-only, solange deren Schreiben nicht zuverlässig verifiziert ist
+- **Heizung zulassen** und **Kühlung zulassen** werden abhängig vom aktuellen Betriebsmodus geschützt
+- für **Variable-ID 3702** wird wegen fehlerhafter REST-Metadaten der verifizierte Bereich **55,0–70,0 °C** verwendet
 
 ---
 
 ## 🚨 Diagnose
 
-### Diagnose-Entitäten
+Home Assistant stellt Diagnoseinformationen wie API-Erreichbarkeit, Fallback-Status, Verbindungsfehler und aktive Meldungen bereit.
 
-Zusätzlich stehen Diagnoseinformationen bereit, darunter:
-
-- **REST API erreichbar**
-- **Einzelpunkt-Fallback aktiv**
-- **Letzter Verbindungsfehler**
-- aktive Meldungen/Alarme
-
-### Standarddiagnose
-
-Die normale Home-Assistant-Diagnose ist datenschutzorientiert und enthält keine Zugangsdaten. Erweiterte aktuelle Messwerte und Recorder-Historie werden nicht automatisch in jede Standarddiagnose aufgenommen.
-
-### Erweiterte Diagnosedaten
-
-Über die Aktion `nibe_local.export_extended_diagnostics` können bewusst erweiterte Diagnosedaten angefordert werden. Dabei lässt sich die Recorder-Historie auf **1, 3, 5 oder 7 Tage** begrenzen; Standard ist **1 Tag**.
-
-Der erweiterte Export enthält für aktivierte NIBE-Punkte – soweit vorhanden – unter anderem:
-
-- Variable-ID
-- REST-Titel und REST-Beschreibung
-- Einheit
-- Datentyp und Variablengröße
-- Divisor und Dezimalstellen
-- Schreibbarkeitskennzeichen
-- aktuellen Rohwert
-- aktuell von der Integration berechneten skalierten Wert
-- `isOk`-Status
-- Kennzeichnung erkannter Integer-Sentinelwerte
-- daraus abgeleitete Gültigkeit des aktuellen Werts
-- die ausdrücklich ausgewählte Recorder-Historie
-
-Aus Datenschutz- und Sicherheitsgründen werden Zugangsdaten nicht exportiert. Erweiterte Diagnosedaten können jedoch Mess- und Einstellwerte enthalten und sollten vor öffentlicher Weitergabe geprüft werden.
+Über `nibe_local.export_extended_diagnostics` können bei Bedarf erweiterte Punktinformationen und optional **1, 3, 5 oder 7 Tage** Recorder-Historie exportiert werden. Zugangsdaten werden dabei nicht ausgegeben; Mess- und Einstellwerte können jedoch enthalten sein.
 
 ---
 
 ## 🧪 Experimentelle Statistikmigration
 
-> [!CAUTION]
-> **Experimentell / noch nicht real getestet:** Die Statistikmigration wurde mit Regressionstests und gegen mehrere Home-Assistant-Versionen entwickelt, aber noch nicht auf einer produktiven Home-Assistant-Recorder-Datenbank praktisch erprobt. Verwende sie zunächst nur mit besonderer Vorsicht.
+Vorhandene Langzeitstatistiken eines bisherigen Sensors – beispielsweise aus einer Modbus-Integration – können experimentell auf einen REST-Sensor übertragen werden.
 
-Ziel der Funktion ist es, vorhandene **Langzeitstatistiken** eines bisherigen Sensors – zum Beispiel aus einer Modbus-Integration – auf den entsprechenden Sensor dieser REST-Integration zu übernehmen, ohne bereits vorhandene REST-Statistiken zu überschreiben.
+Die Migration arbeitet vorsichtig:
 
-### Sicherheitsprinzip
+- zunächst Vorschau
+- Import nur fehlender Stundenwerte
+- vorhandene Zielwerte werden nicht überschrieben
+- auf Wunsch bzw. standardmäßig Sicherung vor dem Import
+- kein direkter SQL-Zugriff durch die Integration
 
-Die Migration ist absichtlich mehrstufig aufgebaut:
+Verfügbare Aktionen:
 
-1. **Vorschau** der Quelle und des REST-Ziels
-2. Prüfung von Einheit, Statistiktyp, Metadaten, vorhandenen Zeiträumen und Überschneidungen
-3. optionaler Import ausschließlich fehlender Stundenwerte
-4. standardmäßig vorherige Sicherung der Ziel-Langzeitstatistik
-5. vorhandene Zielzeitpunkte werden nicht überschrieben
-6. kein direkter SQL-/SQLite-/MariaDB-/PostgreSQL-Zugriff durch die Integration
+- `nibe_local.preview_statistics_migration`
+- `nibe_local.import_statistics_migration`
+- `nibe_local.list_statistics_backups`
+- `nibe_local.preview_statistics_restore`
 
-### Verfügbare Aktionen
-
-#### `nibe_local.preview_statistics_migration`
-
-Read-only-Vorschau für ein ausgewähltes Sensorpaar. Es werden keine Recorder-Daten verändert.
-
-Die Antwort enthält unter anderem:
-
-- Quell- und Zielsensor
-- vorhandene Langzeitstatistik-Metadaten
-- Anzahl und Zeitraum der Quell- und Zielstatistiken
-- bereits vorhandene Überschneidungen
-- voraussichtlich importierbare Stundenwerte
-- Kompatibilitätswarnungen
-
-#### `nibe_local.import_statistics_migration`
-
-**Experimentelle Schreibaktion. Noch nicht real getestet.**
-
-Importiert ausschließlich fehlende stündliche Langzeitstatistiken. Bereits vorhandene Zielzeitpunkte werden übersprungen.
-
-Optionen:
-
-- `source_entity_id`: bisheriger Quellsensor
-- `target_entity_id`: REST-Zielsensor
-- `create_backup`: Sicherung vor dem Import; **standardmäßig aktiviert**, kann bewusst deaktiviert werden
-
-Wenn die Sicherung aktiviert ist und nicht erstellt werden kann, wird der Import abgebrochen.
-
-### Statistik-Backup
-
-Das integrierte Backup ist **kein vollständiges Home-Assistant-Systembackup**. Es ist ein gezielter JSON-Snapshot für die Statistikmigration und wird unter `nibe_local_backups` im Home-Assistant-Konfigurationsverzeichnis gespeichert.
-
-Gesichert werden insbesondere:
-
-- Quell- und Zielsensor
-- Statistik-Metadaten
-- die vor dem Import vorhandene Ziel-Langzeitstatistik
-- die Zeitpunkte, die beim anschließenden Import hinzugefügt werden sollen
-
-Jede Sicherung erhält einen eigenen Zeitstempel; ältere Sicherungen werden nicht automatisch überschrieben.
-
-#### `nibe_local.list_statistics_backups`
-
-Listet alle vorhandenen, von der Integration erzeugten Statistik-Backups auf. Die neuesten Sicherungen erscheinen zuerst. Beschädigte oder nicht lesbare Backup-Dateien werden separat gemeldet.
-
-#### `nibe_local.preview_statistics_restore`
-
-Read-only-Prüfung eines ausgewählten älteren Backups. Es findet **keine tatsächliche Wiederherstellung** statt.
-
-Die Vorschau vergleicht den damaligen Zustand mit der heute vorhandenen Zielstatistik und zeigt unter anderem:
-
-- ursprünglich gesicherte Zielwerte
-- damals geplante Importwerte
-- aktuell noch vorhandene importierte Zeitpunkte
-- inzwischen fehlende ursprüngliche Werte
-- seitdem neu entstandene bzw. nicht zum damaligen Import gehörende Werte
-- `safe_to_restore`
-- konkrete Blockierungsgründe
-
-Die Restore-Bewertung arbeitet **fail-closed**: Sobald ein Zustand nicht eindeutig sicher bewertet werden kann, wird eine automatische Wiederherstellung blockiert.
-
-### Warum es noch keine automatische Restore-Aktion gibt
-
-Home Assistant stellt eine unterstützte API zum Importieren von Langzeitstatistiken bereit, aber derzeit keinen ebenso sauberen öffentlichen Gegenpart zum gezielten Löschen nur bestimmter einzelner importierter Stundenwerte. Ein vollständiges Löschen und anschließender Neuaufbau der Zielstatistik wäre für das hier verfolgte Ziel maximaler Datensicherheit zu invasiv.
-
-Deshalb existieren derzeit bewusst nur Backup, Backup-Liste und Restore-Vorschau. Eine echte Restore-Aktion soll erst ergänzt werden, wenn die betroffenen importierten Zeitpunkte sicher und ohne Gefährdung später entstandener legitimer Recorder-Daten zurückgesetzt werden können.
-
----
-
-## 🔐 Authentifizierung und TLS
-
-Unterstützte Authentifizierungsmethoden:
-
-- Benutzername + Passwort
-- vollständiger Authorization-Header
-
-Die lokale REST API verwendet häufig ein selbstsigniertes Zertifikat. Die TLS-Zertifikatsprüfung kann deshalb deaktiviert werden. Wenn eine vertrauenswürdige Zertifikatskette verfügbar ist, sollte die Prüfung aktiviert bleiben.
-
----
-
-## 🌐 Kommunikation und Robustheit
-
-Im Normalbetrieb werden Werte gesammelt über den lokalen `/points`-Endpunkt gelesen. Kann eine Sammelantwort nicht sinnvoll verwendet werden, kann die Integration auf Einzelpunktabfragen zurückfallen.
-
-Weitere Schutzmechanismen:
-
-- REST-Antworten auf maximal 4 MiB begrenzt
-- maximale JSON-Verschachtelungstiefe 64
-- iterative Normalisierung statt unbegrenzter Rekursion
-- Backoff beim vollständigen Einzelpunkt-Fallback
-- serialisierte Schreibzugriffe
-- technische Authentifizierungsfehler erzeugen keine dauerhafte Benachrichtigungsflut
-
-Die Laufzeitintegration verwendet ausschließlich die lokale REST API.
+Eine automatische Wiederherstellung ist derzeit bewusst nicht implementiert.
 
 ---
 
@@ -332,22 +145,21 @@ Die Laufzeitintegration verwendet ausschließlich die lokale REST API.
 
 - mindestens **Home Assistant 2024.12.0**
 - NIBE S-Series-Steuerung mit lokaler REST API
-- empfohlene aktuelle S-Series-Firmware
-- lokale Erreichbarkeit von Home Assistant zur NIBE
+- aktuelle S-Series-Firmware empfohlen
+- lokale Netzwerkverbindung zwischen Home Assistant und NIBE
 - standardmäßig HTTPS auf Port **8443**
 
-Die lokale REST API muss direkt an der NIBE-Steuerung unter **Menü 7 → Service → 7.5.15 – Lokale REST API** aktiviert und mit Zugangsdaten eingerichtet sein.
+Die lokale REST API wird an der NIBE unter **Menü 7 → Service → 7.5.15 – Lokale REST API** aktiviert und mit Zugangsdaten eingerichtet.
+
+Unterstützt werden:
+
+- Benutzername + Passwort
+- vollständiger Authorization-Header
+- optionale Deaktivierung der TLS-Zertifikatsprüfung bei selbstsigniertem Zertifikat
 
 ---
 
 ## 🧩 Installation
-
-### Manuell
-
-1. `custom_components/nibe_local` nach `/config/custom_components/nibe_local` kopieren.
-2. Home Assistant neu starten.
-3. **Einstellungen → Geräte & Dienste → Integration hinzufügen** öffnen.
-4. **NIBE Local REST API** auswählen.
 
 ### HACS
 
@@ -357,22 +169,40 @@ Direkt über **My Home Assistant** in HACS öffnen:
 
 Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.12.2 ist ein regulärer Release.**
 
-### Einrichtungsablauf
+### Manuell
+
+1. `custom_components/nibe_local` nach `/config/custom_components/nibe_local` kopieren.
+2. Home Assistant neu starten.
+3. **Einstellungen → Geräte & Dienste → Integration hinzufügen** öffnen.
+4. **NIBE Local REST API** auswählen.
+
+### Einrichtung
 
 1. Host/IP-Adresse und Port eingeben.
-2. Authentifizierungsmethode, TLS-Prüfung und Polling-Einstellungen wählen.
-3. Benutzername + Passwort oder den Authorization-Header eingeben.
-4. Verbindung und Zugangsdaten prüfen; erst danach `/device` und `/points` laden.
-5. Automatisch erkannte Anlagenhardware prüfen.
-6. **Standard / Erweitert / Komplett / Individuell** auswählen.
-7. Benennung auswählen.
-8. Bei **Individuell** die gewünschten Variable-IDs auswählen.
-9. Entitätsübersicht prüfen.
-10. Mit **OK** anwenden.
-
-Die Optionen einer bestehenden Anlage verwenden dieselbe Sicherheitsreihenfolge: Verbindungseinstellungen → Zugangsdaten → erfolgreicher authentifizierter Abruf → Hardware-/Profilauswahl → Vorschau.
+2. Authentifizierung, TLS-Prüfung und Polling konfigurieren.
+3. Verbindung prüfen.
+4. Erkannte Hardware kontrollieren.
+5. Entitätsprofil und Benennung wählen.
+6. Bei **Individuell** gewünschte Variable-IDs auswählen.
+7. Entitätsübersicht prüfen und bestätigen.
 
 Die API-Geräte-ID wird intern fest als `0` verwendet.
+
+---
+
+## ⚠️ Grenzen
+
+Nicht automatisch unterstützt werden:
+
+- generische Schreibsteuerung unbekannter Punkte
+- Erraten unbekannter Enum-Bedeutungen
+- Alarmquittierung oder Alarmreset
+- myUplink-Cloudfunktionen
+- generisches Schreiben von NIBE-Zeitwerten
+- Aktivieren/Deaktivieren der BWZ-Zeitperioden über REST, solange dafür kein verifizierter Punkt bekannt ist
+- automatische Wiederherstellung eines Statistikimports
+
+Die tatsächlich verfügbaren Variablen hängen von Modell, Zubehör, Firmware und Anlagenkonfiguration ab.
 
 ---
 
@@ -384,36 +214,15 @@ GitHub Actions prüft die Integration gegen:
 - **Home Assistant 2026.9.1**
 - eine aktuelle Home-Assistant-Version (`latest`)
 
-Die Regressionstests decken unter anderem API-Normalisierung, Authentifizierung, Schreibschutz, Profile, Hardware-Erkennung, Diagnose-Datenschutz, Sentinelwerte, Abtau-Sonderzustände, vollständige DE/EN-Texte für alle kuratierten Punktdefinitionen sowie die Schutzlogik für Statistikmigration, Backups und Restore-Vorschau ab.
-
-Die vorhandenen automatisierten Tests ersetzen ausdrücklich **keinen realen Migrationstest auf einer produktiven Recorder-Datenbank**.
-
----
-
-## ⚠️ Grenzen
-
-Nicht automatisch unterstützt werden:
-
-- unbekannte schreibbare Punkte als generische Steuerung
-- automatisches Erraten unbekannter Enum-Semantik
-- automatisches Freischalten unbekannter Service-/Installerparameter
-- Alarmquittierung oder Alarmreset
-- myUplink-Cloudfunktionen
-- generisches Schreiben von NIBE-Zeitwerten
-- Migration detaillierter Rohzustände aus der normalen Recorder-Historie; die experimentelle Migration bezieht sich auf Langzeitstatistiken
-- automatische Wiederherstellung eines Statistikimports, solange Home Assistant keine ausreichend sichere selektive Recorder-API dafür bereitstellt
-
-Die tatsächlich verfügbaren Variablen hängen von Modell, angeschlossenen Modulen, Firmware und Anlagenkonfiguration ab.
+Regressionstests decken unter anderem API-Verarbeitung, Authentifizierung, Schreibschutz, Profile, Hardware-Erkennung, Übersetzungen, Firmware-Eigenheiten, Diagnose-Datenschutz und Statistikmigration ab.
 
 ---
 
 ## ⚖️ Projektstatus und Haftung
 
-Diese Integration ist ein **inoffizielles Community-Projekt** und steht in keiner Verbindung zu NIBE. Sie befindet sich weiterhin vor Version 1.0 und wird auf einer realen Anlage weiterentwickelt und getestet.
+Dieses Repository ist ein **inoffizielles Community-Projekt** und steht in keiner Verbindung zu NIBE.
 
-**v0.12.2 ist ein regulärer Release.** Die Statistikmigration bleibt davon unabhängig ausdrücklich experimentell und ist bisher nicht praktisch auf einer realen Home-Assistant-Recorder-Datenbank verifiziert.
-
-Die Software wird ohne Gewährleistung oder Garantie bereitgestellt. Die Nutzung erfolgt auf eigene Gefahr. Bei sicherheitsrelevanten Funktionen sind im Zweifel die Anzeigen und Einstellungen am Gerät sowie die offizielle Herstellerdokumentation maßgeblich.
+Die Software wird ohne Gewährleistung oder Garantie bereitgestellt. Bei sicherheitsrelevanten Funktionen sind im Zweifel die Anzeigen und Einstellungen am Gerät sowie die offizielle Herstellerdokumentation maßgeblich.
 
 ---
 
