@@ -50,16 +50,6 @@ Unbekannte Punkte bleiben **read-only**, auch wenn die lokale REST API sie als s
 
 Die Benennung kann zwischen **Home-Assistant-Standard**, **Lokale API** und **Technisch** gewählt werden.
 
-### Verifizierte Pumpenpunkte
-
-Auf der Referenzanlage wurden folgende Zuordnungen durch Live-Messungen bestätigt:
-
-- **2792** – Drehzahl Heizungsumwälzpumpe **GP1**
-- **1975** – Betriebszustand Heizungsmediumpumpe **GP6**
-- **3138** – interne Ladepumpe **GP12**
-
----
-
 ## 🎛️ Bedienfunktionen
 
 ### Lüftung +
@@ -74,7 +64,15 @@ Der Schalter bildet also **keinen zusätzlichen NIBE-Betriebsmodus** ab, sondern
 
 ### Mehr Brauchwasser
 
-Der Schalter **Mehr Brauchwasser** aktiviert die einmalige Brauchwassererhöhung. Der Zustand wird über die von NIBE gemeldete Restzeit überprüft.
+Der Schalter **Mehr Brauchwasser** bildet die Funktion **„Einmalige Erhöhung“** ab, wie sie auch in der **myUplink-App** angeboten wird.
+
+- **Einschalten** schreibt für Variable-ID **4564** den Rohwert `2` und startet damit die einmalige Brauchwassererhöhung.
+- **Ausschalten** schreibt den Rohwert `0` und beendet die einmalige Erhöhung.
+- Der angezeigte Schalterzustand wird nicht allein aus dem geschriebenen Wert abgeleitet, sondern über die von NIBE gemeldete **Restzeit** der Funktion (Variable-ID **4030**) überprüft. Solange eine Restzeit größer als 0 Minuten gemeldet wird, gilt **Mehr Brauchwasser** als aktiv.
+
+Damit verhält sich der Home-Assistant-Schalter wie die entsprechende **„Einmalige Erhöhung“** in myUplink und ist nicht mit einer dauerhaften Änderung des normalen Brauchwassermodus zu verwechseln.
+
+Die in **myUplink** zusätzlich angebotene Funktion **Schnellheizen des Brauchwassers mit Zusatzheizung** ist davon getrennt. Für diese Funktion ist in der derzeit bekannten **lokalen REST API kein verlässlich bestätigter REST-Punkt bekannt**. Die Integration bietet deshalb aktuell bewusst keine entsprechende Schnellheiz-Funktion über REST an.
 
 ---
 
@@ -89,9 +87,14 @@ Die Integration stellt – abhängig von Anlage und Firmware – unter anderem b
 Die Zeitwerte werden derzeit bewusst **read-only** dargestellt.
 
 > [!NOTE]
-> Auf der Referenzanlage erfolgt das **Ein- bzw. Ausschalten der Brauchwasserzirkulation in Home Assistant derzeit über Modbus**. Die lokale REST API stellt zwar die Start- und Stoppzeiten der drei Perioden bereit, bislang ist jedoch **kein verlässlich bestätigter REST-Punkt bekannt, mit dem die einzelnen Perioden aktiviert oder deaktiviert werden können**.
+> Auf der Referenzanlage erfolgt das **Ein- bzw. Ausschalten der Brauchwasserzirkulation in Home Assistant derzeit über Modbus**, indem **Periode 1** aktiviert bzw. deaktiviert wird. Verwendet wird das **Modbus Holding Register 5241** (`u8`, Wertebereich `0–1`):
 >
-> Deshalb wird diese Funktion von der REST-Integration nicht künstlich ergänzt. Die verwendete Modbus-Steuerung ist eine separate Home-Assistant-Lösung und nicht Bestandteil dieser Integration.
+> - `1` = **Periode 1 aktivieren**
+> - `0` = **Periode 1 deaktivieren**
+>
+> Der Home-Assistant-Schalter steuert damit **nicht die Pumpe GP11 direkt**, sondern die Freigabe der ersten BWZ-Zeitperiode. Für Periode 2 und 3 sind in der NIBE-Modbus-Liste entsprechend die Holding Register **5242** und **5243** hinterlegt, ebenfalls mit `0/1`.
+>
+> Die lokale REST API stellt zwar die Start- und Stoppzeiten der drei Perioden bereit, auf der aktuell getesteten Anlage ist jedoch **kein verlässlich nutzbarer REST-Punkt zum Aktivieren bzw. Deaktivieren dieser Perioden bekannt**. Deshalb wird diese Funktion von der REST-Integration nicht künstlich ergänzt. Die Modbus-Steuerung ist eine separate Home-Assistant-Lösung und nicht Bestandteil dieser Integration.
 
 ---
 
