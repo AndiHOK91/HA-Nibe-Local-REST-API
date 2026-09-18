@@ -2,6 +2,14 @@
 
 Alle wesentlichen Änderungen an **NIBE Local REST API** werden hier versionsweise zusammengefasst.
 
+## 0.13.1
+
+- Die Taste **Alarme zurücksetzen** ist nur noch verfügbar, wenn die lokale REST API mindestens einen aktiven NIBE-Alarm meldet.
+- Ohne aktiven Alarm wird der Button in Home Assistant automatisch als nicht verfügbar angezeigt.
+- Auch ein direkter `button.press`-Aufruf ohne aktiven Alarm wird technisch blockiert; es wird dann kein `DELETE /notifications` an die NIBE gesendet.
+- Nach erfolgreichem Alarm-Reset aktualisiert der Coordinator den Alarmstatus wie bisher sofort, sodass die Taste nach dem Verschwinden der Alarme automatisch wieder gesperrt wird.
+- Regressionstests für die dynamische Button-Verfügbarkeit und den zusätzlichen Schutz vor direkten Reset-Aufrufen ergänzt.
+
 ## 0.13.0
 
 - Das Profil **Individuell** erhält eine separate Schreibfreigabe pro ausgewähltem Punkt. Nur von NIBE als schreibbar gemeldete und von der Integration ausdrücklich unterstützte Punkte können freigegeben werden; nicht freigegebene unterstützte Punkte bleiben weiterhin lesbar, unbekannte schreibbare REST-Punkte bleiben grundsätzlich read-only.
