@@ -52,7 +52,7 @@
       },
       "write_selection": {
         "title": "Schreibzugriffe individuell auswählen",
-        "description": "Für die ausgewählten Variablen sind {count} von der Integration unterstützte Schreibzugriffe verfügbar. Wähle einzeln aus, welche davon in Home Assistant schreibbar sein dürfen. Nicht ausgewählte Punkte bleiben als Nur-Lesen-Sensor verfügbar. Unbekannte oder nicht ausdrücklich unterstützte schreibbare REST-Punkte bleiben aus Sicherheitsgründen immer nur lesbar.",
+        "description": "Für die ausgewählten Variablen meldet NIBE {reported_count} Punkte mit isWritable=true. Davon können {count} sicher als Home-Assistant-Schreibentität dargestellt werden. Kuratierte Punkte verwenden weiterhin ihre verifizierte Sonderlogik; zusätzliche Integer-Punkte werden nur bei eindeutigem 0/1-, Zahlenbereich- oder Enum-Schema experimentell angeboten. Nicht freigegebene Punkte bleiben lesbar. Nicht sicher darstellbar: {unsupported_count}.\n\n{unsupported_list}",
         "data": {
           "selected_writable_point_ids": "Schreiben erlauben für"
         }
@@ -122,7 +122,7 @@
       },
       "write_selection": {
         "title": "Schreibzugriffe individuell auswählen",
-        "description": "Für die ausgewählten Variablen sind {count} von der Integration unterstützte Schreibzugriffe verfügbar. Aktiviere nur die Punkte, die Home Assistant tatsächlich verändern dürfen. Abgewählte Punkte bleiben lesbar.",
+        "description": "Für die ausgewählten Variablen meldet NIBE {reported_count} Punkte mit isWritable=true. Davon können {count} sicher als Home-Assistant-Schreibentität dargestellt werden. Aktiviere nur Punkte, die Home Assistant tatsächlich verändern darf. Zusätzliche, nicht kuratierte Integer-Punkte sind experimentell. Zeitwerte und nicht eindeutig klassifizierbare Punkte bleiben gesperrt. Nicht sicher darstellbar: {unsupported_count}.\n\n{unsupported_list}",
         "data": {
           "selected_writable_point_ids": "Schreiben erlauben für"
         }

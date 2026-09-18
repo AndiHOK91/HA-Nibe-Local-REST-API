@@ -210,6 +210,60 @@ def coordinator_device_info(coordinator: NibeCoordinator) -> DeviceInfo:
     )
 
 
+class NibeDiscoveredPointEntity(CoordinatorEntity[NibeCoordinator]):
+    """Base entity for a dynamically discovered NIBE point."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: NibeCoordinator, point_id: int) -> None:
+        super().__init__(coordinator)
+        self.point_id = point_id
+        self._attr_unique_id = entity_unique_id(coordinator, point_id)
+        point = coordinator.point(point_id) or {}
+        base = local_api_point_name(point) or f"Local API variable {point_id}"
+        if coordinator.entity_naming == ENTITY_NAMING_TECHNICAL:
+            base = f"{base} [ID {point_id}]"
+        self._attr_name = base
+
+    @property
+    def point(self) -> dict[str, Any] | None:
+        return self.coordinator.point(self.point_id)
+
+    @property
+    def available(self) -> bool:
+        point = self.point
+        if not self.coordinator.last_update_success or not point:
+            return False
+        if raw_value_is_sentinel(point):
+            return False
+        return bool(point_value(point).get("isOk", True))
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return coordinator_device_info(self.coordinator)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        point = self.point or {}
+        md = point.get("metadata") or {}
+        return {
+            "point_id": self.point_id,
+            "description": _clean(point.get("description")),
+            "variable_type": md.get("variableType"),
+            "variable_size": md.get("variableSize"),
+            "is_writable": md.get("isWritable"),
+            "modbus_register_type": md.get("modbusRegisterType"),
+            "modbus_register_id": md.get("modbusRegisterID"),
+            "raw_value": raw_value(point),
+            "raw_value_is_sentinel": raw_value_is_sentinel(point),
+            "divisor": md.get("divisor"),
+            "decimal": md.get("decimal"),
+            "min_value_raw": md.get("minValue"),
+            "max_value_raw": md.get("maxValue"),
+            "discovered": True,
+        }
+
+
 class NibePointEntity(CoordinatorEntity[NibeCoordinator]):
     """Base entity for one NIBE point."""
 

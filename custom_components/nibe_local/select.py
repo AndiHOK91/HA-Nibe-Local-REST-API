@@ -16,7 +16,14 @@ from .const import (
     POINT_VENTILATION_MODE,
 )
 from .coordinator import NibeCoordinator
-from .entity import NibePointEntity, coordinator_device_info, entity_unique_id, raw_value
+from .entity import (
+    NibeDiscoveredPointEntity,
+    NibePointEntity,
+    coordinator_device_info,
+    entity_unique_id,
+    raw_value,
+)
+from .writable import description_enum_map, writable_platform_for_point
 
 PARALLEL_UPDATES = 1
 
@@ -63,7 +70,49 @@ async def async_setup_entry(
             continue
         entities.append(NibePointSelect(coordinator, definition))
 
+    curated_select_ids = {
+        definition.point_id for definition in POINTS if definition.platform == "select"
+    }
+    for point_id in sorted(coordinator.enabled_point_ids):
+        if (
+            point_id in curated_select_ids
+            or coordinator.selected_writable_point_ids is None
+            or not coordinator.write_enabled(point_id)
+        ):
+            continue
+        point = coordinator.point(point_id)
+        if writable_platform_for_point(point_id, point) != "select":
+            continue
+        entities.append(NibeDiscoveredSelect(coordinator, point_id))
+
     async_add_entities(entities)
+
+
+class NibeDiscoveredSelect(NibeDiscoveredPointEntity, SelectEntity):
+    """Generic enum write entity selected explicitly in Individual mode."""
+
+    @property
+    def _mapping(self) -> dict[int, str]:
+        return description_enum_map(self.point or {})
+
+    @property
+    def options(self) -> list[str]:
+        return list(self._mapping.values())
+
+    @property
+    def current_option(self) -> str | None:
+        return mapped_option(raw_value(self.point or {}), self._mapping)
+
+    async def async_select_option(self, option: str) -> None:
+        reverse = {state: raw for raw, state in self._mapping.items()}
+        if option not in reverse:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="select_invalid_option",
+                translation_placeholders={"option": option},
+            )
+        await self.coordinator.api.patch_point(self.point_id, reverse[option])
+        await self.coordinator.async_refresh_point(self.point_id)
 
 
 class NibePointSelect(NibePointEntity, SelectEntity):

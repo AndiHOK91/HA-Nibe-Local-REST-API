@@ -58,6 +58,7 @@ from .equipment import (
     normalize_equipment,
     point_allowed_by_equipment,
 )
+from .writable import api_is_writable, writable_platform_for_point
 from .profiles import (
     DEFAULT_ENTITY_PROFILE,
     ENTITY_PROFILES,
@@ -648,26 +649,28 @@ def _entity_selection_schema(
     )
 
 
+def _reported_writable_point_ids(
+    points: dict[str, Any],
+    selected_ids,
+) -> frozenset[int]:
+    """Return selected points explicitly marked writable by the public REST API."""
+    selected = normalize_selected_ids(selected_ids)
+    return frozenset(
+        point_id
+        for point_id in selected
+        if api_is_writable(points.get(str(point_id)))
+    )
+
+
 def _supported_writable_point_ids(
     points: dict[str, Any],
     selected_ids,
 ) -> frozenset[int]:
-    """Return selected points that are safe write-capable integration entities."""
-    selected = normalize_selected_ids(selected_ids)
-    definitions = {
-        definition.point_id: definition
-        for definition in POINTS
-        if definition.platform in _WRITABLE_POINT_PLATFORMS
-    }
+    """Return REST-writable selected points with a safe HA write representation."""
     return frozenset(
         point_id
-        for point_id in selected
-        if point_id in definitions
-        and bool(
-            ((points.get(str(point_id)) or {}).get("metadata") or {}).get(
-                "isWritable", False
-            )
-        )
+        for point_id in _reported_writable_point_ids(points, selected_ids)
+        if writable_platform_for_point(point_id, points.get(str(point_id))) is not None
     )
 
 
@@ -698,7 +701,12 @@ def _selected_writable_options(
     """Return the safe preselection for the per-point write step."""
     eligible = _supported_writable_point_ids(points, selected_ids)
     if configured_writable_ids is None:
-        selected = eligible
+        curated = {
+            definition.point_id
+            for definition in POINTS
+            if definition.platform in _WRITABLE_POINT_PLATFORMS
+        }
+        selected = eligible & curated
     else:
         selected = eligible & normalize_selected_ids(configured_writable_ids)
     return [str(point_id) for point_id in sorted(selected)]
@@ -766,11 +774,7 @@ def _remove_write_mode_registry_conflicts(
     """Remove stale point entities when Individual write mode changes platform."""
     registry = er.async_get(hass)
     prefix = f"{entry.entry_id}_"
-    definitions = {
-        definition.point_id: definition
-        for definition in POINTS
-        if definition.platform in _WRITABLE_POINT_PLATFORMS
-    }
+    definitions = {definition.point_id: definition for definition in POINTS}
     removed = 0
 
     for registry_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
@@ -783,8 +787,6 @@ def _remove_write_mode_registry_conflicts(
 
         point_id = int(suffix)
         definition = definitions.get(point_id)
-        if definition is None:
-            continue
         if not _point_is_enabled(
             points,
             profile,
@@ -795,13 +797,21 @@ def _remove_write_mode_registry_conflicts(
             continue
 
         point = points.get(str(point_id)) or {}
-        api_writable = bool((point.get("metadata") or {}).get("isWritable", False))
-        writable = api_writable and write_enabled(
+        platform = writable_platform_for_point(point_id, point)
+        writable = platform is not None and write_enabled(
             profile,
             point_id,
             selected_writable_ids,
         )
-        expected_domain = definition.platform if writable else "sensor"
+        if writable:
+            expected_domain = platform
+        elif definition is None or definition.platform in _WRITABLE_POINT_PLATFORMS:
+            expected_domain = "sensor"
+        elif definition.platform == "sensor":
+            expected_domain = "sensor"
+        else:
+            continue
+
         if registry_entry.domain == expected_domain:
             continue
 
@@ -1137,12 +1147,34 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         equipment = self._pending_data.get(CONF_EQUIPMENT, ())
         points = filter_points_for_equipment(self._available_points or {}, equipment)
         selected_ids = self._pending_data.get(CONF_SELECTED_POINT_IDS, ())
+        reported = _reported_writable_point_ids(points, selected_ids)
         eligible = _supported_writable_point_ids(points, selected_ids)
-        if not eligible:
+        unsupported = reported - eligible
+        if not reported:
             self._pending_data[CONF_SELECTED_WRITABLE_POINT_IDS] = []
             return await self.async_step_entity_preview()
 
         point_names = await _async_translated_point_names(self.hass)
+        placeholders = {
+            "count": str(len(eligible)),
+            "reported_count": str(len(reported)),
+            "unsupported_count": str(len(unsupported)),
+            "unsupported_list": _format_preview_ids(
+                unsupported,
+                points,
+                point_names,
+                german=_is_german(self.hass),
+            ),
+        }
+        if not eligible:
+            if user_input is not None:
+                self._pending_data[CONF_SELECTED_WRITABLE_POINT_IDS] = []
+                return await self.async_step_entity_preview()
+            return self.async_show_form(
+                step_id="write_selection",
+                data_schema=vol.Schema({}),
+                description_placeholders=placeholders,
+            )
         if user_input is not None:
             requested = normalize_selected_ids(
                 _parse_selected_options(
@@ -1162,7 +1194,7 @@ class NibeLocalConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._pending_data.get(CONF_SELECTED_WRITABLE_POINT_IDS),
                 point_names=point_names,
             ),
-            description_placeholders={"count": str(len(eligible))},
+            description_placeholders=placeholders,
         )
 
     async def async_step_entity_preview(self, user_input=None):
@@ -1393,12 +1425,34 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
         equipment = self._pending_options.get(CONF_EQUIPMENT)
         points = filter_points_for_equipment(self._available_points or {}, equipment)
         selected_ids = self._pending_options.get(CONF_SELECTED_POINT_IDS, ())
+        reported = _reported_writable_point_ids(points, selected_ids)
         eligible = _supported_writable_point_ids(points, selected_ids)
-        if not eligible:
+        unsupported = reported - eligible
+        if not reported:
             self._pending_options[CONF_SELECTED_WRITABLE_POINT_IDS] = []
             return await self.async_step_entity_preview()
 
         point_names = await _async_translated_point_names(self.hass)
+        placeholders = {
+            "count": str(len(eligible)),
+            "reported_count": str(len(reported)),
+            "unsupported_count": str(len(unsupported)),
+            "unsupported_list": _format_preview_ids(
+                unsupported,
+                points,
+                point_names,
+                german=_is_german(self.hass),
+            ),
+        }
+        if not eligible:
+            if user_input is not None:
+                self._pending_options[CONF_SELECTED_WRITABLE_POINT_IDS] = []
+                return await self.async_step_entity_preview()
+            return self.async_show_form(
+                step_id="write_selection",
+                data_schema=vol.Schema({}),
+                description_placeholders=placeholders,
+            )
         if user_input is not None:
             requested = normalize_selected_ids(
                 _parse_selected_options(
@@ -1418,7 +1472,7 @@ class NibeLocalOptionsFlow(config_entries.OptionsFlow):
                 self._pending_options.get(CONF_SELECTED_WRITABLE_POINT_IDS),
                 point_names=point_names,
             ),
-            description_placeholders={"count": str(len(eligible))},
+            description_placeholders=placeholders,
         )
 
     async def async_step_entity_preview(self, user_input=None):
