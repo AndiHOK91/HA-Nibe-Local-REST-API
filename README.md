@@ -74,7 +74,13 @@ Der Schalter bildet also **keinen zusätzlichen NIBE-Betriebsmodus** ab, sondern
 
 ### Mehr Brauchwasser
 
-Der Schalter **Mehr Brauchwasser** aktiviert die einmalige Brauchwassererhöhung. Der Zustand wird über die von NIBE gemeldete Restzeit überprüft.
+Der Schalter **Mehr Brauchwasser** bildet die Funktion **„Einmalige Erhöhung“** ab, wie sie auch in der **myUplink-App** angeboten wird.
+
+- **Einschalten** schreibt für Variable-ID **4564** den Rohwert `2` und startet damit die einmalige Brauchwassererhöhung.
+- **Ausschalten** schreibt den Rohwert `0` und beendet die einmalige Erhöhung.
+- Der angezeigte Schalterzustand wird nicht allein aus dem geschriebenen Wert abgeleitet, sondern über die von NIBE gemeldete **Restzeit** der Funktion (Variable-ID **4030**) überprüft. Solange eine Restzeit größer als 0 Minuten gemeldet wird, gilt **Mehr Brauchwasser** als aktiv.
+
+Damit verhält sich der Home-Assistant-Schalter wie die entsprechende **„Einmalige Erhöhung“** in myUplink und ist nicht mit einer dauerhaften Änderung des normalen Brauchwassermodus zu verwechseln.
 
 ---
 
