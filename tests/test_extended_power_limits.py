@@ -53,8 +53,8 @@ def test_aux_status_name_depends_on_selected_function(function, key, raw, expect
     assert e.unique_id == 'test_22077'
 
 
-@pytest.mark.parametrize('raw,expected', [(66, 'external_power_limit'), ('66', 'external_power_limit'), (3, '3')])
-def test_aux_function_sensor_translates_66_only(raw, expected):
+@pytest.mark.parametrize('raw,expected', [(66, 'external_power_limit'), ('66', 'external_power_limit'), (3, 'function_3')])
+def test_aux_function_sensor_translates_confirmed_codes(raw, expected):
     e = entity(22070, raw)
     assert e.native_value == expected
     assert expected in e.options
@@ -85,3 +85,25 @@ def test_aux_switch_writes_zero_and_one():
     result = []
     asyncio.run(sensor.async_setup_entry(None, SimpleNamespace(runtime_data=c), result.extend))
     assert not any(getattr(getattr(e, 'definition', None), 'point_id', None) == 22077 for e in result)
+
+
+@pytest.mark.parametrize('code', range(70))
+def test_all_aux_codes_have_valid_options_and_unknown_codes_stay_numeric(code):
+    from custom_components.nibe_local.sensor import AUX_FUNCTION_STATES
+    e = entity(22070, code)
+    assert e.native_value == AUX_FUNCTION_STATES.get(code, str(code))
+    assert e.native_value in e.options
+    assert len(e.options) == len(set(e.options))
+
+
+def test_aux_labels_exist_in_both_languages():
+    import json
+    from pathlib import Path
+    from custom_components.nibe_local.sensor import AUX_FUNCTION_STATES
+    for language in ['de', 'en']:
+        d = json.loads((Path('custom_components/nibe_local/translations') / f'{language}.json').read_text())
+        labels = d['entity']['sensor']['aux_modbus_function']['state']
+        assert set(AUX_FUNCTION_STATES.values()) <= set(labels)
+    assert labels['external_power_limit'] == 'Ext. power limitation'
+    assert 49 not in AUX_FUNCTION_STATES
+    assert 62 not in AUX_FUNCTION_STATES

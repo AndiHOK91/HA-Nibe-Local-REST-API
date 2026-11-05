@@ -2,6 +2,8 @@
 
 ## Unveröffentlicht
 
+- Punkt 22070 zeigt 57 bestätigte AUX-Funktionsbezeichnungen statt Rohcodes an (55 aus Firmware 4.14.6, Alarmfunktionen 22/23 aus offizieller NIBE-Modbus-Dokumentation). Ungeklärte Codes bleiben numerisch sichtbar. Keine zusätzlichen Schreibfunktionen freigegeben.
+
 - 22070 erhält den Namen **Aux von Modbus** und zeigt für Funktionscode 66 **Ext. Leistungsbegr.** an. Andere Funktionscodes bleiben numerisch erkennbar.
 - 22077 ist ein schreibbarer Schalter mit **Aus = 0 / Ein = 1**. Bei deaktivierter Schreibfreigabe bleibt ein benannter Aus/Ein-Sensor erhalten.
 

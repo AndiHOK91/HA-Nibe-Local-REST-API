@@ -36,6 +36,68 @@ from .writable import description_enum_map, writable_platform_for_point
 
 PARALLEL_UPDATES = 0
 
+# AUX option records from NIBE 4.14.6 noah-heatsystem (16-byte records,
+# file offsets 0x984dc0..0x9851bf), cross-referenced with firmware translations.
+# Codes 22/23 are confirmed by the official NIBE Modbus S-Series manual.
+# These labels describe functions; they do not imply support on every model.
+AUX_FUNCTION_STATES = {0: 'function_0',
+ 1: 'function_1',
+ 2: 'function_2',
+ 3: 'function_3',
+ 4: 'function_4',
+ 5: 'function_5',
+ 6: 'function_6',
+ 7: 'function_7',
+ 8: 'function_8',
+ 9: 'function_9',
+ 10: 'function_10',
+ 11: 'function_11',
+ 12: 'function_12',
+ 13: 'function_13',
+ 14: 'function_14',
+ 17: 'function_17',
+ 18: 'function_18',
+ 19: 'function_19',
+ 20: 'function_20',
+ 21: 'function_21',
+ 22: 'function_22',
+ 23: 'function_23',
+ 24: 'function_24',
+ 25: 'function_25',
+ 26: 'function_26',
+ 27: 'function_27',
+ 28: 'function_28',
+ 29: 'function_29',
+ 30: 'function_30',
+ 31: 'function_31',
+ 33: 'function_33',
+ 34: 'function_34',
+ 36: 'function_36',
+ 37: 'function_37',
+ 38: 'function_38',
+ 39: 'function_39',
+ 40: 'function_40',
+ 41: 'function_41',
+ 42: 'function_42',
+ 43: 'function_43',
+ 44: 'function_44',
+ 48: 'function_48',
+ 51: 'function_51',
+ 52: 'function_52',
+ 53: 'function_53',
+ 54: 'function_54',
+ 55: 'function_55',
+ 56: 'function_56',
+ 57: 'function_57',
+ 58: 'function_58',
+ 59: 'function_59',
+ 60: 'function_60',
+ 61: 'function_61',
+ 66: 'external_power_limit',
+ 67: 'function_67',
+ 68: 'function_68',
+ 69: 'function_69'}
+
 OPERATING_PRIORITY_MAP = {
     10: "off",
     20: "hot_water",
@@ -234,7 +296,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
                 code = int(value)
             except (TypeError, ValueError):
                 return "unknown"
-            return "external_power_limit" if code == 66 else str(code) if 0 <= code <= 69 else "unknown"
+            return AUX_FUNCTION_STATES.get(code, str(code)) if 0 <= code <= 69 else "unknown"
 
         if self.definition.point_id == 32824:
             try:
@@ -317,7 +379,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
     @property
     def options(self):
         if self.definition.point_id == 22070:
-            return [str(code) for code in range(70) if code != 66] + ["external_power_limit", "unknown"]
+            return [AUX_FUNCTION_STATES.get(code, str(code)) for code in range(70)] + ["unknown"]
         if self.definition.point_id == 32824:
             return ["inactive", "active", "unknown"]
         if self.definition.point_id == 22077:
