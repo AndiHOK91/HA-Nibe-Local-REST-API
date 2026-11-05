@@ -1,6 +1,6 @@
 # Changelog
 
-## Unveröffentlicht
+## 0.14.6
 
 - Alarmmaßnahmen **3935 (Raumtemperatur senken)** und **3936 (Brauchwassertemperatur senken)** als benannte Schalter **Aus = 0 / Ein = 1** aufgenommen. Die bisherige automatische Profilauswahl bleibt unverändert; ohne individuelle Schreibfreigabe stehen benannte Aus/Ein-Sensoren zur Verfügung.
 
