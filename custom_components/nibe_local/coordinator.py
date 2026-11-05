@@ -291,7 +291,7 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             has_previous_points=bool(previous_points),
         ):
             _LOGGER.debug(
-                "Bulk /points still returned no usable data; keeping previous values "
+                "Bulk /points still returned no usable data; marking this update failed "
                 "and delaying the next individual-point fallback for %.0f s",
                 self._next_fallback_attempt - now,
             )
