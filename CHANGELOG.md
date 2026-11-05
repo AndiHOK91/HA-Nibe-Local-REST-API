@@ -2,7 +2,7 @@
 
 ## Unveröffentlicht
 
-- REST-ID **22077** heißt unabhängig vom gewählten AUX-Funktionscode **Aux von Modbus**. Der lesende Sensor zeigt **Inaktiv (0) / Aktiv (1)**; der schreibbare Schalter verwendet weiterhin die Home-Assistant-Zustände `off/on` und schreibt unverändert 0/1. Entitäts-IDs bleiben erhalten.
+- REST-ID **22077** heißt unabhängig vom gewählten AUX-Funktionscode **Aux von Modbus**. Der lesende Sensor zeigt **Aus (0) / Ein (1)**; der schreibbare Schalter verwendet weiterhin die Home-Assistant-Zustände `off/on` und schreibt unverändert 0/1. Entitäts-IDs bleiben erhalten.
 
 ## 0.14.6
 
