@@ -1,5 +1,9 @@
 # Changelog
 
+## Unveröffentlicht
+
+- Punkt **32824** aus der automatischen Auswahl des Profils **Erweitert** entfernt; unter Komplett und Individuell weiter verfügbar. Der Name **Aktivierung der Leistungsbegrenzung** und die Zustände Inaktiv/Aktiv bleiben erhalten. Keine bestätigte Menüzuordnung ergänzt.
+
 ## 0.14.5
 
 - Punkt 22070 zeigt 57 bestätigte AUX-Funktionsbezeichnungen statt Rohcodes an (55 aus Firmware 4.14.6, Alarmfunktionen 22/23 aus offizieller NIBE-Modbus-Dokumentation). Ungeklärte Codes bleiben numerisch sichtbar. Keine zusätzlichen Schreibfunktionen freigegeben.
