@@ -236,7 +236,13 @@ class NibeSensor(NibePointEntity, SensorEntity):
                 return "unknown"
             return "external_power_limit" if code == 66 else str(code) if 0 <= code <= 69 else "unknown"
 
-        if self.definition.point_id in {22077, 32824}:
+        if self.definition.point_id == 32824:
+            try:
+                return {0: "inactive", 1: "active"}.get(int(raw_value(point)), "unknown")
+            except (TypeError, ValueError):
+                return "unknown"
+
+        if self.definition.point_id == 22077:
             try:
                 return {0: "off", 1: "on"}.get(int(raw_value(point)), "unknown")
             except (TypeError, ValueError):
@@ -312,7 +318,9 @@ class NibeSensor(NibePointEntity, SensorEntity):
     def options(self):
         if self.definition.point_id == 22070:
             return [str(code) for code in range(70) if code != 66] + ["external_power_limit", "unknown"]
-        if self.definition.point_id in {22077, 32824}:
+        if self.definition.point_id == 32824:
+            return ["inactive", "active", "unknown"]
+        if self.definition.point_id == 22077:
             return ["off", "on", "unknown"]
         if self.definition.point_id in {4651, 4821}:
             return ["periodic", "auto", "unknown"]

@@ -182,7 +182,7 @@
       "aux_via_modbus": {"name": "AUX über Modbus", "state": {"off": "Aus", "on": "Ein", "unknown": "Unbekannt"}},
       "external_power_limit_request": {"name": "Externe Anforderung von Leistungsbegrenzung", "state": {"off": "Aus", "on": "Ein", "unknown": "Unbekannt"}},
       "external_power_limit": {"name": "Externe Leistungsbegrenzung"},
-      "power_limitation_enabled": {"name": "Aktivierung der Leistungsbegrenzung", "state": {"off": "Aus", "on": "Ein", "unknown": "Unbekannt"}},
+      "power_limitation_enabled": {"name": "Aktivierung der Leistungsbegrenzung", "state": {"inactive": "Inaktiv", "active": "Aktiv", "unknown": "Unbekannt"}},
       "charge_pump_operating_mode": {"name": "Betriebsmodus HU-Pumpe GP1 Heizung", "state": {"periodic": "Periodisch", "auto": "Auto", "unknown": "Unbekannt"}},
       "charge_pump_cooling_operating_mode": {"name": "Betriebsmodus HU-Pumpe GP1 Kühlung", "state": {"periodic": "Periodisch", "auto": "Auto", "unknown": "Unbekannt"}},
       "defrost": {"name": "Enteisungsstatus (EB101)", "state": {"off": "Aus", "active": "Aktiv", "passive": "Passiv", "unknown": "Unbekannt"}},

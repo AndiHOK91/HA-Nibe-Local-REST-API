@@ -22,7 +22,7 @@ def entity(pid, raw, **metadata):
     return NibeSensor(c, next(p for p in POINTS if p.point_id == pid))
 
 
-@pytest.mark.parametrize('raw,expected', [(0, 'off'), (1, 'on'), ('1', 'on'), (2, 'unknown')])
+@pytest.mark.parametrize('raw,expected', [(0, 'inactive'), (1, 'active'), ('1', 'active'), (2, 'unknown')])
 def test_power_limitation_sensor_states(raw, expected):
     e = entity(32824, raw)
     assert e.native_value == expected
