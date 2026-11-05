@@ -1,6 +1,6 @@
 # Changelog
 
-## Unveröffentlicht
+## 0.14.4
 
 - Die nur lesende Darstellung der GP1-Betriebsmodi 4651/4821 verwendet ebenfalls die Namen **Betriebsmodus HU-Pumpe GP1 Heizung/Kühlung** und die Zustände **Periodisch / Auto** statt der Rohwerte 0/1. Die bestehende Sensor-Identität bleibt erhalten.
 
