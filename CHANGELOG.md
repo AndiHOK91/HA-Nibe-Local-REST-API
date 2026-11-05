@@ -1,5 +1,9 @@
 # Changelog
 
+## Unveröffentlicht
+
+- REST-ID **22077** heißt unabhängig vom gewählten AUX-Funktionscode **Aux von Modbus**. Der lesende Sensor zeigt **Inaktiv (0) / Aktiv (1)**; der schreibbare Schalter verwendet weiterhin die Home-Assistant-Zustände `off/on` und schreibt unverändert 0/1. Entitäts-IDs bleiben erhalten.
+
 ## 0.14.6
 
 - Alarmmaßnahmen **3935 (Raumtemperatur senken)** und **3936 (Brauchwassertemperatur senken)** als benannte Schalter **Aus = 0 / Ein = 1** aufgenommen. Die bisherige automatische Profilauswahl bleibt unverändert; ohne individuelle Schreibfreigabe stehen benannte Aus/Ein-Sensoren zur Verfügung.
