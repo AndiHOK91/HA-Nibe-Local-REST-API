@@ -1,6 +1,6 @@
 # Changelog
 
-## Unveröffentlicht
+## 0.14.5
 
 - Punkt 22070 zeigt 57 bestätigte AUX-Funktionsbezeichnungen statt Rohcodes an (55 aus Firmware 4.14.6, Alarmfunktionen 22/23 aus offizieller NIBE-Modbus-Dokumentation). Ungeklärte Codes bleiben numerisch sichtbar. Keine zusätzlichen Schreibfunktionen freigegeben.
 
