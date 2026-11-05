@@ -2,6 +2,9 @@
 
 ## Unveröffentlicht
 
+- 22070 erhält den Namen **Aux von Modbus** und zeigt für Funktionscode 66 **Ext. Leistungsbegr.** an. Andere Funktionscodes bleiben numerisch erkennbar.
+- 22077 ist ein schreibbarer Schalter mit **Aus = 0 / Ein = 1**. Bei deaktivierter Schreibfreigabe bleibt ein benannter Aus/Ein-Sensor erhalten.
+
 - AUX-Status 22077 in **Erweitert** aufgenommen und als **Aus / Ein** dargestellt. Bei ausgewählter AUX-Funktion 66 (Punkt 22070) lautet der Name **Externe Anforderung von Leistungsbegrenzung**; andere/ungeklärte AUX-Funktionen behalten den allgemeinen Namen.
 
 - Externe Leistungsbegrenzung (27238) und Aktivierung der Leistungsbegrenzung (32824) in die automatische Auswahl des Profils **Erweitert** aufgenommen.

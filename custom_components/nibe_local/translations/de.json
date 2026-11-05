@@ -178,6 +178,7 @@
   },
   "entity": {
     "sensor": {
+      "aux_modbus_function": {"name": "Aux von Modbus", "state": {"external_power_limit": "Ext. Leistungsbegr.", "unknown": "Unbekannt"}},
       "aux_via_modbus": {"name": "AUX über Modbus", "state": {"off": "Aus", "on": "Ein", "unknown": "Unbekannt"}},
       "external_power_limit_request": {"name": "Externe Anforderung von Leistungsbegrenzung", "state": {"off": "Aus", "on": "Ein", "unknown": "Unbekannt"}},
       "external_power_limit": {"name": "Externe Leistungsbegrenzung"},
@@ -302,6 +303,8 @@
       "smart_mode": {"name": "Smart Mode", "state": {"normal": "Normal", "away": "Abwesend"}}
     },
     "switch": {
+      "aux_via_modbus": {"name": "AUX über Modbus"},
+      "external_power_limit_request": {"name": "Externe Anforderung von Leistungsbegrenzung"},
       "aux_heat_allowed_heating": {"name": "Zusatzheizung im Heizbetrieb zulassen"},
       "heating_allowed": {"name": "Heizung zulassen"},
       "cooling_allowed": {"name": "Kühlung zulassen"},

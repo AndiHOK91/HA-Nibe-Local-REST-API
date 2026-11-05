@@ -51,6 +51,7 @@
   },
   "entity": {
     "sensor": {
+      "aux_modbus_function": {"name": "AUX via Modbus function", "state": {"external_power_limit": "Ext. power limitation", "unknown": "Unknown"}},
       "aux_via_modbus": {"name": "AUX via Modbus", "state": {"off": "Off", "on": "On", "unknown": "Unknown"}},
       "external_power_limit_request": {"name": "External request for power limiting", "state": {"off": "Off", "on": "On", "unknown": "Unknown"}},
       "external_power_limit": {"name": "External power limit"},
@@ -176,6 +177,8 @@
       "smart_mode": {"name": "Smart Mode", "state": {"normal": "Normal", "away": "Away"}}
     },
     "switch": {
+      "aux_via_modbus": {"name": "AUX via Modbus"},
+      "external_power_limit_request": {"name": "External request for power limiting"},
       "aux_heat_allowed_heating": {"name": "Allow auxiliary heat for heating"},
       "heating_allowed": {"name": "Allow heating"},
       "cooling_allowed": {"name": "Allow cooling"},
