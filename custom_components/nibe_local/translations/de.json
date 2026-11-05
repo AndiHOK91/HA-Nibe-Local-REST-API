@@ -178,6 +178,11 @@
   },
   "entity": {
     "sensor": {
+      "aux_modbus_function": {"name": "Aux von Modbus", "state": {"function_0": "Nicht verwenden", "function_1": "Vorübergehend mehr BW", "function_2": "Externe Justierung", "function_3": "Zusatzheizung blockieren", "function_4": "Verdichter / EP14 blockieren", "function_5": "(EP15) blockieren", "function_6": "Heizung blockieren", "function_7": "Kühlung blockieren", "function_8": "Ven.drz.1 aktivieren (NO)", "function_9": "Ven.drz.2 aktivieren (NO)", "function_10": "Ven.drz.3 aktivieren (NO)", "function_11": "Ven.drz.4 aktivieren (NO)", "function_12": "Brauchwasser, oben (BT7)", "function_13": "Wärmequellenwächter", "function_14": "Wärmequellenpumpe aktivieren", "function_17": "Au.luftbeimisch. (BT28)", "function_18": "Kühl-/Heizfühler (BT74)", "function_19": "Tarifblockierung (NO)", "function_20": "SG Ready A", "function_21": "SG Ready B", "function_22": "Externer Alarm (NC)", "function_23": "Externer Alarm (NO)", "function_24": "Zusatzheizung (BT63)", "function_25": "Vorlauft. Kühlung (BT64)", "function_26": "Heizkesselfühler (BT52)", "function_27": "Rücklauftemp. (BT71)", "function_28": "Ext Vorl.t, Kühl (BT25)", "function_29": "(EB101) blockieren", "function_30": "(EB102) blockieren", "function_31": "Ven.drz.1 aktivieren (NC)", "function_33": "Externe Zusatzheizung blockieren", "function_34": "Brauchwasser blockieren", "function_36": "AZ10-BT50", "function_37": "AZ11-BT50", "function_38": "AZ12-BT50", "function_39": "AZ13-BT50", "function_40": "Niveauwächter", "function_41": "Bed.modus Niedrig aktiv.", "function_42": "Kaminwächter", "function_43": "AZ10 blockieren", "function_44": "Druckw. Klimat.system", "function_48": "Brauchwasser Start (BT5)", "function_51": "Verd.steuerung Kühlung", "function_52": "Lifetime test don't allow > 59Hz", "function_53": "Ext. gest. Kühlung Wärmep. 1", "function_54": "Ext. gest. Kühlung Wärmep. 2", "function_55": "OEK blockieren", "function_56": "Niveauwächter WQM NC", "function_57": "Niveauwächter WQM NO", "function_58": "Heizung aktivieren", "function_59": "Kühlung aktivieren", "function_60": "Temp. ext. BWZ (BT82)", "function_61": "Tmp.ext.BW-Austr (BT70)", "external_power_limit": "Ext. Leistungsbegr.", "function_67": "Vol.str.wächter WQM NC", "function_68": "Tarifblockierung (NC)", "function_69": "WQM/FH-P. akt.", "unknown": "Unbekannt"}},
+      "aux_via_modbus": {"name": "AUX über Modbus", "state": {"off": "Aus", "on": "Ein", "unknown": "Unbekannt"}},
+      "external_power_limit_request": {"name": "Externe Anforderung von Leistungsbegrenzung", "state": {"off": "Aus", "on": "Ein", "unknown": "Unbekannt"}},
+      "external_power_limit": {"name": "Externe Leistungsbegrenzung"},
+      "power_limitation_enabled": {"name": "Aktivierung der Leistungsbegrenzung", "state": {"inactive": "Inaktiv", "active": "Aktiv", "unknown": "Unbekannt"}},
       "charge_pump_operating_mode": {"name": "Betriebsmodus HU-Pumpe GP1 Heizung", "state": {"periodic": "Periodisch", "auto": "Auto", "unknown": "Unbekannt"}},
       "charge_pump_cooling_operating_mode": {"name": "Betriebsmodus HU-Pumpe GP1 Kühlung", "state": {"periodic": "Periodisch", "auto": "Auto", "unknown": "Unbekannt"}},
       "defrost": {"name": "Enteisungsstatus (EB101)", "state": {"off": "Aus", "active": "Aktiv", "passive": "Passiv", "unknown": "Unbekannt"}},
@@ -298,6 +303,8 @@
       "smart_mode": {"name": "Smart Mode", "state": {"normal": "Normal", "away": "Abwesend"}}
     },
     "switch": {
+      "aux_via_modbus": {"name": "AUX über Modbus"},
+      "external_power_limit_request": {"name": "Externe Anforderung von Leistungsbegrenzung"},
       "aux_heat_allowed_heating": {"name": "Zusatzheizung im Heizbetrieb zulassen"},
       "heating_allowed": {"name": "Heizung zulassen"},
       "cooling_allowed": {"name": "Kühlung zulassen"},

@@ -36,6 +36,68 @@ from .writable import description_enum_map, writable_platform_for_point
 
 PARALLEL_UPDATES = 0
 
+# AUX option records from NIBE 4.14.6 noah-heatsystem (16-byte records,
+# file offsets 0x984dc0..0x9851bf), cross-referenced with firmware translations.
+# Codes 22/23 are confirmed by the official NIBE Modbus S-Series manual.
+# These labels describe functions; they do not imply support on every model.
+AUX_FUNCTION_STATES = {0: 'function_0',
+ 1: 'function_1',
+ 2: 'function_2',
+ 3: 'function_3',
+ 4: 'function_4',
+ 5: 'function_5',
+ 6: 'function_6',
+ 7: 'function_7',
+ 8: 'function_8',
+ 9: 'function_9',
+ 10: 'function_10',
+ 11: 'function_11',
+ 12: 'function_12',
+ 13: 'function_13',
+ 14: 'function_14',
+ 17: 'function_17',
+ 18: 'function_18',
+ 19: 'function_19',
+ 20: 'function_20',
+ 21: 'function_21',
+ 22: 'function_22',
+ 23: 'function_23',
+ 24: 'function_24',
+ 25: 'function_25',
+ 26: 'function_26',
+ 27: 'function_27',
+ 28: 'function_28',
+ 29: 'function_29',
+ 30: 'function_30',
+ 31: 'function_31',
+ 33: 'function_33',
+ 34: 'function_34',
+ 36: 'function_36',
+ 37: 'function_37',
+ 38: 'function_38',
+ 39: 'function_39',
+ 40: 'function_40',
+ 41: 'function_41',
+ 42: 'function_42',
+ 43: 'function_43',
+ 44: 'function_44',
+ 48: 'function_48',
+ 51: 'function_51',
+ 52: 'function_52',
+ 53: 'function_53',
+ 54: 'function_54',
+ 55: 'function_55',
+ 56: 'function_56',
+ 57: 'function_57',
+ 58: 'function_58',
+ 59: 'function_59',
+ 60: 'function_60',
+ 61: 'function_61',
+ 66: 'external_power_limit',
+ 67: 'function_67',
+ 68: 'function_68',
+ 69: 'function_69'}
+
 OPERATING_PRIORITY_MAP = {
     10: "off",
     20: "hot_water",
@@ -145,7 +207,7 @@ async def async_setup_entry(
     definitions_by_id = {definition.point_id: definition for definition in POINTS}
     entities.extend(
         NibeSensor(coordinator, definitions_by_id[point_id])
-        if point_id in {4651, 4821}
+        if point_id in {4651, 4821, 22077}
         else NibeDiscoveredSensor(coordinator, point_id)
         for point_id in sorted(read_only_sensor_ids)
     )
@@ -172,6 +234,15 @@ class NibeDiscoveredSensor(NibeDiscoveredPointEntity, SensorEntity):
 
 
 class NibeSensor(NibePointEntity, SensorEntity):
+    def __init__(self, coordinator, definition) -> None:
+        super().__init__(coordinator, definition)
+        # Register 2741 controls the AUX function selected in register 2740.
+        # Only function 66 means external power limiting.
+        if definition.point_id == 22077 and self._attr_translation_key:
+            selected_function = raw_value(coordinator.point(22070) or {})
+            if selected_function in (66, "66"):
+                self._attr_translation_key = "external_power_limit_request"
+
     @property
     def available(self) -> bool:
         point = self.point
@@ -219,6 +290,26 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return periodic_hot_water_date(raw_value(point))
 
+        if self.definition.point_id == 22070:
+            value = raw_value(point)
+            try:
+                code = int(value)
+            except (TypeError, ValueError):
+                return "unknown"
+            return AUX_FUNCTION_STATES.get(code, str(code)) if 0 <= code <= 69 else "unknown"
+
+        if self.definition.point_id == 32824:
+            try:
+                return {0: "inactive", 1: "active"}.get(int(raw_value(point)), "unknown")
+            except (TypeError, ValueError):
+                return "unknown"
+
+        if self.definition.point_id == 22077:
+            try:
+                return {0: "off", 1: "on"}.get(int(raw_value(point)), "unknown")
+            except (TypeError, ValueError):
+                return "unknown"
+
         if self.definition.point_id in {4651, 4821}:
             value = raw_value(point)
             try:
@@ -259,7 +350,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def device_class(self):
-        if self.definition.point_id in {3098, 4651, 4821}:
+        if self.definition.point_id in {3098, 4651, 4821, 22070, 22077, 32824}:
             return SensorDeviceClass.ENUM
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return None
@@ -287,6 +378,12 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def options(self):
+        if self.definition.point_id == 22070:
+            return [AUX_FUNCTION_STATES.get(code, str(code)) for code in range(70)] + ["unknown"]
+        if self.definition.point_id == 32824:
+            return ["inactive", "active", "unknown"]
+        if self.definition.point_id == 22077:
+            return ["off", "on", "unknown"]
         if self.definition.point_id in {4651, 4821}:
             return ["periodic", "auto", "unknown"]
         if self.definition.point_id == 3098:

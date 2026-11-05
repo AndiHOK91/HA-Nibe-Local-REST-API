@@ -142,6 +142,9 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
 
     def __init__(self, coordinator: NibeCoordinator, definition) -> None:
         super().__init__(coordinator, definition)
+        if definition.point_id == 22077 and self._attr_translation_key:
+            if raw_value(coordinator.point(22070) or {}) in (66, "66"):
+                self._attr_translation_key = "external_power_limit_request"
         self._optimistic_state: bool | None = None
         self._expected_state: bool | None = None
         self._verify_task: asyncio.Task[None] | None = None

@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lok
 
 Entwickelt und im realen Betrieb getestet mit **VVM S320, S2125 und ERS S40-400**. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.14.4**
+Aktuelle Integrationsversion: **0.14.5**
 
 > [!WARNING]
 > Die **Statistikmigration** ist experimentell und noch nicht auf einer produktiven Home-Assistant-Recorder-Datenbank praktisch erprobt. Vor der Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein.
@@ -163,7 +163,7 @@ Direkt über **My Home Assistant** in HACS öffnen:
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AndiHOK91&repository=HA-Nibe-Local-REST-API&category=integration)
 
-Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.14.4 ist ein regulärer Release.**
+Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.14.5 ist ein regulärer Release.**
 
 ### Manuell
 
@@ -234,3 +234,7 @@ Die Pumpenmodi 4729/4745/4778 verwenden eine Auswahl **Manuell (0) / Automatisch
 Der Gradminuten-Sensor (781) bleibt bei Schreibfreigabe erhalten; ein zusätzliches `number`-Eingabefeld erlaubt Änderungen. Bestehende Aufzeichnungslücken werden nicht rückwirkend aufgefüllt. Punkt 840 liefert bei Rohwert 65535 keine gültige Minutenzahl; `duration_status: not_provided_by_device` kennzeichnet diesen Fall, ohne 0 Minuten oder einen erfundenen Countdown anzuzeigen.
 
 Die GP1-Betriebsmodi **4651 (Heizung)** und **4821 (Kühlung)** sind in v0.14.3 als schreibbare Auswahl **Periodisch (0) / Auto (1)** verfügbar. Im Profil Individuell müssen sie ausgewählt und zum Schreiben freigegeben sein. Bisherige Sensor-/Switch-Verweise sind auf die neuen `select`-Entitäten umzustellen.
+
+### Leistungsbegrenzung und AUX ab v0.14.5
+
+Das Profil **Erweitert** enthält 27238 (Externe Leistungsbegrenzung in kW), 32824 (Inaktiv/Aktiv), 22070 (Aux von Modbus mit bestätigten Funktionsnamen) und 22077 (AUX-Anforderung als Schalter, sofern Schreibrechte aktiviert sind). Für Funktion 66 lautet der Schaltername **Externe Anforderung von Leistungsbegrenzung**. Aus schreibt 0, Ein schreibt 1. Ohne Schreibfreigabe bleibt die Lesedarstellung erhalten. Bestehende Verweise auf den Sensor 22077 müssen beim Aktivieren der Schreibrechte auf `switch` angepasst werden.

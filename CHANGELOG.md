@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.14.5
+
+- Punkt 22070 zeigt 57 bestätigte AUX-Funktionsbezeichnungen statt Rohcodes an (55 aus Firmware 4.14.6, Alarmfunktionen 22/23 aus offizieller NIBE-Modbus-Dokumentation). Ungeklärte Codes bleiben numerisch sichtbar. Keine zusätzlichen Schreibfunktionen freigegeben.
+
+- 22070 erhält den Namen **Aux von Modbus** und zeigt für Funktionscode 66 **Ext. Leistungsbegr.** an. Andere Funktionscodes bleiben numerisch erkennbar.
+- 22077 ist ein schreibbarer Schalter mit **Aus = 0 / Ein = 1**. Bei deaktivierter Schreibfreigabe bleibt ein benannter Aus/Ein-Sensor erhalten.
+
+- AUX-Status 22077 in **Erweitert** aufgenommen und als **Aus / Ein** dargestellt. Bei ausgewählter AUX-Funktion 66 (Punkt 22070) lautet der Name **Externe Anforderung von Leistungsbegrenzung**; andere/ungeklärte AUX-Funktionen behalten den allgemeinen Namen.
+
+- Externe Leistungsbegrenzung (27238) und Aktivierung der Leistungsbegrenzung (32824) in die automatische Auswahl des Profils **Erweitert** aufgenommen.
+- Sensor 32824 stellt **0 = Inaktiv / 1 = Aktiv** dar. Sensor 27238 liefert die skalierte Leistung in kW.
+
 ## 0.14.4
 
 - Die nur lesende Darstellung der GP1-Betriebsmodi 4651/4821 verwendet ebenfalls die Namen **Betriebsmodus HU-Pumpe GP1 Heizung/Kühlung** und die Zustände **Periodisch / Auto** statt der Rohwerte 0/1. Die bestehende Sensor-Identität bleibt erhalten.
