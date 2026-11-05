@@ -207,7 +207,7 @@ async def async_setup_entry(
     definitions_by_id = {definition.point_id: definition for definition in POINTS}
     entities.extend(
         NibeSensor(coordinator, definitions_by_id[point_id])
-        if point_id in {4651, 4821, 22077}
+        if point_id in {3935, 3936, 4651, 4821, 22077}
         else NibeDiscoveredSensor(coordinator, point_id)
         for point_id in sorted(read_only_sensor_ids)
     )
@@ -304,7 +304,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
             except (TypeError, ValueError):
                 return "unknown"
 
-        if self.definition.point_id == 22077:
+        if self.definition.point_id in {3935, 3936, 22077}:
             try:
                 return {0: "off", 1: "on"}.get(int(raw_value(point)), "unknown")
             except (TypeError, ValueError):
@@ -350,7 +350,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def device_class(self):
-        if self.definition.point_id in {3098, 4651, 4821, 22070, 22077, 32824}:
+        if self.definition.point_id in {3098, 3935, 3936, 4651, 4821, 22070, 22077, 32824}:
             return SensorDeviceClass.ENUM
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return None
@@ -382,7 +382,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
             return [AUX_FUNCTION_STATES.get(code, str(code)) for code in range(70)] + ["unknown"]
         if self.definition.point_id == 32824:
             return ["inactive", "active", "unknown"]
-        if self.definition.point_id == 22077:
+        if self.definition.point_id in {3935, 3936, 22077}:
             return ["off", "on", "unknown"]
         if self.definition.point_id in {4651, 4821}:
             return ["periodic", "auto", "unknown"]

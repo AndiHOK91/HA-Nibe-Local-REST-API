@@ -2,6 +2,8 @@
 
 ## Unveröffentlicht
 
+- Alarmmaßnahmen **3935 (Raumtemperatur senken)** und **3936 (Brauchwassertemperatur senken)** als benannte Schalter **Aus = 0 / Ein = 1** aufgenommen. Die bisherige automatische Profilauswahl bleibt unverändert; ohne individuelle Schreibfreigabe stehen benannte Aus/Ein-Sensoren zur Verfügung.
+
 - Punkt **32824** aus der automatischen Auswahl des Profils **Erweitert** entfernt; unter Komplett und Individuell weiter verfügbar. Der Name **Aktivierung der Leistungsbegrenzung** und die Zustände Inaktiv/Aktiv bleiben erhalten. Keine bestätigte Menüzuordnung ergänzt.
 
 ## 0.14.5
