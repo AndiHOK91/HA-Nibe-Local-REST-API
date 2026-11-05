@@ -271,6 +271,18 @@ def _sync_individual_defaults(
     hass.config_entries.async_update_entry(entry, options=new_options)
 
 
+def _remove_replaced_point_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove obsolete entity domains when upgrading pump modes/defrost status."""
+    registry = er.async_get(hass)
+    obsolete_domains = {3098: "binary_sensor", 4729: "switch", 4745: "switch", 4778: "switch"}
+    for point_id, old_domain in obsolete_domains.items():
+        old_entity_id = registry.async_get_entity_id(
+            old_domain, DOMAIN, f"{entry.entry_id}_{point_id}"
+        )
+        if old_entity_id:
+            registry.async_remove(old_entity_id)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     data = {**entry.data, **entry.options}
 
@@ -300,6 +312,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await coordinator.async_config_entry_first_refresh()
     await _async_migrate_entity_unique_ids(hass, entry)
+    _remove_replaced_point_entities(hass, entry)
     _sync_individual_defaults(
         hass,
         entry,

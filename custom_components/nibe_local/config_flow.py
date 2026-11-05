@@ -814,6 +814,10 @@ def _remove_write_mode_registry_conflicts(
         else:
             continue
 
+        # Gradminuten keep the measurement sensor alongside the optional writer.
+        if point_id == 781 and registry_entry.domain == "sensor":
+            continue
+
         if registry_entry.domain == expected_domain:
             continue
 

@@ -178,6 +178,7 @@
   },
   "entity": {
     "sensor": {
+      "defrost": {"name": "Abtaustatus (EB101)", "state": {"off": "Aus", "active": "Aktiv", "passive": "Passiv", "unknown": "Unbekannt"}},
       "degree_minutes": {"name": "Gradminuten"},
       "aux_heat_total_time": {"name": "Gesamtbetriebszeit Zusatzheizung"},
       "aux_heat_power": {"name": "Leistung interne Zusatzheizung"},
@@ -280,11 +281,13 @@
       "internal_charge_pump_gp12": {"name": "Interne Ladepumpe (GP12)"},
       "compressor_requested": {"name": "Verdichter angefordert (EB101-EP14)"},
       "protection_mode": {"name": "Schutzmodus (EB101)"},
-      "defrost": {"name": "Abtauung aktiv (EB101)"},
       "api_reachable": {"name": "REST API erreichbar"},
       "fallback_active": {"name": "Einzelpunkt-Fallback aktiv"}
     },
     "select": {
+      "pump_heating_mode": {"name": "Betriebsmodus Umwälzpumpe Heizung Wärmepumpe 1", "state": {"manual": "Manuell", "auto": "Automatisch"}},
+      "pump_hot_water_mode": {"name": "Betriebsmodus Umwälzpumpe Brauchwasser Wärmepumpe 1", "state": {"manual": "Manuell", "auto": "Automatisch"}},
+      "pump_cooling_mode": {"name": "Betriebsmodus Umwälzpumpe Kühlung Wärmepumpe 1", "state": {"manual": "Manuell", "auto": "Automatisch"}},
       "operating_mode_setting": {"name": "Betriebsmodus", "state": {"auto": "Auto", "manual": "Manuell", "auxiliary_heat_only": "Nur Zusatzheizung"}},
       "hot_water_position": {"name": "Brauchwasserbedarf", "state": {"low": "Niedrig", "medium": "Mittel", "high": "Hoch"}},
       "ventilation_mode": {"name": "Lüftungsmodus", "state": {"normal": "Normal", "off": "Aus", "reduced": "Reduziert", "increased": "Erhöht", "maximum": "Maximal"}},
