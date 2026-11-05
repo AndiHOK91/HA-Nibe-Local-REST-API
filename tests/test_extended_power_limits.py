@@ -126,8 +126,8 @@ def test_aux_status_localized_active_inactive_labels():
     from pathlib import Path
     root = Path(__file__).parents[1] / 'custom_components' / 'nibe_local' / 'translations'
     for language, name, inactive, active in (
-        ('de', 'Aux von Modbus', 'Inaktiv', 'Aktiv'),
-        ('en', 'AUX via Modbus', 'Inactive', 'Active'),
+        ('de', 'Aux von Modbus', 'Aus', 'Ein'),
+        ('en', 'AUX via Modbus', 'Off', 'On'),
     ):
         data = json.loads((root / f'{language}.json').read_text(encoding='utf-8'))
         sensor = data['entity']['sensor']['aux_via_modbus']
