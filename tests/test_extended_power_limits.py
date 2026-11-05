@@ -38,16 +38,16 @@ def test_external_power_limit_preserves_scaling_and_unit():
     assert e.device_class == SensorDeviceClass.POWER
 
 
-@pytest.mark.parametrize('function,key', [(66, 'external_power_limit_request'), ('66', 'external_power_limit_request'), (3, 'aux_via_modbus'), (None, 'aux_via_modbus')])
+@pytest.mark.parametrize('function', [66, '66', 3, None])
 @pytest.mark.parametrize('raw,expected', [(0, 'off'), (1, 'on')])
-def test_aux_status_name_depends_on_selected_function(function, key, raw, expected):
+def test_aux_status_name_is_stable_for_every_function(function, raw, expected):
     points = {22077: {'value': {'integerValue': raw}}}
     if function is not None:
         points[22070] = {'value': {'integerValue': function}}
     c = SimpleNamespace(point=lambda pid: points.get(pid),
         entity_naming='home_assistant', instance_id='test')
     e = NibeSensor(c, next(p for p in POINTS if p.point_id == 22077))
-    assert e.translation_key == key
+    assert e.translation_key == 'aux_via_modbus'
     assert e.native_value == expected
     assert e.device_class == SensorDeviceClass.ENUM
     assert e.unique_id == 'test_22077'
@@ -76,7 +76,7 @@ def test_aux_switch_writes_zero_and_one():
     asyncio.run(switch.async_setup_entry(None, SimpleNamespace(runtime_data=c), result.extend))
     assert len(result) == 1
     e = result[0]
-    assert e.translation_key == 'external_power_limit_request'
+    assert e.translation_key == 'aux_via_modbus'
     asyncio.run(e.async_turn_on())
     c.api.patch_point.assert_awaited_once_with(22077, 1)
     c.api.patch_point.reset_mock()
@@ -119,3 +119,19 @@ def test_rest_power_limitation_activation_is_not_automatically_selected():
     from pathlib import Path
     translations = json.loads(Path('custom_components/nibe_local/translations/de.json').read_text())
     assert translations['entity']['sensor']['power_limitation_enabled']['name'] == 'Aktivierung der Leistungsbegrenzung'
+
+
+def test_aux_status_localized_active_inactive_labels():
+    import json
+    from pathlib import Path
+    root = Path(__file__).parents[1] / 'custom_components' / 'nibe_local' / 'translations'
+    for language, name, inactive, active in (
+        ('de', 'Aux von Modbus', 'Inaktiv', 'Aktiv'),
+        ('en', 'AUX via Modbus', 'Inactive', 'Active'),
+    ):
+        data = json.loads((root / f'{language}.json').read_text(encoding='utf-8'))
+        sensor = data['entity']['sensor']['aux_via_modbus']
+        assert sensor['name'] == name
+        assert sensor['state']['off'] == inactive
+        assert sensor['state']['on'] == active
+        assert data['entity']['switch']['aux_via_modbus']['name'] == name
