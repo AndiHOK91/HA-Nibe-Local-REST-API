@@ -236,12 +236,6 @@ class NibeDiscoveredSensor(NibeDiscoveredPointEntity, SensorEntity):
 class NibeSensor(NibePointEntity, SensorEntity):
     def __init__(self, coordinator, definition) -> None:
         super().__init__(coordinator, definition)
-        # Register 2741 controls the AUX function selected in register 2740.
-        # Only function 66 means external power limiting.
-        if definition.point_id == 22077 and self._attr_translation_key:
-            selected_function = raw_value(coordinator.point(22070) or {})
-            if selected_function in (66, "66"):
-                self._attr_translation_key = "external_power_limit_request"
 
     @property
     def available(self) -> bool:
