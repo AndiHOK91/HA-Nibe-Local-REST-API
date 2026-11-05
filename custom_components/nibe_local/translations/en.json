@@ -51,6 +51,8 @@
   },
   "entity": {
     "sensor": {
+      "charge_pump_operating_mode": {"name": "GP1 heating circulation pump operating mode", "state": {"periodic": "Periodic", "auto": "Auto", "unknown": "Unknown"}},
+      "charge_pump_cooling_operating_mode": {"name": "GP1 cooling circulation pump operating mode", "state": {"periodic": "Periodic", "auto": "Auto", "unknown": "Unknown"}},
       "defrost": {"name": "Defrost status (EB101)", "state": {"off": "Off", "active": "Active", "passive": "Passive", "unknown": "Unknown"}},
       "degree_minutes": {"name": "Degree minutes"},
       "aux_heat_total_time": {"name": "Auxiliary heat total operating time"},
