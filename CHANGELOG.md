@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.1
+
+- Deutsche Defrost-Bezeichnungen einheitlich auf **Enteisung** umgestellt: Enteisungsstatus, Zeit bis Enteisung, Enteisungsindex, Ventilatorstart, angeforderte und letzte Enteisung sowie maximale Enteisungszeit.
+- Technische IDs und Zustandswerte bleiben erhalten; die Änderung betrifft die deutschen Anzeigenamen.
+
 ## 0.14.0
 
 **Upgrade-Hinweis:** Pumpenmodi wechseln von `switch` zu `select`, Abtaupunkt 3098 von `binary_sensor` zu `sensor`. Betroffene Dashboard-Karten und Automationen müssen angepasst werden.

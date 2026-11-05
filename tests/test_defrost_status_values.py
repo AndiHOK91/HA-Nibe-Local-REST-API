@@ -52,7 +52,7 @@ def test_last_defrost_german_state_translations_cover_rest_values() -> None:
     assert states["Low return"] == "Rücklauftemperatur zu niedrig"
     assert states["Low flow"] == "Volumenstrom zu niedrig"
     assert states["Low LP"] == "Niederdruck zu niedrig"
-    assert states["Max time"] == "Maximale Abtauzeit erreicht"
+    assert states["Max time"] == "Maximale Enteisungszeit erreicht"
     assert states["Not accessible"] == "Nicht verfügbar"
 
 

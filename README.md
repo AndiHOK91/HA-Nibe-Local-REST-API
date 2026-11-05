@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lok
 
 Entwickelt und im realen Betrieb getestet mit **VVM S320, S2125 und ERS S40-400**. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.14.0**
+Aktuelle Integrationsversion: **0.14.1**
 
 > [!WARNING]
 > Die **Statistikmigration** ist experimentell und noch nicht auf einer produktiven Home-Assistant-Recorder-Datenbank praktisch erprobt. Vor der Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein.
@@ -27,7 +27,7 @@ Unterstützt werden unter anderem:
 
 - Heizungs-, Kühlungs-, Brauchwasser- und Lüftungswerte
 - Temperaturen, Gradminuten, Volumenstrom sowie Pumpen- und Ventilatorwerte
-- Verdichter-, Kältekreis-, EEV-/EVI- und Abtauwerte
+- Verdichter-, Kältekreis-, EEV-/EVI- und Enteisungswerte
 - Energie- und Leistungswerte
 - Alarme und Meldungen
 - ausdrücklich freigegebene Steuerungen über `switch`, `select` und `number`
@@ -163,7 +163,7 @@ Direkt über **My Home Assistant** in HACS öffnen:
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AndiHOK91&repository=HA-Nibe-Local-REST-API&category=integration)
 
-Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.14.0 ist ein regulärer Release.**
+Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.14.1 ist ein regulärer Release.**
 
 ### Manuell
 
