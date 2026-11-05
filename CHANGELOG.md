@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.3
+
+- Betriebsart Ladepumpe (4651) und Betriebsart Ladepumpe Kühlung (4821) als benannte Statussensoren mit **0 = Periodisch / 1 = Auto** ergänzt. Die Punkte bleiben außerhalb der automatischen Profilauswahl; bestehende Sensor-Unique-IDs bleiben erhalten.
+
 ## 0.14.2
 
 - Dimensionierte Außenlufttemperatur (REST-ID 3868) verwendet eine Schrittweite von **1 °C** im von NIBE gemeldeten Bereich **−40 bis +20 °C**. Die Rohwertskalierung mit Divisor 10 bleibt erhalten.

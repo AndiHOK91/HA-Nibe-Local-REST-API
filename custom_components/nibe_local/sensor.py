@@ -216,6 +216,13 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return periodic_hot_water_date(raw_value(point))
 
+        if self.definition.point_id in {4651, 4821}:
+            value = raw_value(point)
+            try:
+                return {0: "periodic", 1: "auto"}.get(int(value), "unknown")
+            except (TypeError, ValueError):
+                return "unknown"
+
         if self.definition.point_id in {3098, POINT_DEFROST_REQUESTED}:
             value = raw_value(point)
             try:
@@ -249,7 +256,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def device_class(self):
-        if self.definition.point_id == 3098:
+        if self.definition.point_id in {3098, 4651, 4821}:
             return SensorDeviceClass.ENUM
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return None
@@ -277,6 +284,8 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def options(self):
+        if self.definition.point_id in {4651, 4821}:
+            return ["periodic", "auto", "unknown"]
         if self.definition.point_id == 3098:
             return list(DEFROST_REQUESTED_MAP.values()) + ["unknown"]
         return None

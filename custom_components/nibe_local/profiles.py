@@ -48,7 +48,7 @@ KNOWN_POINT_IDS = frozenset(definition.point_id for definition in POINTS)
 
 # Curated points that retain their proper entity platform/name when explicitly
 # selected, but are intentionally excluded from the automatic Extended profile.
-INDIVIDUAL_ONLY_POINT_IDS = frozenset({3138, 4729, 4745, 4778})
+INDIVIDUAL_ONLY_POINT_IDS = frozenset({3138, 4651, 4729, 4745, 4778, 4821})
 EXTENDED_PROFILE_POINT_IDS = KNOWN_POINT_IDS - INDIVIDUAL_ONLY_POINT_IDS
 
 
