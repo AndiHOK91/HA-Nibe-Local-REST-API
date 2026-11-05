@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.0
+
+- Erste stabile Version der lokalen NIBE REST-Integration nach Modulprüfung und gezielten Regressionstests.
+- Wiederverbindung: Fehlgeschlagene erste Gerätesprachen-Abfrage darf erneut versucht werden.
+- Fehlertoleranz: Leere Bulk-Antwort mit vollständig fehlgeschlagener oder wegen Backoff unterdrückter Einzelpunkt-Abfrage wird nicht mehr als frische Messung gewertet; bisherige Werte bleiben im Coordinator-Cache, ein fehlgeschlagener Poll wird korrekt gemeldet.
+- Zusätzliche Regressionstests für 0/1-Schreibbefehle, redundante Writes, abgelehnte REST-PATCH-Antworten, Registry-Domain-Migration und REST-Fallback-Wiederherstellung.
+- **Einschränkungen:** Statistikmigration bleibt experimentell; einzelne von der Firmware als schreibbar deklarierte Punkte wurden nicht an allen Anlagen praktisch getestet. Herstellerseitig nicht bestätigte REST-Funktionen werden nicht versprochen.
+- Offene Statusdekodierung 2022 (PR #53) bleibt für eine spätere Version zurückgestellt.
+
 ## 0.14.7
 
 - REST-ID **22077** heißt unabhängig vom gewählten AUX-Funktionscode **Aux von Modbus**. Der lesende Sensor zeigt **Aus (0) / Ein (1)**; der schreibbare Schalter verwendet weiterhin die Home-Assistant-Zustände `off/on` und schreibt unverändert 0/1. Entitäts-IDs bleiben erhalten.

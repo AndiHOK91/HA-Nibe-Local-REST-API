@@ -291,11 +291,13 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             has_previous_points=bool(previous_points),
         ):
             _LOGGER.debug(
-                "Bulk /points still returned no usable data; keeping previous values "
+                "Bulk /points still returned no usable data; marking this update failed "
                 "and delaying the next individual-point fallback for %.0f s",
                 self._next_fallback_attempt - now,
             )
-            return previous_points
+            # Cached values must not be advertised as fresh measurements:
+            # report a failed update until at least one point is fetched again.
+            raise NibeApiError("Bulk /points unavailable; fallback scan backed off")
 
         _LOGGER.warning(
             "Bulk /points response could not be normalized; falling back to "
@@ -332,6 +334,8 @@ class NibeCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 delay,
             )
 
+        if not fresh_points:
+            raise NibeApiError("Bulk and individual /points requests returned no fresh values")
         return merge_point_updates(previous_points, fresh_points)
 
     def entity_enabled(self, point_id: int) -> bool:
