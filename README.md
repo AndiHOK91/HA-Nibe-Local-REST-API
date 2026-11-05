@@ -232,3 +232,5 @@ Die Software wird ohne Gewährleistung oder Garantie bereitgestellt. Bei sicherh
 Die Pumpenmodi 4729/4745/4778 verwenden eine Auswahl **Manuell (0) / Automatisch (1)**. Die bisherigen `switch`-Entitäten werden durch `select` ersetzt. Punkt 3098 (Input Register 1805) ersetzt den bisherigen Binärsensor durch einen einzelnen Statussensor **Aus / Aktiv / Passiv**. Dashboard-Karten und Automationen müssen die neuen Domains und Zustände verwenden.
 
 Der Gradminuten-Sensor (781) bleibt bei Schreibfreigabe erhalten; ein zusätzliches `number`-Eingabefeld erlaubt Änderungen. Bestehende Aufzeichnungslücken werden nicht rückwirkend aufgefüllt. Punkt 840 liefert bei Rohwert 65535 keine gültige Minutenzahl; `duration_status: not_provided_by_device` kennzeichnet diesen Fall, ohne 0 Minuten oder einen erfundenen Countdown anzuzeigen.
+
+Die GP1-Betriebsmodi **4651 (Heizung)** und **4821 (Kühlung)** sind in v0.14.3 als schreibbare Auswahl **Periodisch (0) / Auto (1)** verfügbar. Im Profil Individuell müssen sie ausgewählt und zum Schreiben freigegeben sein. Bisherige Sensor-/Switch-Verweise sind auf die neuen `select`-Entitäten umzustellen.

@@ -51,8 +51,6 @@
   },
   "entity": {
     "sensor": {
-      "charge_pump_operating_mode": {"name": "Charge pump operating mode (EB101)", "state": {"periodic": "Periodic", "auto": "Auto", "unknown": "Unknown"}},
-      "charge_pump_cooling_operating_mode": {"name": "Charge pump cooling operating mode (EB101)", "state": {"periodic": "Periodic", "auto": "Auto", "unknown": "Unknown"}},
       "defrost": {"name": "Defrost status (EB101)", "state": {"off": "Off", "active": "Active", "passive": "Passive", "unknown": "Unknown"}},
       "degree_minutes": {"name": "Degree minutes"},
       "aux_heat_total_time": {"name": "Auxiliary heat total operating time"},
@@ -161,6 +159,8 @@
       "fallback_active": {"name": "Individual-point fallback active"}
     },
     "select": {
+      "charge_pump_operating_mode": {"name": "GP1 heating circulation pump operating mode", "state": {"periodic": "Periodic", "auto": "Auto"}},
+      "charge_pump_cooling_operating_mode": {"name": "GP1 cooling circulation pump operating mode", "state": {"periodic": "Periodic", "auto": "Auto"}},
       "pump_heating_mode": {"name": "Pump heating mode", "state": {"manual": "Manual", "auto": "Automatic"}},
       "pump_hot_water_mode": {"name": "Pump hot water mode", "state": {"manual": "Manual", "auto": "Automatic"}},
       "pump_cooling_mode": {"name": "Pump cooling mode", "state": {"manual": "Manual", "auto": "Automatic"}},

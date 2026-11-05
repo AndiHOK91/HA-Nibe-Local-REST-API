@@ -119,6 +119,8 @@ class NibePointSelect(NibePointEntity, SelectEntity):
     """Select for explicitly mapped NIBE enum points."""
 
     ENUM_OPTIONS: dict[int, dict[int, str]] = {
+        4651: {0: "periodic", 1: "auto"},
+        4821: {0: "periodic", 1: "auto"},
         4729: {0: "manual", 1: "auto"},
         4745: {0: "manual", 1: "auto"},
         4778: {0: "manual", 1: "auto"},

@@ -271,7 +271,9 @@ def _sync_individual_defaults(
     hass.config_entries.async_update_entry(entry, options=new_options)
 
 
-def _remove_replaced_point_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
+def _remove_replaced_point_entities(
+    hass: HomeAssistant, entry: ConfigEntry, coordinator: NibeCoordinator | None = None
+) -> None:
     """Remove obsolete entity domains when upgrading pump modes/defrost status."""
     registry = er.async_get(hass)
     obsolete_domains = {3098: "binary_sensor", 4729: "switch", 4745: "switch", 4778: "switch"}
@@ -281,6 +283,22 @@ def _remove_replaced_point_entities(hass: HomeAssistant, entry: ConfigEntry) -> 
         )
         if old_entity_id:
             registry.async_remove(old_entity_id)
+
+
+    # Keep a read-only fallback sensor when write permission is disabled.
+    if coordinator is not None:
+        for point_id in (4651, 4821):
+            point = coordinator.point(point_id) or {}
+            if not coordinator.entity_enabled(point_id) or not coordinator.write_enabled(point_id):
+                continue
+            if not (point.get("metadata") or {}).get("isWritable", False):
+                continue
+            for domain in ("sensor", "switch"):
+                old_entity_id = registry.async_get_entity_id(
+                    domain, DOMAIN, f"{entry.entry_id}_{point_id}"
+                )
+                if old_entity_id:
+                    registry.async_remove(old_entity_id)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -312,7 +330,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
     await coordinator.async_config_entry_first_refresh()
     await _async_migrate_entity_unique_ids(hass, entry)
-    _remove_replaced_point_entities(hass, entry)
+    _remove_replaced_point_entities(hass, entry, coordinator)
     _sync_individual_defaults(
         hass,
         entry,

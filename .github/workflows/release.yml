@@ -41,6 +41,20 @@ jobs:
         shell: bash
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
+            if [ "$VERSION" = "0.14.3" ]; then
+              CURRENT_TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.sha')
+              if [ "$CURRENT_TAG_SHA" = "abfe237e8803184d5970b7db24c1bf79a7cc1e7d" ]; then
+                git config user.name "github-actions[bot]"
+                git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                git tag -f "$TAG" "$GITHUB_SHA"
+                git push origin "refs/tags/$TAG" --force-with-lease="refs/tags/$TAG:$CURRENT_TAG_SHA"
+                RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq '.id')
+                gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+                  -f target_commitish="$GITHUB_SHA" -F prerelease=false -f make_latest=true \
+                  -f body='GP1-Betriebsmodi korrigiert: 4651 = Betriebsmodus HU-Pumpe GP1 Heizung; 4821 = Betriebsmodus HU-Pumpe GP1 Kühlung. Beide sind schreibbare Auswahlfelder: Periodisch (0) / Auto (1). Dashboard und Automationen auf select umstellen. In HACS bereits installierte v0.14.3 erneut herunterladen und Home Assistant neu starten.' >/dev/null
+              fi
+              exit 0
+            fi
             if [ "$VERSION" != "0.10.1" ]; then
               echo "Release $TAG existiert bereits."
               exit 0

@@ -2,7 +2,9 @@
 
 ## 0.14.3
 
-- Betriebsart Ladepumpe (4651) und Betriebsart Ladepumpe Kühlung (4821) als benannte Statussensoren mit **0 = Periodisch / 1 = Auto** ergänzt. Die Punkte bleiben außerhalb der automatischen Profilauswahl; bestehende Sensor-Unique-IDs bleiben erhalten.
+- REST-Punkte **4651** und **4821** als schreibbare Auswahl **Periodisch (0) / Auto (1)** umgesetzt. Namen: **Betriebsmodus HU-Pumpe GP1 Heizung** und **Betriebsmodus HU-Pumpe GP1 Kühlung**.
+- Schreibrechte im individuellen Profil werden berücksichtigt. Bei aktivierter Schreibfreigabe ersetzen Select-Entitäten die alten Sensor-/Switch-Entitäten; ohne Freigabe bleiben die Punkte lesbar.
+- Upgrade-Hinweis: Dashboard-Karten und Automationen bei diesen beiden Punkten auf die Domain `select` und die Zustände `periodic` / `auto` umstellen.
 
 ## 0.14.2
 

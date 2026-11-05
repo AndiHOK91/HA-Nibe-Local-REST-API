@@ -178,8 +178,6 @@
   },
   "entity": {
     "sensor": {
-      "charge_pump_operating_mode": {"name": "Betriebsart Ladepumpe (EB101)", "state": {"periodic": "Periodisch", "auto": "Auto", "unknown": "Unbekannt"}},
-      "charge_pump_cooling_operating_mode": {"name": "Betriebsart Ladepumpe, Kühlung (EB101)", "state": {"periodic": "Periodisch", "auto": "Auto", "unknown": "Unbekannt"}},
       "defrost": {"name": "Enteisungsstatus (EB101)", "state": {"off": "Aus", "active": "Aktiv", "passive": "Passiv", "unknown": "Unbekannt"}},
       "degree_minutes": {"name": "Gradminuten"},
       "aux_heat_total_time": {"name": "Gesamtbetriebszeit Zusatzheizung"},
@@ -287,6 +285,8 @@
       "fallback_active": {"name": "Einzelpunkt-Fallback aktiv"}
     },
     "select": {
+      "charge_pump_operating_mode": {"name": "Betriebsmodus HU-Pumpe GP1 Heizung", "state": {"periodic": "Periodisch", "auto": "Auto"}},
+      "charge_pump_cooling_operating_mode": {"name": "Betriebsmodus HU-Pumpe GP1 Kühlung", "state": {"periodic": "Periodisch", "auto": "Auto"}},
       "pump_heating_mode": {"name": "Betriebsmodus Umwälzpumpe Heizung Wärmepumpe 1", "state": {"manual": "Manuell", "auto": "Automatisch"}},
       "pump_hot_water_mode": {"name": "Betriebsmodus Umwälzpumpe Brauchwasser Wärmepumpe 1", "state": {"manual": "Manuell", "auto": "Automatisch"}},
       "pump_cooling_mode": {"name": "Betriebsmodus Umwälzpumpe Kühlung Wärmepumpe 1", "state": {"manual": "Manuell", "auto": "Automatisch"}},
