@@ -1,5 +1,10 @@
 # Changelog
 
+## Unveröffentlicht
+
+- Externe Leistungsbegrenzung (27238) und Aktivierung der Leistungsbegrenzung (32824) in die automatische Auswahl des Profils **Erweitert** aufgenommen.
+- Sensor 32824 stellt **0 = Aus / 1 = Ein** dar. Sensor 27238 liefert die skalierte Leistung in kW.
+
 ## 0.14.4
 
 - Die nur lesende Darstellung der GP1-Betriebsmodi 4651/4821 verwendet ebenfalls die Namen **Betriebsmodus HU-Pumpe GP1 Heizung/Kühlung** und die Zustände **Periodisch / Auto** statt der Rohwerte 0/1. Die bestehende Sensor-Identität bleibt erhalten.
