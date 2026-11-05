@@ -20,6 +20,8 @@ jobs:
             python-version: "3.13"
           - homeassistant-version: "2026.9.1"
             python-version: "3.14"
+          - homeassistant-version: "2026.11.0"
+            python-version: "3.14"
           - homeassistant-version: "latest"
             python-version: "3.14"
 
