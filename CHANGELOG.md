@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.2
+
+- Dimensionierte Außenlufttemperatur (REST-ID 3868) verwendet eine Schrittweite von **1 °C** im von NIBE gemeldeten Bereich **−40 bis +20 °C**. Die Rohwertskalierung mit Divisor 10 bleibt erhalten.
+- Schreibzugriffe mit Nachkommastellen werden für diesen Punkt vor dem API-Aufruf abgewiesen.
+
 ## 0.14.1
 
 - Deutsche Defrost-Bezeichnungen einheitlich auf **Enteisung** umgestellt: Enteisungsstatus, Zeit bis Enteisung, Enteisungsindex, Ventilatorstart, angeforderte und letzte Enteisung sowie maximale Enteisungszeit.

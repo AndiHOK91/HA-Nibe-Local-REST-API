@@ -100,10 +100,15 @@ def metadata_limits(
     return float(minimum / divisor), float(maximum / divisor)
 
 
-def value_is_representable(point: dict, value: float) -> bool:
+def value_is_representable(
+    point: dict, value: float, point_id: int | None = None
+) -> bool:
     """Return whether a scaled value maps exactly to a NIBE integer raw value."""
     divisor = _metadata_divisor(point)
     if not isinstance(divisor, (int, float)) or divisor <= 0:
+        return False
+    # Point 3868 accepts whole degrees despite a raw divisor of 10.
+    if point_id == 3868 and not float(value).is_integer():
         return False
     raw_value = value * divisor
     return math.isclose(raw_value, round(raw_value), rel_tol=0.0, abs_tol=1e-9)
@@ -146,6 +151,8 @@ class NibeNumber(NibePointEntity, NumberEntity):
 
     @property
     def native_step(self) -> float:
+        if self.definition.point_id == 3868:
+            return 1.0
         divisor = _metadata_divisor(self.point or {})
         return 1 / divisor if isinstance(divisor, (int, float)) and divisor > 0 else 1
 
@@ -174,7 +181,7 @@ class NibeNumber(NibePointEntity, NumberEntity):
                 },
             )
 
-        if not value_is_representable(self.point or {}, value):
+        if not value_is_representable(self.point or {}, value, self.definition.point_id):
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="number_invalid_step",
@@ -216,6 +223,8 @@ class NibeDiscoveredNumber(NibeDiscoveredPointEntity, NumberEntity):
 
     @property
     def native_step(self) -> float:
+        if self.point_id == 3868:
+            return 1.0
         divisor = _metadata_divisor(self.point or {})
         return 1 / divisor if isinstance(divisor, (int, float)) and divisor > 0 else 1
 
@@ -239,7 +248,7 @@ class NibeDiscoveredNumber(NibeDiscoveredPointEntity, NumberEntity):
                 },
             )
 
-        if not value_is_representable(self.point or {}, value):
+        if not value_is_representable(self.point or {}, value, self.point_id):
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="number_invalid_step",
