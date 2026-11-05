@@ -51,6 +51,8 @@
   },
   "entity": {
     "sensor": {
+      "aux_via_modbus": {"name": "AUX via Modbus", "state": {"off": "Off", "on": "On", "unknown": "Unknown"}},
+      "external_power_limit_request": {"name": "External request for power limiting", "state": {"off": "Off", "on": "On", "unknown": "Unknown"}},
       "external_power_limit": {"name": "External power limit"},
       "power_limitation_enabled": {"name": "Power limitation enabled", "state": {"off": "Off", "on": "On", "unknown": "Unknown"}},
       "charge_pump_operating_mode": {"name": "GP1 heating circulation pump operating mode", "state": {"periodic": "Periodic", "auto": "Auto", "unknown": "Unknown"}},

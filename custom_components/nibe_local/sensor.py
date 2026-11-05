@@ -172,6 +172,15 @@ class NibeDiscoveredSensor(NibeDiscoveredPointEntity, SensorEntity):
 
 
 class NibeSensor(NibePointEntity, SensorEntity):
+    def __init__(self, coordinator, definition) -> None:
+        super().__init__(coordinator, definition)
+        # Register 2741 controls the AUX function selected in register 2740.
+        # Only function 66 means external power limiting.
+        if definition.point_id == 22077 and self._attr_translation_key:
+            selected_function = raw_value(coordinator.point(22070) or {})
+            if selected_function in (66, "66"):
+                self._attr_translation_key = "external_power_limit_request"
+
     @property
     def available(self) -> bool:
         point = self.point
@@ -219,7 +228,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return periodic_hot_water_date(raw_value(point))
 
-        if self.definition.point_id == 32824:
+        if self.definition.point_id in {22077, 32824}:
             try:
                 return {0: "off", 1: "on"}.get(int(raw_value(point)), "unknown")
             except (TypeError, ValueError):
@@ -265,7 +274,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def device_class(self):
-        if self.definition.point_id in {3098, 4651, 4821, 32824}:
+        if self.definition.point_id in {3098, 4651, 4821, 22077, 32824}:
             return SensorDeviceClass.ENUM
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return None
@@ -293,7 +302,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def options(self):
-        if self.definition.point_id == 32824:
+        if self.definition.point_id in {22077, 32824}:
             return ["off", "on", "unknown"]
         if self.definition.point_id in {4651, 4821}:
             return ["periodic", "auto", "unknown"]

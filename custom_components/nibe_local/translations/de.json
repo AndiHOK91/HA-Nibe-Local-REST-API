@@ -178,6 +178,8 @@
   },
   "entity": {
     "sensor": {
+      "aux_via_modbus": {"name": "AUX über Modbus", "state": {"off": "Aus", "on": "Ein", "unknown": "Unbekannt"}},
+      "external_power_limit_request": {"name": "Externe Anforderung von Leistungsbegrenzung", "state": {"off": "Aus", "on": "Ein", "unknown": "Unbekannt"}},
       "external_power_limit": {"name": "Externe Leistungsbegrenzung"},
       "power_limitation_enabled": {"name": "Aktivierung der Leistungsbegrenzung", "state": {"off": "Aus", "on": "Ein", "unknown": "Unbekannt"}},
       "charge_pump_operating_mode": {"name": "Betriebsmodus HU-Pumpe GP1 Heizung", "state": {"periodic": "Periodisch", "auto": "Auto", "unknown": "Unbekannt"}},

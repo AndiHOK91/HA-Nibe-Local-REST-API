@@ -9,7 +9,7 @@ from custom_components.nibe_local.profiles import (
 from custom_components.nibe_local.sensor import NibeSensor
 
 
-@pytest.mark.parametrize('pid', [27238, 32824])
+@pytest.mark.parametrize('pid', [22077, 27238, 32824])
 def test_power_limits_are_selected_by_extended_profile(pid):
     assert point_enabled(PROFILE_EXTENDED, pid)
     assert not point_enabled(PROFILE_STANDARD, pid)
@@ -36,3 +36,18 @@ def test_external_power_limit_preserves_scaling_and_unit():
     assert e.native_value == 4.2
     assert e.native_unit_of_measurement == 'kW'
     assert e.device_class == SensorDeviceClass.POWER
+
+
+@pytest.mark.parametrize('function,key', [(66, 'external_power_limit_request'), ('66', 'external_power_limit_request'), (3, 'aux_via_modbus'), (None, 'aux_via_modbus')])
+@pytest.mark.parametrize('raw,expected', [(0, 'off'), (1, 'on')])
+def test_aux_status_name_depends_on_selected_function(function, key, raw, expected):
+    points = {22077: {'value': {'integerValue': raw}}}
+    if function is not None:
+        points[22070] = {'value': {'integerValue': function}}
+    c = SimpleNamespace(point=lambda pid: points.get(pid),
+        entity_naming='home_assistant', instance_id='test')
+    e = NibeSensor(c, next(p for p in POINTS if p.point_id == 22077))
+    assert e.translation_key == key
+    assert e.native_value == expected
+    assert e.device_class == SensorDeviceClass.ENUM
+    assert e.unique_id == 'test_22077'

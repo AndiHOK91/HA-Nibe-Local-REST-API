@@ -2,6 +2,8 @@
 
 ## Unveröffentlicht
 
+- AUX-Status 22077 in **Erweitert** aufgenommen und als **Aus / Ein** dargestellt. Bei ausgewählter AUX-Funktion 66 (Punkt 22070) lautet der Name **Externe Anforderung von Leistungsbegrenzung**; andere/ungeklärte AUX-Funktionen behalten den allgemeinen Namen.
+
 - Externe Leistungsbegrenzung (27238) und Aktivierung der Leistungsbegrenzung (32824) in die automatische Auswahl des Profils **Erweitert** aufgenommen.
 - Sensor 32824 stellt **0 = Aus / 1 = Ein** dar. Sensor 27238 liefert die skalierte Leistung in kW.
 
