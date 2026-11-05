@@ -302,14 +302,15 @@ def _remove_replaced_point_entities(
 
 
     if coordinator is not None:
-        point = coordinator.point(22077) or {}
-        if (coordinator.entity_enabled(22077) and coordinator.write_enabled(22077)
-                and (point.get("metadata") or {}).get("isWritable", False)):
-            old_entity_id = registry.async_get_entity_id(
-                "sensor", DOMAIN, f"{entry.entry_id}_22077"
-            )
-            if old_entity_id:
-                registry.async_remove(old_entity_id)
+        for point_id in (3935, 3936, 22077):
+            point = coordinator.point(point_id) or {}
+            if (coordinator.entity_enabled(point_id) and coordinator.write_enabled(point_id)
+                    and (point.get("metadata") or {}).get("isWritable", False)):
+                old_entity_id = registry.async_get_entity_id(
+                    "sensor", DOMAIN, f"{entry.entry_id}_{point_id}"
+                )
+                if old_entity_id:
+                    registry.async_remove(old_entity_id)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

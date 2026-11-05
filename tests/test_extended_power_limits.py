@@ -9,7 +9,7 @@ from custom_components.nibe_local.profiles import (
 from custom_components.nibe_local.sensor import NibeSensor
 
 
-@pytest.mark.parametrize('pid', [22070, 22077, 27238, 32824])
+@pytest.mark.parametrize('pid', [22070, 22077, 27238])
 def test_power_limits_are_selected_by_extended_profile(pid):
     assert point_enabled(PROFILE_EXTENDED, pid)
     assert not point_enabled(PROFILE_STANDARD, pid)
@@ -107,3 +107,15 @@ def test_aux_labels_exist_in_both_languages():
     assert labels['external_power_limit'] == 'Ext. power limitation'
     assert 49 not in AUX_FUNCTION_STATES
     assert 62 not in AUX_FUNCTION_STATES
+
+
+def test_rest_power_limitation_activation_is_not_automatically_selected():
+    from custom_components.nibe_local.profiles import PROFILE_COMPLETE, PROFILE_INDIVIDUAL
+    assert not point_enabled(PROFILE_EXTENDED, 32824)
+    assert not point_enabled(PROFILE_STANDARD, 32824)
+    assert point_enabled(PROFILE_COMPLETE, 32824)
+    assert point_enabled(PROFILE_INDIVIDUAL, 32824, [32824])
+    import json
+    from pathlib import Path
+    translations = json.loads(Path('custom_components/nibe_local/translations/de.json').read_text())
+    assert translations['entity']['sensor']['power_limitation_enabled']['name'] == 'Aktivierung der Leistungsbegrenzung'

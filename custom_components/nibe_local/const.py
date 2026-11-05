@@ -72,6 +72,8 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(1827, "step_controlled_aux_heat_blocking", "system", "binary_sensor"),
     PointDef(2022, "current_status", "system", diagnostic=True),
     PointDef(3751, "operating_mode_setting", "system", "select"),
+    PointDef(3935, "alarm_action_lower_room_temperature", "system", "switch"),
+    PointDef(3936, "alarm_action_lower_hot_water_temperature", "system", "switch"),
     PointDef(3919, "aux_heat_allowed_heating", "heating", "switch"),
     PointDef(4064, "operating_mode_status", "system"),
     PointDef(3375, "alarm_number", "system", diagnostic=True),
