@@ -202,7 +202,6 @@ class NibeLocalApi:
         """Use the language configured in the NIBE firmware for REST labels."""
         if self._language_checked:
             return
-        self._language_checked = True
         try:
             point = await self._request(
                 "GET", f"/devices/{self.device_id}/points/{NIBE_LANGUAGE_POINT_ID}"
@@ -210,9 +209,12 @@ class NibeLocalApi:
         except NibeAuthError:
             raise
         except NibeApiError as err:
+            # A temporary transport failure must not permanently disable
+            # language detection for this integration instance.
             _LOGGER.debug("Could not determine NIBE UI language: %s", err)
             return
         self._update_language_from_point(point)
+        self._language_checked = True
 
     def _update_language_from_point(self, point: Any) -> None:
         """Update the REST Accept-Language value from NIBE point 3745."""
