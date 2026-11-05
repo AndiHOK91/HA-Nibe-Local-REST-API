@@ -103,7 +103,8 @@ async def async_setup_entry(
         and coordinator.entity_enabled(definition.point_id)
         and coordinator.point(definition.point_id)
         and not (
-            coordinator.selected_writable_point_ids is not None
+            definition.point_id != 781
+            and coordinator.selected_writable_point_ids is not None
             and coordinator.write_enabled(definition.point_id)
             and writable_platform_for_point(
                 definition.point_id,
@@ -215,7 +216,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return periodic_hot_water_date(raw_value(point))
 
-        if self.definition.point_id == POINT_DEFROST_REQUESTED:
+        if self.definition.point_id in {3098, POINT_DEFROST_REQUESTED}:
             value = raw_value(point)
             try:
                 return DEFROST_REQUESTED_MAP.get(int(value), "unknown")
@@ -248,6 +249,8 @@ class NibeSensor(NibePointEntity, SensorEntity):
 
     @property
     def device_class(self):
+        if self.definition.point_id == 3098:
+            return SensorDeviceClass.ENUM
         if self.definition.point_id == POINT_PERIODIC_HOT_WATER_DATE:
             return None
         if self.definition.point_id == 829:
@@ -270,6 +273,12 @@ class NibeSensor(NibePointEntity, SensorEntity):
             return SensorDeviceClass.PRESSURE
         if unit in {"h", "min", "s"}:
             return SensorDeviceClass.DURATION
+        return None
+
+    @property
+    def options(self):
+        if self.definition.point_id == 3098:
+            return list(DEFROST_REQUESTED_MAP.values()) + ["unknown"]
         return None
 
     @property
@@ -306,6 +315,7 @@ class NibeSensor(NibePointEntity, SensorEntity):
             raw = raw_value(point)
             if raw == 65535:
                 attributes["nibe_special_value"] = raw
+                attributes["duration_status"] = "not_provided_by_device"
                 label = description_enum_map(point).get(65535)
                 if label:
                     attributes["nibe_special_state"] = label

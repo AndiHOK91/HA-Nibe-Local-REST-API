@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.14.0
+
+**Upgrade-Hinweis:** Pumpenmodi wechseln von `switch` zu `select`, Abtaupunkt 3098 von `binary_sensor` zu `sensor`. Betroffene Dashboard-Karten und Automationen müssen angepasst werden.
+
+- Pumpenmodi 4729/4745/4778 als Auswahl Manuell/Automatisch statt Ein/Aus; alte Switch-Registry-Einträge werden beim Start entfernt.
+- Gradminuten-Sensor bleibt bei Schreibfreigabe zusätzlich zum Eingabefeld erhalten.
+- Enteisung 3098 wird als einzelner Statussensor Aus/Aktiv/Passiv dargestellt; ersetzt den Binärsensor.
+- Zeit bis Enteisung kennzeichnet den Sonderwert 65535 zusätzlich mit `duration_status: not_provided_by_device`; der Minutenwert bleibt unbekannt.
+
+- Kompatibilität mit Home Assistant **2026.11.0** geprüft: 207 Tests erfolgreich; expliziten CI-Job ergänzt.
+
 ## 0.13.4
 
 - `nibe_local.export_extended_diagnostics` bietet das erzeugte Ergebnis jetzt zusätzlich als echte **JSON-Datei zum Download** an.
