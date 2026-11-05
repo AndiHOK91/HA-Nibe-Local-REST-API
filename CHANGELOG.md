@@ -1,5 +1,9 @@
 # Changelog
 
+## Unveröffentlicht
+
+- Die nur lesende Darstellung der GP1-Betriebsmodi 4651/4821 verwendet ebenfalls die Namen **Betriebsmodus HU-Pumpe GP1 Heizung/Kühlung** und die Zustände **Periodisch / Auto** statt der Rohwerte 0/1. Die bestehende Sensor-Identität bleibt erhalten.
+
 ## 0.14.3
 
 - REST-Punkte **4651** und **4821** als schreibbare Auswahl **Periodisch (0) / Auto (1)** umgesetzt. Namen: **Betriebsmodus HU-Pumpe GP1 Heizung** und **Betriebsmodus HU-Pumpe GP1 Kühlung**.
