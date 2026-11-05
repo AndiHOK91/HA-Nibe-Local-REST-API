@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lok
 
 Entwickelt und im realen Betrieb getestet mit **VVM S320, S2125 und ERS S40-400**. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **0.13.4**
+Aktuelle Integrationsversion: **0.14.0**
 
 > [!WARNING]
 > Die **Statistikmigration** ist experimentell und noch nicht auf einer produktiven Home-Assistant-Recorder-Datenbank praktisch erprobt. Vor der Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein.
@@ -163,7 +163,7 @@ Direkt über **My Home Assistant** in HACS öffnen:
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AndiHOK91&repository=HA-Nibe-Local-REST-API&category=integration)
 
-Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.13.4 ist ein regulärer Release.**
+Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v0.14.0 ist ein regulärer Release.**
 
 ### Manuell
 
@@ -192,7 +192,6 @@ Nicht automatisch unterstützt werden:
 
 - generische Schreibsteuerung unbekannter Punkte
 - Erraten unbekannter Enum-Bedeutungen
-- Alarmquittierung oder Alarmreset
 - myUplink-Cloudfunktionen
 - generisches Schreiben von NIBE-Zeitwerten
 - Aktivieren/Deaktivieren der BWZ-Zeitperioden über REST, solange dafür kein verifizierter Punkt bekannt ist
@@ -208,6 +207,7 @@ GitHub Actions prüft die Integration gegen:
 
 - **Home Assistant 2024.12.0**
 - **Home Assistant 2026.9.1**
+- **Home Assistant 2026.11.0**
 - eine aktuelle Home-Assistant-Version (`latest`)
 
 Regressionstests decken unter anderem API-Verarbeitung, Authentifizierung, Schreibschutz, Profile, Hardware-Erkennung, Übersetzungen, Firmware-Eigenheiten, Diagnose-Datenschutz und Statistikmigration ab.
@@ -227,7 +227,7 @@ Die Software wird ohne Gewährleistung oder Garantie bereitgestellt. Bei sicherh
 - AndiHOK91
 - ChatGPT (OpenAI) – Unterstützung bei Entwicklung, REST-API-Auswertung, Tests und Home-Assistant-Integration
 
-### Geplante Entitätskorrekturen
+### Änderungen beim Update auf v0.14.0
 
 Die Pumpenmodi 4729/4745/4778 verwenden eine Auswahl **Manuell (0) / Automatisch (1)**. Die bisherigen `switch`-Entitäten werden durch `select` ersetzt. Punkt 3098 (Input Register 1805) ersetzt den bisherigen Binärsensor durch einen einzelnen Statussensor **Aus / Aktiv / Passiv**. Dashboard-Karten und Automationen müssen die neuen Domains und Zustände verwenden.
 
