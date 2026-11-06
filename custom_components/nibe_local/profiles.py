@@ -18,7 +18,7 @@ ENTITY_PROFILES = (
 DEFAULT_ENTITY_PROFILE = PROFILE_EXTENDED
 
 ALARM_RESET_PROFILES = frozenset(
-    {PROFILE_EXTENDED, PROFILE_INDIVIDUAL}
+    {PROFILE_EXTENDED, PROFILE_COMPLETE, PROFILE_INDIVIDUAL}
 )
 
 
@@ -93,11 +93,6 @@ def write_enabled(
     Existing Individual entries created before this option existed keep their
     previous behavior when the setting is absent (None).
     """
-    # Complete is a monitoring view: expose all points, but never
-    # automatically populate the Controls section with writable entities.
-    # Use Extended for curated controls or Individual for explicit write selection.
-    if profile == PROFILE_COMPLETE:
-        return False
     if profile != PROFILE_INDIVIDUAL:
         return True
     if selected_writable_ids is None:
