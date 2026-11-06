@@ -24,6 +24,7 @@ from .entity import (
     raw_value,
 )
 from .writable import description_enum_map, writable_platform_for_point
+from .write_verification import DelayedPointWriteMixin
 
 PARALLEL_UPDATES = 1
 
@@ -88,7 +89,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class NibeDiscoveredSelect(NibeDiscoveredPointEntity, SelectEntity):
+class NibeDiscoveredSelect(DelayedPointWriteMixin, NibeDiscoveredPointEntity, SelectEntity):
     """Generic enum write entity selected explicitly in Individual mode."""
 
     @property
@@ -101,6 +102,8 @@ class NibeDiscoveredSelect(NibeDiscoveredPointEntity, SelectEntity):
 
     @property
     def current_option(self) -> str | None:
+        if self._pending_display_value is not None:
+            return self._pending_display_value
         return mapped_option(raw_value(self.point or {}), self._mapping)
 
     async def async_select_option(self, option: str) -> None:
@@ -111,11 +114,10 @@ class NibeDiscoveredSelect(NibeDiscoveredPointEntity, SelectEntity):
                 translation_key="select_invalid_option",
                 translation_placeholders={"option": option},
             )
-        await self.coordinator.api.patch_point(self.point_id, reverse[option])
-        await self.coordinator.async_refresh_point(self.point_id)
+        await self._async_patch_and_verify(self.point_id, reverse[option], option)
 
 
-class NibePointSelect(NibePointEntity, SelectEntity):
+class NibePointSelect(DelayedPointWriteMixin, NibePointEntity, SelectEntity):
     """Select for explicitly mapped NIBE enum points."""
 
     ENUM_OPTIONS: dict[int, dict[int, str]] = {
@@ -153,6 +155,8 @@ class NibePointSelect(NibePointEntity, SelectEntity):
 
     @property
     def current_option(self) -> str | None:
+        if self._pending_display_value is not None:
+            return self._pending_display_value
         return mapped_option(raw_value(self.point or {}), self._mapping)
 
     async def async_select_option(self, option: str) -> None:
@@ -164,11 +168,9 @@ class NibePointSelect(NibePointEntity, SelectEntity):
                 translation_placeholders={"option": option},
             )
 
-        await self.coordinator.api.patch_point(
-            self.definition.point_id,
-            reverse[option],
+        await self._async_patch_and_verify(
+            self.definition.point_id, reverse[option], option
         )
-        await self.coordinator.async_refresh_point(self.definition.point_id)
 
     @property
     def extra_state_attributes(self):
