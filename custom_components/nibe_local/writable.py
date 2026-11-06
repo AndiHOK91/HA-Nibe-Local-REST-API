@@ -67,6 +67,11 @@ def writable_platform_for_point(
     NIBE time values intentionally remain read-only even when isWritable=true,
     because real VVM S320 tests showed HTTP 400 for unchanged time writes.
     """
+    # A defrost request is a diagnostic *status*, not a documented
+    # externally supported defrost command. Never infer a writable switch
+    # from incomplete or misleading firmware metadata.
+    if point_id == 8060:
+        return None
     if not api_is_writable(point):
         return None
 
