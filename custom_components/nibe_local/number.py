@@ -13,6 +13,7 @@ from .const import DOMAIN, POINTS
 from .coordinator import NibeCoordinator
 from .entity import NibeDiscoveredPointEntity, NibePointEntity, scaled_value, to_raw
 from .writable import writable_platform_for_point
+from .write_verification import DelayedPointWriteMixin
 
 PARALLEL_UPDATES = 1
 
@@ -114,9 +115,11 @@ def value_is_representable(
     return math.isclose(raw_value, round(raw_value), rel_tol=0.0, abs_tol=1e-9)
 
 
-class NibeNumber(NibePointEntity, NumberEntity):
+class NibeNumber(DelayedPointWriteMixin, NibePointEntity, NumberEntity):
     @property
     def native_value(self) -> float | None:
+        if self._pending_display_value is not None:
+            return float(self._pending_display_value)
         value = scaled_value(self.point or {})
         return float(value) if isinstance(value, (int, float)) else None
 
@@ -191,18 +194,18 @@ class NibeNumber(NibePointEntity, NumberEntity):
                 },
             )
 
-        await self.coordinator.api.patch_point(
-            self.definition.point_id,
-            to_raw(self.point or {}, value),
+        await self._async_patch_and_verify(
+            self.definition.point_id, to_raw(self.point or {}, value), value
         )
-        await self.coordinator.async_refresh_point(self.definition.point_id)
 
 
-class NibeDiscoveredNumber(NibeDiscoveredPointEntity, NumberEntity):
+class NibeDiscoveredNumber(DelayedPointWriteMixin, NibeDiscoveredPointEntity, NumberEntity):
     """Generic numeric write entity selected explicitly in Individual mode."""
 
     @property
     def native_value(self) -> float | None:
+        if self._pending_display_value is not None:
+            return float(self._pending_display_value)
         value = scaled_value(self.point or {})
         return float(value) if isinstance(value, (int, float)) else None
 
@@ -258,8 +261,6 @@ class NibeDiscoveredNumber(NibeDiscoveredPointEntity, NumberEntity):
                 },
             )
 
-        await self.coordinator.api.patch_point(
-            self.point_id,
-            to_raw(self.point or {}, value),
+        await self._async_patch_and_verify(
+            self.point_id, to_raw(self.point or {}, value), value
         )
-        await self.coordinator.async_refresh_point(self.point_id)

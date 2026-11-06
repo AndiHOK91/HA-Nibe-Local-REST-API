@@ -1,6 +1,8 @@
 """Select entities for NIBE Local REST."""
 from __future__ import annotations
 
+import asyncio
+
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -24,6 +26,7 @@ from .entity import (
     raw_value,
 )
 from .writable import description_enum_map, writable_platform_for_point
+from .write_verification import DelayedPointWriteMixin
 
 PARALLEL_UPDATES = 1
 
@@ -88,7 +91,7 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class NibeDiscoveredSelect(NibeDiscoveredPointEntity, SelectEntity):
+class NibeDiscoveredSelect(DelayedPointWriteMixin, NibeDiscoveredPointEntity, SelectEntity):
     """Generic enum write entity selected explicitly in Individual mode."""
 
     @property
@@ -101,6 +104,8 @@ class NibeDiscoveredSelect(NibeDiscoveredPointEntity, SelectEntity):
 
     @property
     def current_option(self) -> str | None:
+        if self._pending_display_value is not None:
+            return self._pending_display_value
         return mapped_option(raw_value(self.point or {}), self._mapping)
 
     async def async_select_option(self, option: str) -> None:
@@ -111,11 +116,10 @@ class NibeDiscoveredSelect(NibeDiscoveredPointEntity, SelectEntity):
                 translation_key="select_invalid_option",
                 translation_placeholders={"option": option},
             )
-        await self.coordinator.api.patch_point(self.point_id, reverse[option])
-        await self.coordinator.async_refresh_point(self.point_id)
+        await self._async_patch_and_verify(self.point_id, reverse[option], option)
 
 
-class NibePointSelect(NibePointEntity, SelectEntity):
+class NibePointSelect(DelayedPointWriteMixin, NibePointEntity, SelectEntity):
     """Select for explicitly mapped NIBE enum points."""
 
     ENUM_OPTIONS: dict[int, dict[int, str]] = {
@@ -153,6 +157,8 @@ class NibePointSelect(NibePointEntity, SelectEntity):
 
     @property
     def current_option(self) -> str | None:
+        if self._pending_display_value is not None:
+            return self._pending_display_value
         return mapped_option(raw_value(self.point or {}), self._mapping)
 
     async def async_select_option(self, option: str) -> None:
@@ -164,11 +170,9 @@ class NibePointSelect(NibePointEntity, SelectEntity):
                 translation_placeholders={"option": option},
             )
 
-        await self.coordinator.api.patch_point(
-            self.definition.point_id,
-            reverse[option],
+        await self._async_patch_and_verify(
+            self.definition.point_id, reverse[option], option
         )
-        await self.coordinator.async_refresh_point(self.definition.point_id)
 
     @property
     def extra_state_attributes(self):
@@ -178,7 +182,7 @@ class NibePointSelect(NibePointEntity, SelectEntity):
 
 
 class NibeSmartModeSelect(CoordinatorEntity[NibeCoordinator], SelectEntity):
-    """NIBE Smart Mode select."""
+    """NIBE Smart Mode select with bounded delayed device readback."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "smart_mode"
@@ -187,6 +191,8 @@ class NibeSmartModeSelect(CoordinatorEntity[NibeCoordinator], SelectEntity):
     def __init__(self, coordinator: NibeCoordinator) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = entity_unique_id(coordinator, "smart_mode")
+        self._pending_option: str | None = None
+        self._verify_task: asyncio.Task[None] | None = None
 
     @property
     def device_info(self):
@@ -194,8 +200,39 @@ class NibeSmartModeSelect(CoordinatorEntity[NibeCoordinator], SelectEntity):
 
     @property
     def current_option(self) -> str | None:
+        if self._pending_option is not None:
+            return self._pending_option
         return ((self.coordinator.data or {}).get("device") or {}).get("smartMode")
 
+    async def _verify_smart_mode(self, expected: str) -> None:
+        try:
+            for delay in (self.coordinator.command_poll_delay_ms / 1000, 1, 1.5, 2, 3, 5):
+                await asyncio.sleep(delay)
+                try:
+                    await self.coordinator.async_request_refresh()
+                except Exception:
+                    continue
+                current = ((self.coordinator.data or {}).get("device") or {}).get("smartMode")
+                if current == expected:
+                    return
+        finally:
+            if self._pending_option == expected:
+                self._pending_option = None
+                self.async_write_ha_state()
+
     async def async_select_option(self, option: str) -> None:
+        if self._verify_task and not self._verify_task.done():
+            self._verify_task.cancel()
+        self._pending_option = None
         await self.coordinator.api.set_smart_mode(option)
-        await self.coordinator.async_request_refresh()
+        if getattr(self, "hass", None) is None:
+            await self.coordinator.async_request_refresh()
+            return
+        self._pending_option = option
+        self.async_write_ha_state()
+        self._verify_task = self.hass.async_create_task(self._verify_smart_mode(option))
+
+    async def async_will_remove_from_hass(self) -> None:
+        if self._verify_task and not self._verify_task.done():
+            self._verify_task.cancel()
+        await super().async_will_remove_from_hass()

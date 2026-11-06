@@ -22,6 +22,7 @@ from .const import (
 from .coordinator import NibeCoordinator
 from .entity import NibeDiscoveredPointEntity, NibePointEntity, entity_unique_id, raw_value
 from .writable import writable_platform_for_point
+from .write_verification import DelayedPointWriteMixin
 
 PARALLEL_UPDATES = 1
 
@@ -34,8 +35,11 @@ MODE_DEPENDENT_SWITCHES = {
 # immediately visible on a subsequent GET. Keep the requested Home Assistant
 # state optimistically until the NIBE confirms it, otherwise the switch appears
 # to jump back until the next normal coordinator poll.
-DELAYED_VERIFY_SWITCHES = MODE_DEPENDENT_SWITCHES | {
-    3706,  # Periodic hot water
+# Apply delayed readback protection to every curated writable switch.
+# Special-purpose hot-water and ventilation controls retain their own
+# purpose-built confirmation handling.
+DELAYED_VERIFY_SWITCHES = {
+    definition.point_id for definition in POINTS if definition.platform == "switch"
 }
 
 MORE_HOT_WATER_DEFINITION = next(
@@ -119,16 +123,17 @@ def write_allowed_for_mode(point_id: int, mode: int | None) -> bool:
     return False
 
 
-class NibeDiscoveredSwitch(NibeDiscoveredPointEntity, SwitchEntity):
+class NibeDiscoveredSwitch(DelayedPointWriteMixin, NibeDiscoveredPointEntity, SwitchEntity):
     """Generic 0/1 write entity selected explicitly in Individual mode."""
 
     @property
     def is_on(self) -> bool | None:
+        if self._pending_display_value is not None:
+            return self._pending_display_value
         return _switch_state(self.point)
 
     async def _set_state(self, state: bool) -> None:
-        await self.coordinator.api.patch_point(self.point_id, 1 if state else 0)
-        await self.coordinator.async_refresh_point(self.point_id)
+        await self._async_patch_and_verify(self.point_id, 1 if state else 0, state)
 
     async def async_turn_on(self, **kwargs) -> None:
         await self._set_state(True)
@@ -212,6 +217,11 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
             2.0,
             3.0,
         )
+        if self.definition.point_id == 22077:
+            # NIBE may acknowledge AUX writes before the corresponding REST
+            # value changes. Allow additional readbacks without oscillating
+            # the Home Assistant state; always fall back after the deadline.
+            delays += (3.0, 5.0, 5.0)
         expected = self._expected_state
         if expected is None:
             return
@@ -237,6 +247,15 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
 
     async def _set_state(self, state: bool) -> None:
         await self._ensure_write_allowed()
+
+        if getattr(self, "hass", None) is None:
+            # Detached entities in migration and write-contract regression tests
+            # cannot publish optimistic Home Assistant state.
+            await self.coordinator.api.patch_point(
+                self.definition.point_id, 1 if state else 0
+            )
+            await self.coordinator.async_refresh_point(self.definition.point_id)
+            return
 
         if self.definition.point_id not in DELAYED_VERIFY_SWITCHES:
             await self.coordinator.api.patch_point(
