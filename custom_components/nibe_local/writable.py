@@ -70,7 +70,9 @@ def writable_platform_for_point(
     # A defrost request is a diagnostic *status*, not a documented
     # externally supported defrost command. Never infer a writable switch
     # from incomplete or misleading firmware metadata.
-    if point_id == 8060:
+    if point_id in {3098, 8060}:
+        # Both are defrost status readings; never create writable controls
+        # based solely on a potentially misleading firmware metadata flag.
         return None
     if not api_is_writable(point):
         return None
