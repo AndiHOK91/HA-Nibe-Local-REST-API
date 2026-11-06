@@ -318,6 +318,7 @@
       "cooling_allowed": {"name": "Kühlung zulassen"},
       "periodic_hot_water": {"name": "Periodische Brauchwassererhöhung"},
       "more_hot_water": {"name": "Mehr Brauchwasser"},
+      "defrost_status_switch": {"name": "Enteisung aktiv (EB101) – nur Anzeige"},
       "night_reduction": {"name": "Nachtabsenkung"},
       "ventilation_plus": {"name": "Lüftung +"}
     },
