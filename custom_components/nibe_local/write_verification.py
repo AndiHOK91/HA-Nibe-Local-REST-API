@@ -35,11 +35,14 @@ class DelayedPointWriteMixin:
     _pending_display_value: Any = None
     _pending_raw_value: Any = None
     _pending_verify_task: asyncio.Task[None] | None = None
+    _verification_generation: int = 0
 
     async def _async_patch_and_verify(
         self, point_id: int, raw: int | str, display_value: Any
     ) -> None:
         """Write a REST point then verify readback without a transient UI reset."""
+        self._verification_generation += 1
+        generation = self._verification_generation
         self._cancel_pending_verification()
         self._pending_display_value = None
         self._pending_raw_value = None
@@ -56,10 +59,10 @@ class DelayedPointWriteMixin:
         self._pending_raw_value = raw
         self.async_write_ha_state()
         self._pending_verify_task = self.hass.async_create_task(
-            self._async_verify_point_value(point_id, raw)
+            self._async_verify_point_value(point_id, raw, generation)
         )
 
-    async def _async_verify_point_value(self, point_id: int, expected: int | str) -> None:
+    async def _async_verify_point_value(\n        self, point_id: int, expected: int | str, generation: int\n    ) -> None:
         try:
             first_delay = getattr(self.coordinator, "command_poll_delay_ms", 1000) / 1000
             for delay in (first_delay, *VERIFY_DELAYS_SECONDS[1:]):
@@ -77,7 +80,7 @@ class DelayedPointWriteMixin:
             raise
         finally:
             # A newer command owns this entity's pending optimistic display.
-            if self._pending_raw_value == expected:
+            if self._verification_generation == generation:
                 self._pending_display_value = None
                 self._pending_raw_value = None
                 if getattr(self, "hass", None) is not None:
