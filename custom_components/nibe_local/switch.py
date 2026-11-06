@@ -7,6 +7,7 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -67,6 +68,10 @@ async def async_setup_entry(
 ) -> None:
     coordinator: NibeCoordinator = entry.runtime_data
     entities = []
+    # Input register 1805 / point 3098 is read-only. Expose a status-only
+    # switch alongside the full enum sensor; never send PATCH for this point.
+    if coordinator.entity_enabled(3098) and coordinator.point(3098):
+        entities.append(NibeDefrostStatusSwitch(coordinator))
     for definition in POINTS:
         if definition.platform != "switch":
             continue
@@ -121,6 +126,50 @@ def write_allowed_for_mode(point_id: int, mode: int | None) -> bool:
     if mode == 2:
         return point_id == POINT_HEATING_ALLOWED
     return False
+
+
+class NibeDefrostStatusSwitch(NibePointEntity, SwitchEntity):
+    """Read-only status switch for defrost input register 1805 (REST point 3098).
+
+    Values 1 (active) and 2 (passive) are both defrost states. The existing
+    enum sensor remains available for distinguishing them. An input register
+    cannot be controlled; deliberately refuse service calls.
+    """
+
+    _attr_icon = "mdi:snowflake-melt"
+
+    def __init__(self, coordinator: NibeCoordinator) -> None:
+        definition = next(p for p in POINTS if p.point_id == 3098)
+        super().__init__(coordinator, definition)
+        self._attr_unique_id = entity_unique_id(coordinator, "3098_defrost_status_switch")
+        self._attr_translation_key = "defrost_status_switch"
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    @property
+    def is_on(self) -> bool | None:
+        value = raw_value(self.point or {})
+        try:
+            state = int(value)
+        except (ValueError, TypeError):
+            return None
+        if state == 0:
+            return False
+        if state in {1, 2}:
+            return True
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        attributes = dict(super().extra_state_attributes or {})
+        attributes["read_only"] = True
+        attributes["modbus_input_register"] = 1805
+        return attributes
+
+    async def async_turn_on(self, **kwargs) -> None:
+        raise HomeAssistantError("Enteisungsstatus ist ein schreibgeschütztes Modbus-Input-Register (1805)")
+
+    async def async_turn_off(self, **kwargs) -> None:
+        raise HomeAssistantError("Enteisungsstatus ist ein schreibgeschütztes Modbus-Input-Register (1805)")
 
 
 class NibeDiscoveredSwitch(DelayedPointWriteMixin, NibeDiscoveredPointEntity, SwitchEntity):
