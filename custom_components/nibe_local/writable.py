@@ -70,7 +70,10 @@ def writable_platform_for_point(
     # A defrost request is a diagnostic *status*, not a documented
     # externally supported defrost command. Never infer a writable switch
     # from incomplete or misleading firmware metadata.
-    if point_id == 8060:
+    if point_id in {8060, 22070}:
+        # 22070 is an AUX function selector with firmware-specific enum
+        # labels, never an unconstrained numeric slider. Keep it as the
+        # curated translated read-only enum sensor for all profiles.
         return None
     if not api_is_writable(point):
         return None
