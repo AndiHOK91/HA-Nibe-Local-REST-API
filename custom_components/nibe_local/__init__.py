@@ -276,7 +276,7 @@ def _remove_replaced_point_entities(
 ) -> None:
     """Remove obsolete entity domains when upgrading pump modes/defrost status."""
     registry = er.async_get(hass)
-    obsolete_domains = {3098: "binary_sensor", 4729: "switch", 4745: "switch", 4778: "switch"}
+    obsolete_domains = {3098: "binary_sensor", 4729: "switch", 4745: "switch", 4778: "switch", 8060: "switch"}
     for point_id, old_domain in obsolete_domains.items():
         old_entity_id = registry.async_get_entity_id(
             old_domain, DOMAIN, f"{entry.entry_id}_{point_id}"
@@ -302,7 +302,7 @@ def _remove_replaced_point_entities(
 
 
     if coordinator is not None:
-        for point_id in (3935, 3936, 22077):
+        for point_id in (3935, 3936, 9659, 9663, 22077):
             point = coordinator.point(point_id) or {}
             if (coordinator.entity_enabled(point_id) and coordinator.write_enabled(point_id)
                     and (point.get("metadata") or {}).get("isWritable", False)):
