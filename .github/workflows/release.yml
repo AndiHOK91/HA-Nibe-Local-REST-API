@@ -41,26 +41,26 @@ jobs:
         shell: bash
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
-            # One-time user-authorized replacement of v1.0.1; do not touch
-            # any later manually moved or otherwise updated release tag.
+            # One-time, lease-protected recovery after the previous
+            # v1.0.1 release was withdrawn and PRs #59/#60 were merged.
             if [ "$VERSION" = "1.0.1" ]; then
-              EXPECTED_TAG_SHA="c50af217ed71356108fb23470c13dcf44b94881d"
+              EXPECTED_TAG_SHA="dedc11edcc01bceaf3af76d7ed0584c7ca5bcfd7"
               CURRENT_TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '.object.sha')
               if [ "$CURRENT_TAG_SHA" = "$EXPECTED_TAG_SHA" ]; then
                 git config user.name "github-actions[bot]"
                 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
                 git tag -f "$TAG" "$GITHUB_SHA"
                 git push origin "refs/tags/$TAG" --force-with-lease="refs/tags/$TAG:$EXPECTED_TAG_SHA"
-                RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq '.id')
-                EXISTING_NOTES=$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --jq '.body')
-                UPDATED_NOTES=$(printf '%s\n\n%s\n' "$EXISTING_NOTES" 'Update v1.0.1: Verzögerte REST-Schreibbestätigung für schreibbare Switch-, Select- und Number-Entitäten inklusive AUX 22077 und HU-Pumpenmodi. Das gewünschte UI-Ergebnis bleibt bis zur NIBE-Bestätigung sichtbar; bei nicht bestätigter Änderung wird der reale REST-Wert angezeigt. Nach HACS-Update v1.0.1 erneut herunterladen und Home Assistant neu starten.')
-                gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
-                  -f target_commitish="$GITHUB_SHA" -F prerelease=false \
-                  -f make_latest=true -f body="$UPDATED_NOTES" >/dev/null
-                echo "Existing v1.0.1 tag and release updated successfully."
-              else
-                echo "v1.0.1 tag already replaced or modified: $CURRENT_TAG_SHA. Skipping."
+              elif [ "$CURRENT_TAG_SHA" != "$GITHUB_SHA" ]; then
+                echo "::error::v1.0.1 changed unexpectedly: $CURRENT_TAG_SHA; refusing to move tag"
+                exit 1
               fi
+              RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" --jq '.id')
+              gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+                -f target_commitish="$GITHUB_SHA" -F prerelease=false \
+                -f make_latest=true \
+                -f body='v1.0.1 – aktualisierte stabile Fassung nach PR #59 und #60: AUX von Modbus Funktion (REST 22070) als übersetzter Enum-Sensor statt roher Zahl 66; der separate AUX-Schalter bleibt REST 22077. Schreibverhalten und Entitätssteuerungen in allen Profilen einschließlich Komplett bleiben wie v1.0.0. Die zeitverzögerte Bestätigung wird nur für ausdrücklich genannte HU-Pumpenmodi 4729/4745/4778 und AUX 22077 ergänzt; vorhandene v1.0.0-Sonderfälle bleiben erhalten. Die deutschen Übersetzungen, Tonsignal-Schalter 9659/9663 und Enteisungsanzeige aus der vorigen v1.0.1 bleiben enthalten. Bei bereits installierter v1.0.1 in HACS dieselbe Version erneut herunterladen und Home Assistant neu starten.' >/dev/null
+              echo "Updated v1.0.1 tag and release to the validated main commit."
               exit 0
             fi
             if [ "$VERSION" = "0.14.3" ]; then
