@@ -192,6 +192,7 @@
       "cooling_allowed": {"name": "Allow cooling"},
       "periodic_hot_water": {"name": "Periodic hot water increase"},
       "more_hot_water": {"name": "More hot water"},
+      "defrost_status_switch": {"name": "Defrost active (EB101) – read-only"},
       "night_reduction": {"name": "Night reduction"},
       "ventilation_plus": {"name": "Ventilation +"}
     },
