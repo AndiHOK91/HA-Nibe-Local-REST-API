@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+- Profil **Erweitert**: Schalter **Tonsignal bei Alarm** (9659) und **Ton bei Tastendruck** (9663) aus der automatischen Auswahl entfernt; unter **Komplett** und **Individuell** weiterhin verfügbar.
+- Alle kuratierten Enteisungs- und EEV-Diagnosepunkte (inkl. 3098, 840, 841, 8052, 8060, 22268) ausdrücklich für **Erweitert** abgesichert.
+- Regressionstests für die Profilzuordnung erweitert. Keine Änderung am Schreib- oder Pollingverhalten.
+
 ## 1.0.1
 
 - **Tonsignal bei Alarm** (REST 9659, Modbus Holding 5326) und **Ton bei Tastendruck** (REST 9663, Modbus Holding 5327) als benannte Aus/Ein-Schalter ergänzt. Schreibbarkeit wird anhand der lokalen REST-Metadaten geprüft; ohne Schreibrecht bleiben benannte Aus/Ein-Sensoren erhalten.
