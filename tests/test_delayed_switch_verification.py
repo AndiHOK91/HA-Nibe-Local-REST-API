@@ -18,12 +18,11 @@ def _point(value):
 
 
 def test_known_delayed_switches_are_verified_asynchronously() -> None:
+    from custom_components.nibe_local.const import POINTS
     assert DELAYED_VERIFY_SWITCHES == {
-        3706,  # Periodic hot water
-        22077,  # AUX via Modbus
-        POINT_HEATING_ALLOWED,
-        POINT_COOLING_ALLOWED,
+        definition.point_id for definition in POINTS if definition.platform == "switch"
     }
+    assert {22077, 3706, POINT_HEATING_ALLOWED, POINT_COOLING_ALLOWED} <= DELAYED_VERIFY_SWITCHES
 
 
 def test_switch_state_normalization() -> None:
