@@ -54,7 +54,7 @@ async def async_setup_entry(
     entities: list[SelectEntity] = []
 
     device = (coordinator.data or {}).get("device")
-    if supports_smart_mode(device):
+    if coordinator.entity_profile != "complete" and supports_smart_mode(device):
         entities.append(NibeSmartModeSelect(coordinator))
 
     for definition in POINTS:
