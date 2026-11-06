@@ -36,6 +36,7 @@ MODE_DEPENDENT_SWITCHES = {
 # to jump back until the next normal coordinator poll.
 DELAYED_VERIFY_SWITCHES = MODE_DEPENDENT_SWITCHES | {
     3706,  # Periodic hot water
+    22077,  # AUX via Modbus: REST write is visible only after delayed readback
 }
 
 MORE_HOT_WATER_DEFINITION = next(
@@ -212,6 +213,11 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
             2.0,
             3.0,
         )
+        if self.definition.point_id == 22077:
+            # NIBE may acknowledge AUX writes before the corresponding REST
+            # value changes. Allow additional readbacks without oscillating
+            # the Home Assistant state; always fall back after the deadline.
+            delays += (3.0, 5.0, 5.0)
         expected = self._expected_state
         if expected is None:
             return
