@@ -14,6 +14,7 @@ from custom_components.nibe_local.const import CONF_SELECTED_WRITABLE_POINT_IDS
 from custom_components.nibe_local.writable import writable_platform_for_point
 from custom_components.nibe_local.profiles import (
     PROFILE_EXTENDED,
+    PROFILE_COMPLETE,
     PROFILE_INDIVIDUAL,
     write_enabled,
 )
@@ -104,6 +105,9 @@ def test_generic_writable_points_are_never_preselected_without_explicit_choice()
 
 def test_write_permission_only_applies_to_individual_profile() -> None:
     assert write_enabled(PROFILE_EXTENDED, 3667, []) is True
+    # Complete retains the curated write behavior from v1.0.0.
+    assert write_enabled(PROFILE_COMPLETE, 3667, None) is True
+    assert write_enabled(PROFILE_COMPLETE, 22077, None) is True
 
     # Legacy Individual entries without the new setting keep old behavior.
     assert write_enabled(PROFILE_INDIVIDUAL, 3667, None) is True

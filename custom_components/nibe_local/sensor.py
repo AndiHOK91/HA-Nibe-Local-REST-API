@@ -207,7 +207,7 @@ async def async_setup_entry(
     definitions_by_id = {definition.point_id: definition for definition in POINTS}
     entities.extend(
         NibeSensor(coordinator, definitions_by_id[point_id])
-        if point_id in {3935, 3936, 9659, 9663, 4651, 4821, 22077}
+        if point_id in definitions_by_id
         else NibeDiscoveredSensor(coordinator, point_id)
         for point_id in sorted(read_only_sensor_ids)
     )
