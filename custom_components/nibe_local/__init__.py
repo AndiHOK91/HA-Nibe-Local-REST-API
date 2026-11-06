@@ -302,7 +302,7 @@ def _remove_replaced_point_entities(
 
 
     if coordinator is not None:
-        for point_id in (3935, 3936, 22077):
+        for point_id in (3935, 3936, 9659, 9663, 22077):
             point = coordinator.point(point_id) or {}
             if (coordinator.entity_enabled(point_id) and coordinator.write_enabled(point_id)
                     and (point.get("metadata") or {}).get("isWritable", False)):
