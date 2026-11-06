@@ -14,7 +14,7 @@ Diese Custom Integration bindet eine NIBE-S-Series-Anlage direkt über die **lok
 
 Entwickelt und im realen Betrieb getestet mit **VVM S320, S2125 und ERS S40-400**. Andere S-Series-Konfigurationen können ebenfalls funktionieren, sind aber nicht automatisch vollständig verifiziert.
 
-Aktuelle Integrationsversion: **1.0.1**
+Aktuelle Integrationsversion: **1.0.2**
 
 > [!WARNING]
 > Die **Statistikmigration** ist experimentell und noch nicht auf einer produktiven Home-Assistant-Recorder-Datenbank praktisch erprobt. Vor der Verwendung sollte ein reguläres Home-Assistant-Backup vorhanden sein.
@@ -50,7 +50,7 @@ Unbekannte Punkte bleiben standardmäßig **read-only**. Im Profil **Individuell
 | Profil | Zweck |
 |---|---|
 | **Standard** | Kuratierter Kernumfang für den normalen Home-Assistant-Betrieb |
-| **Erweitert** | Zusätzliche technische Diagnose-, Kältekreis- und Servicewerte |
+| **Erweitert** | Zusätzliche technische Diagnose-, Kältekreis-, EEV- und Enteisungswerte; Tonsignal-Schalter 9659/9663 nur unter Komplett oder Individuell |
 | **Komplett** | Alle von der lokalen REST API gemeldeten Punkte; Schreibzugriffe für kuratierte Punkte wie in v1.0.0, unbekannte Punkte read-only |
 | **Individuell** | Freie Auswahl der gewünschten Variable-IDs; unterstützte Schreibzugriffe werden anschließend je Variable separat freigegeben |
 
@@ -169,7 +169,7 @@ Direkt über **My Home Assistant** in HACS öffnen:
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=AndiHOK91&repository=HA-Nibe-Local-REST-API&category=integration)
 
-Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v1.0.1 ist ein regulärer Release.**
+Wenn das Repository als Custom Repository in HACS eingebunden ist, kann die Integration darüber installiert und aktualisiert werden. **v1.0.2 ist ein regulärer Release.**
 
 ### Manuell
 
