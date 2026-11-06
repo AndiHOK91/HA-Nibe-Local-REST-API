@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- **Tonsignal bei Alarm** (REST 9659, Modbus Holding 5326) und **Ton bei Tastendruck** (REST 9663, Modbus Holding 5327) als benannte Aus/Ein-Schalter ergänzt. Schreibbarkeit wird anhand der lokalen REST-Metadaten geprüft; ohne Schreibrecht bleiben benannte Aus/Ein-Sensoren erhalten.
+- **Enteisung angefordert (EB101)** (REST 8060): Enum-Sensor für Aus/Aktiv/Passiv/Unbekannt und deutsche Statusübersetzungen in Erweitert, Komplett und bei individueller Auswahl korrigiert.
+- Veraltete `switch`-Entität für REST 8060 wird bereinigt. Für diesen Diagnosepunkt werden keine undokumentierten Schreibbefehle angeboten.
+- Tests für Profile, Übersetzungen, Schalter-Schreibwerte und Registry-Migration erweitert.
+
 ## 1.0.0
 
 - Erste stabile Version der lokalen NIBE REST-Integration nach Modulprüfung und gezielten Regressionstests.
