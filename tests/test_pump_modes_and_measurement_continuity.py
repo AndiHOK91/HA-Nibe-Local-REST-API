@@ -98,4 +98,4 @@ def test_upgrade_removes_only_obsolete_pump_and_defrost_domains(monkeypatch):
     integration._remove_replaced_point_entities(None, SimpleNamespace(entry_id="test"))
     assert set(removed) == {"binary_sensor.test_3098", "switch.test_4729",
                             "switch.test_4745", "switch.test_4778",
-                            "switch.test_8060"}
+                            "switch.test_8060", "number.test_22070"}

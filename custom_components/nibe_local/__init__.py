@@ -285,6 +285,15 @@ def _remove_replaced_point_entities(
             registry.async_remove(old_entity_id)
 
 
+    # Point 22070 used to be misclassified as a writable Number in
+    # Individual mode. The curated enum sensor has the same stable unique
+    # ID; remove the old Number registry entry so the sensor can reclaim it.
+    old_aux_number = registry.async_get_entity_id(
+        "number", DOMAIN, f"{entry.entry_id}_22070"
+    )
+    if old_aux_number:
+        registry.async_remove(old_aux_number)
+
     # Keep a read-only fallback sensor when write permission is disabled.
     if coordinator is not None:
         for point_id in (4651, 4821):
