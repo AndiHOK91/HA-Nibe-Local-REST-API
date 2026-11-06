@@ -41,7 +41,7 @@ Unterstützt werden unter anderem:
 - Standard- und erweiterte Diagnosedaten; `nibe_local.export_extended_diagnostics` liefert zusätzlich einen 10 Minuten gültigen, signierten JSON-Download-Link
 - experimentelle Migration vorhandener Home-Assistant-Langzeitstatistiken
 
-Im Profil **Komplett** bleiben sämtliche Variablen nur lesbar; für aktive Steuerungen **Erweitert** oder **Individuell** verwenden. Unbekannte Punkte bleiben standardmäßig **read-only**. Im Profil **Individuell** können zusätzlich ausgewählte REST-Punkte mit `isWritable=true` experimentell schreibbar freigegeben werden, wenn ihre Metadaten ein eindeutiges 0/1-, Zahlenbereich- oder Enum-Schema liefern. Zeitwerte und nicht eindeutig klassifizierbare Punkte bleiben gesperrt.
+Unbekannte Punkte bleiben standardmäßig **read-only**. Im Profil **Individuell** können zusätzlich ausgewählte REST-Punkte mit `isWritable=true` experimentell schreibbar freigegeben werden, wenn ihre Metadaten ein eindeutiges 0/1-, Zahlenbereich- oder Enum-Schema liefern. Zeitwerte und nicht eindeutig klassifizierbare Punkte bleiben gesperrt.
 
 ---
 
@@ -51,7 +51,7 @@ Im Profil **Komplett** bleiben sämtliche Variablen nur lesbar; für aktive Steu
 |---|---|
 | **Standard** | Kuratierter Kernumfang für den normalen Home-Assistant-Betrieb |
 | **Erweitert** | Zusätzliche technische Diagnose-, Kältekreis- und Servicewerte |
-| **Komplett** | Alle von der lokalen REST API gemeldeten Punkte **nur lesend**; keine automatisch erzeugten Steuerungsentitäten |
+| **Komplett** | Alle von der lokalen REST API gemeldeten Punkte; Schreibzugriffe für kuratierte Punkte wie in v1.0.0, unbekannte Punkte read-only |
 | **Individuell** | Freie Auswahl der gewünschten Variable-IDs; unterstützte Schreibzugriffe werden anschließend je Variable separat freigegeben |
 
 Im Profil **Individuell** folgt nach der Variablenauswahl ein eigener Schritt für Schreibrechte. Dort werden alle ausgewählten Punkte berücksichtigt, die NIBE mit `isWritable=true` meldet. Kuratierte Schreibpunkte behalten ihre verifizierte Sonderlogik. Nicht kuratierte Integer-Punkte werden nur dann experimentell angeboten, wenn sie anhand der REST-Metadaten eindeutig als 0/1-Schalter, Zahl mit belastbarem Wertebereich oder Enum klassifiziert werden können. Abgewählte Punkte bleiben lesbar; Zeitwerte und nicht eindeutig klassifizierbare Punkte bleiben gesperrt.
@@ -126,7 +126,7 @@ Zusätzlich gilt:
 
 Aktive NIBE-Alarme werden über den lokalen REST-Endpunkt `/notifications` eingelesen. Alarmnummer, von NIBE gelieferter Titel/Beschreibung, Schweregrad, Zeit und Quelle stehen am Sensor **Aktive Meldungen** zur Verfügung. Bei einem neu auftretenden Alarm erzeugt die Integration zusätzlich eine **persistente Home-Assistant-Benachrichtigung** mit diesen Angaben.
 
-In den Profilen **Erweitert** und **Individuell** steht außerdem die Taste **Alarme zurücksetzen** zur Verfügung. Sie verwendet den von NIBE dokumentierten REST-Aufruf `DELETE /api/v1/devices/{deviceId}/notifications`, der alle zurücksetzbaren aktiven Alarme/Meldungen quittiert. Bei **HTTP 405** unterstützt die Anlage den Reset nicht oder die Funktion ist am Gerät nicht freigegeben.
+Ab dem Profil **Erweitert** steht außerdem die Taste **Alarme zurücksetzen** zur Verfügung. Sie verwendet den von NIBE dokumentierten REST-Aufruf `DELETE /api/v1/devices/{deviceId}/notifications`, der alle zurücksetzbaren aktiven Alarme/Meldungen quittiert. Bei **HTTP 405** unterstützt die Anlage den Reset nicht oder die Funktion ist am Gerät nicht freigegeben.
 
 Zusätzlich stellt Home Assistant Diagnoseinformationen wie API-Erreichbarkeit, Fallback-Status und Verbindungsfehler bereit. Über `nibe_local.export_extended_diagnostics` können bei Bedarf erweiterte Punktinformationen und optional **1, 3, 5 oder 7 Tage** Recorder-Historie exportiert werden.
 
