@@ -248,6 +248,15 @@ class NibeSwitch(NibePointEntity, SwitchEntity):
     async def _set_state(self, state: bool) -> None:
         await self._ensure_write_allowed()
 
+        if getattr(self, "hass", None) is None:
+            # Detached entities in migration and write-contract regression tests
+            # cannot publish optimistic Home Assistant state.
+            await self.coordinator.api.patch_point(
+                self.definition.point_id, 1 if state else 0
+            )
+            await self.coordinator.async_refresh_point(self.definition.point_id)
+            return
+
         if self.definition.point_id not in DELAYED_VERIFY_SWITCHES:
             await self.coordinator.api.patch_point(
                 self.definition.point_id, 1 if state else 0
