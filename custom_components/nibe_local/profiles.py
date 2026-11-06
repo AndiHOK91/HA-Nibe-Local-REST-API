@@ -48,8 +48,19 @@ KNOWN_POINT_IDS = frozenset(definition.point_id for definition in POINTS)
 
 # Curated points that retain their proper entity platform/name when explicitly
 # selected, but are intentionally excluded from the automatic Extended profile.
-INDIVIDUAL_ONLY_POINT_IDS = frozenset({3138, 3935, 3936, 4651, 4729, 4745, 4778, 4821, 32824})
-EXTENDED_PROFILE_POINT_IDS = KNOWN_POINT_IDS - INDIVIDUAL_ONLY_POINT_IDS
+INDIVIDUAL_ONLY_POINT_IDS = frozenset({3138, 3935, 3936, 4651, 4729, 4745, 4778, 4821, 9659, 9663, 32824})
+# Include the complete curated defrost/EEV diagnostic group in Extended,
+# including defrost status (3098), time/index (840/841), fan trigger (8052),
+# requested defrost (8060), and last defrost result (22268).
+# Keep this explicit so future profile exclusions cannot accidentally hide them.
+DEFROST_EXTENDED_POINT_IDS = frozenset(
+    definition.point_id
+    for definition in POINTS
+    if definition.group == "eev_defrost" or "defrost" in definition.key
+)
+EXTENDED_PROFILE_POINT_IDS = (
+    KNOWN_POINT_IDS - INDIVIDUAL_ONLY_POINT_IDS
+) | DEFROST_EXTENDED_POINT_IDS
 
 
 def normalize_selected_ids(values: Iterable[object] | None) -> frozenset[int]:

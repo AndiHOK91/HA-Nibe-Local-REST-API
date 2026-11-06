@@ -22,7 +22,7 @@ from custom_components.nibe_local.profiles import (
 def test_tone_points_curated_as_binary_switches(point_id, register, name):
     definition = next(p for p in POINTS if p.point_id == point_id)
     assert definition.platform == "switch"
-    assert point_enabled(PROFILE_EXTENDED, point_id)
+    assert not point_enabled(PROFILE_EXTENDED, point_id)
     assert point_enabled(PROFILE_COMPLETE, point_id)
     assert point_enabled(PROFILE_INDIVIDUAL, point_id, [point_id])
     assert not point_enabled(PROFILE_STANDARD, point_id)
