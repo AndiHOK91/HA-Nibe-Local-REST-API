@@ -100,7 +100,7 @@ def test_alarm_notification_english_reset_hint() -> None:
 def test_alarm_reset_profile_scope() -> None:
     assert alarm_reset_enabled(PROFILE_STANDARD) is False
     assert alarm_reset_enabled(PROFILE_EXTENDED) is True
-    assert alarm_reset_enabled(PROFILE_COMPLETE) is True
+    assert alarm_reset_enabled(PROFILE_COMPLETE) is False
     assert alarm_reset_enabled(PROFILE_INDIVIDUAL) is True
 
 
