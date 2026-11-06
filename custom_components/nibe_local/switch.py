@@ -22,7 +22,6 @@ from .const import (
 from .coordinator import NibeCoordinator
 from .entity import NibeDiscoveredPointEntity, NibePointEntity, entity_unique_id, raw_value
 from .writable import writable_platform_for_point
-from .write_verification import DelayedPointWriteMixin
 
 PARALLEL_UPDATES = 1
 
@@ -31,15 +30,11 @@ MODE_DEPENDENT_SWITCHES = {
     POINT_COOLING_ALLOWED,
 }
 
-# These settings are accepted by the NIBE REST API before the updated value is
-# immediately visible on a subsequent GET. Keep the requested Home Assistant
-# state optimistically until the NIBE confirms it, otherwise the switch appears
-# to jump back until the next normal coordinator poll.
-# Apply delayed readback protection to every curated writable switch.
-# Special-purpose hot-water and ventilation controls retain their own
-# purpose-built confirmation handling.
-DELAYED_VERIFY_SWITCHES = {
-    definition.point_id for definition in POINTS if definition.platform == "switch"
+# Restore the selective v1.0.0 delayed-verification behavior.
+# Only explicitly reported AUX via Modbus additionally needs this protection.
+DELAYED_VERIFY_SWITCHES = MODE_DEPENDENT_SWITCHES | {
+    3706,  # Periodic hot water (v1.0.0)
+    22077,  # AUX via Modbus (explicitly requested)
 }
 
 MORE_HOT_WATER_DEFINITION = next(
@@ -123,17 +118,16 @@ def write_allowed_for_mode(point_id: int, mode: int | None) -> bool:
     return False
 
 
-class NibeDiscoveredSwitch(DelayedPointWriteMixin, NibeDiscoveredPointEntity, SwitchEntity):
+class NibeDiscoveredSwitch(NibeDiscoveredPointEntity, SwitchEntity):
     """Generic 0/1 write entity selected explicitly in Individual mode."""
 
     @property
     def is_on(self) -> bool | None:
-        if self._pending_display_value is not None:
-            return self._pending_display_value
         return _switch_state(self.point)
 
     async def _set_state(self, state: bool) -> None:
-        await self._async_patch_and_verify(self.point_id, 1 if state else 0, state)
+        await self.coordinator.api.patch_point(self.point_id, 1 if state else 0)
+        await self.coordinator.async_refresh_point(self.point_id)
 
     async def async_turn_on(self, **kwargs) -> None:
         await self._set_state(True)
