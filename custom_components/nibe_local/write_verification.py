@@ -62,7 +62,9 @@ class DelayedPointWriteMixin:
             self._async_verify_point_value(point_id, raw, generation)
         )
 
-    async def _async_verify_point_value(\n        self, point_id: int, expected: int | str, generation: int\n    ) -> None:
+    async def _async_verify_point_value(
+        self, point_id: int, expected: int | str, generation: int
+    ) -> None:
         try:
             first_delay = getattr(self.coordinator, "command_poll_delay_ms", 1000) / 1000
             for delay in (first_delay, *VERIFY_DELAYS_SECONDS[1:]):
