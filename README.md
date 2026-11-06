@@ -41,7 +41,7 @@ Unterstützt werden unter anderem:
 - Standard- und erweiterte Diagnosedaten; `nibe_local.export_extended_diagnostics` liefert zusätzlich einen 10 Minuten gültigen, signierten JSON-Download-Link
 - experimentelle Migration vorhandener Home-Assistant-Langzeitstatistiken
 
-Unbekannte Punkte bleiben standardmäßig **read-only**. Im Profil **Individuell** können zusätzlich ausgewählte REST-Punkte mit `isWritable=true` experimentell schreibbar freigegeben werden, wenn ihre Metadaten ein eindeutiges 0/1-, Zahlenbereich- oder Enum-Schema liefern. Zeitwerte und nicht eindeutig klassifizierbare Punkte bleiben gesperrt.
+Im Profil **Komplett** bleiben sämtliche Variablen nur lesbar; für aktive Steuerungen **Erweitert** oder **Individuell** verwenden. Unbekannte Punkte bleiben standardmäßig **read-only**. Im Profil **Individuell** können zusätzlich ausgewählte REST-Punkte mit `isWritable=true` experimentell schreibbar freigegeben werden, wenn ihre Metadaten ein eindeutiges 0/1-, Zahlenbereich- oder Enum-Schema liefern. Zeitwerte und nicht eindeutig klassifizierbare Punkte bleiben gesperrt.
 
 ---
 
@@ -51,7 +51,7 @@ Unbekannte Punkte bleiben standardmäßig **read-only**. Im Profil **Individuell
 |---|---|
 | **Standard** | Kuratierter Kernumfang für den normalen Home-Assistant-Betrieb |
 | **Erweitert** | Zusätzliche technische Diagnose-, Kältekreis- und Servicewerte |
-| **Komplett** | Alle von der lokalen REST API gemeldeten Punkte; unbekannte Punkte read-only |
+| **Komplett** | Alle von der lokalen REST API gemeldeten Punkte **nur lesend**; keine automatisch erzeugten Steuerungsentitäten |
 | **Individuell** | Freie Auswahl der gewünschten Variable-IDs; unterstützte Schreibzugriffe werden anschließend je Variable separat freigegeben |
 
 Im Profil **Individuell** folgt nach der Variablenauswahl ein eigener Schritt für Schreibrechte. Dort werden alle ausgewählten Punkte berücksichtigt, die NIBE mit `isWritable=true` meldet. Kuratierte Schreibpunkte behalten ihre verifizierte Sonderlogik. Nicht kuratierte Integer-Punkte werden nur dann experimentell angeboten, wenn sie anhand der REST-Metadaten eindeutig als 0/1-Schalter, Zahl mit belastbarem Wertebereich oder Enum klassifiziert werden können. Abgewählte Punkte bleiben lesbar; Zeitwerte und nicht eindeutig klassifizierbare Punkte bleiben gesperrt.
