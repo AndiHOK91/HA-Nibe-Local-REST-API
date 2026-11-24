@@ -177,6 +177,7 @@
       "pump_cooling_mode": {"name": "Pump cooling mode", "state": {"manual": "Manual", "auto": "Automatic"}},
       "operating_mode_setting": {"name": "Operating mode", "state": {"auto": "Auto", "manual": "Manual", "auxiliary_heat_only": "Auxiliary heat only"}},
       "hot_water_position": {"name": "Hot water demand", "state": {"low": "Low", "medium": "Medium", "high": "High"}},
+      "heat_distribution_system": {"name": "Heat distribution system", "state": {"own_setting": "Own setting", "radiator": "Radiator", "underfloor_heating": "Underfloor heating", "radiator_and_underfloor_heating": "Radiator + underfloor heating"}},
       "ventilation_mode": {"name": "Ventilation mode", "state": {"normal": "Normal", "off": "Off", "reduced": "Reduced", "increased": "Increased", "maximum": "Maximum"}},
       "smart_mode": {"name": "Smart Mode", "state": {"normal": "Normal", "away": "Away"}}
     },
