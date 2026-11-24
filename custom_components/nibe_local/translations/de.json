@@ -303,6 +303,7 @@
       "pump_cooling_mode": {"name": "Betriebsmodus Umwälzpumpe Kühlung Wärmepumpe 1", "state": {"manual": "Manuell", "auto": "Automatisch"}},
       "operating_mode_setting": {"name": "Betriebsmodus", "state": {"auto": "Auto", "manual": "Manuell", "auxiliary_heat_only": "Nur Zusatzheizung"}},
       "hot_water_position": {"name": "Brauchwasserbedarf", "state": {"low": "Niedrig", "medium": "Mittel", "high": "Hoch"}},
+      "heat_distribution_system": {"name": "Wärmeverteilsystem", "state": {"own_setting": "Eigene Einstellung", "radiator": "Heizkörper", "underfloor_heating": "Fußbodenheizung", "radiator_and_underfloor_heating": "Heizkörper + Fußbodenheizung"}},
       "ventilation_mode": {"name": "Lüftungsmodus", "state": {"normal": "Normal", "off": "Aus", "reduced": "Reduziert", "increased": "Erhöht", "maximum": "Maximal"}},
       "smart_mode": {"name": "Smart Mode", "state": {"normal": "Normal", "away": "Abwesend"}}
     },
