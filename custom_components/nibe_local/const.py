@@ -46,6 +46,7 @@ POINT_HOT_WATER_DEMAND = 3697
 POINT_PERIODIC_HOT_WATER_DATE = 2685
 POINT_TIME_TO_DEFROST = 840
 POINT_DEFROST_REQUESTED = 8060
+POINT_HEAT_DISTRIBUTION_SYSTEM = 3976
 
 PLATFORMS = ["sensor", "binary_sensor", "number", "switch", "select", "time", "button"]
 
@@ -91,6 +92,7 @@ POINTS: tuple[PointDef, ...] = (
     PointDef(3667, "heating_curve", "heating", "number"),
     PointDef(3671, "heating_curve_offset", "heating", "number"),
     PointDef(3920, "heating_allowed", "heating", "switch"),
+    PointDef(3976, "heat_distribution_system", "heating", "select"),
     PointDef(1716, "cooling_status", "cooling", "binary_sensor"),
     PointDef(2683, "cooling_blocked", "cooling", "binary_sensor"),
     PointDef(2691, "cooling_degree_minutes", "cooling"),
