@@ -12,6 +12,7 @@ from .const import (
     DOMAIN,
     POINTS,
     POINT_HOT_WATER_DEMAND,
+    POINT_HEAT_DISTRIBUTION_SYSTEM,
     POINT_OPERATING_MODE_SETTING,
     POINT_VENTILATION_MODE,
 )
@@ -134,6 +135,12 @@ class NibePointSelect(DelayedPointWriteMixin, NibePointEntity, SelectEntity):
             0: "low",
             1: "medium",
             2: "high",
+        },
+        POINT_HEAT_DISTRIBUTION_SYSTEM: {
+            0: "own_setting",
+            1: "radiator",
+            2: "underfloor_heating",
+            3: "radiator_and_underfloor_heating",
         },
         POINT_VENTILATION_MODE: {
             0: "normal",
