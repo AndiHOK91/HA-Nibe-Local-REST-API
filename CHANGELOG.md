@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.3
+
+- REST-Punkt **3976** als kuratiertes Auswahlfeld **Wärmeverteilsystem** umgesetzt.
+- Firmware-/Menüzuordnung für Menü **7.1.6.2 Volumenstromeinstellung Klimat.system** verwendet: **0 = Eigene Einstellung**, **1 = Heizkörper**, **2 = Fußbodenheizung**, **3 = Heizkörper + Fußbodenheizung**.
+- Falsche bzw. missverständliche Bezeichnung mit **Luftvolumenstrom** für diesen Punkt durch **Wärmeverteilsystem** ersetzt.
+- Deutsche und englische Übersetzungen sowie Regressionstests für Punkt 3976 ergänzt.
+
 ## 1.0.2
 
 - Profil **Erweitert**: Schalter **Tonsignal bei Alarm** (9659) und **Ton bei Tastendruck** (9663) aus der automatischen Auswahl entfernt; unter **Komplett** und **Individuell** weiterhin verfügbar.
